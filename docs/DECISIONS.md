@@ -5,7 +5,7 @@ notes and temporary findings in pull requests or task notes instead.
 
 ## D-001 — Static-first standalone web application
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2026-07-26
 
 The initial product will be a standalone .NET 10 Blazor WebAssembly
@@ -63,12 +63,11 @@ metadata and device interoperability.
 
 ## D-006 — Aspire is development infrastructure
 
-**Status:** Accepted  
+**Status:** Superseded by D-008
 **Date:** 2026-07-28
 
-Use an Aspire AppHost and the Aspire Blazor Gateway from PBI-000 to orchestrate
-the standalone Blazor WebAssembly application and forward browser telemetry to
-the local Aspire dashboard.
+This decision originally assigned an Aspire AppHost and the Aspire Blazor
+Gateway to the repository baseline. D-008 defers that work to PBI-210.
 
 AppHost and the development gateway are not a production application server.
 The Web project must continue to publish and run as static assets without them.
@@ -77,7 +76,7 @@ and retention decision.
 
 ## D-007 — Current PBI pointer and fixture gate
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2026-07-28
 
 `docs/CURRENT_PBI.md` contains only one `PBI-NNN` identifier. Codex resolves the
@@ -87,6 +86,19 @@ complete scope and acceptance criteria from the corresponding section in
 Before implementation, Codex checks `docs/FIXTURES.md` and reports any files or
 real-device evidence the user must provide. Fixture-dependent work waits for
 those inputs or explicit approval to use a synthetic substitute.
+
+## D-008 — Aspire telemetry is deferred
+
+**Status:** Accepted
+**Date:** 2026-07-28
+
+Aspire AppHost, the Blazor Gateway, and browser telemetry are not part of the
+repository baseline in PBI-000. They are deferred to PBI-210 and may be
+scheduled independently of product delivery.
+
+If implemented, they remain development-only infrastructure. The Web project
+must continue to publish and run as static assets without AppHost, a gateway,
+or a telemetry backend.
 
 ## Decision template
 

@@ -6,10 +6,9 @@ Start with a standalone .NET 10 Blazor WebAssembly application. It downloads as
 static assets and executes in the browser, making it suitable for Azure Static
 Web Apps, GitHub Pages, or any ordinary static host.
 
-Use an Aspire AppHost for local orchestration and the Aspire dashboard. For
-standalone Blazor WebAssembly browser telemetry, use the Aspire Blazor Gateway
-as a development-time same-origin proxy. Neither the AppHost nor this gateway
-is deployed as the application's production runtime.
+Aspire orchestration and browser telemetry are deferred to PBI-210. If added,
+they remain optional development infrastructure and are not deployed as the
+application's production runtime.
 
 Do not create a production ASP.NET Core server project initially. External map
 tiles, elevation, geocoding, and routing may be accessed through explicit
@@ -21,7 +20,6 @@ can be introduced later without changing the domain model.
 ```text
 RouteTrace.slnx
 ├─ src/
-│  ├─ RouteTrace.AppHost/
 │  ├─ RouteTrace.Core/
 │  │  ├─ Geography/
 │  │  ├─ Gpx/
@@ -57,8 +55,8 @@ RouteTrace.slnx
 └─ README.md
 ```
 
-Create `AppHost`, `Core`, `Web`, and `Core.Tests` initially. `TestData` is a
-fixture directory, not necessarily a project. Add `Web.Tests`,
+Create `Core`, `Web`, and `Core.Tests` initially. `TestData` is a fixture
+directory, not necessarily a project. Add `AppHost` only in PBI-210. Add `Web.Tests`,
 browser/component, or end-to-end test projects only when behaviour justifies
 them. Add a shared ServiceDefaults project only when a non-browser .NET service
 exists and can consume it.
@@ -75,7 +73,7 @@ Aspire provides the local development control plane:
 - A normal `dotnet publish` of `RouteTrace.Web` must still produce static assets
   that run without AppHost or gateway.
 
-Pin a compatible current Aspire version during PBI-000. The standalone Blazor
+Pin a compatible current Aspire version during PBI-210. The standalone Blazor
 hosting integration is currently preview, so verify its .NET 10 compatibility
 and record the selected version and any fallback before expanding its use.
 
@@ -232,9 +230,9 @@ without accounts.
 
 ## Deployment
 
-The Web project publishes static assets. AppHost is used by development and
-tests but is not included in the static deployment. The initial CI pipeline
-should:
+The Web project publishes static assets. If AppHost is added in PBI-210, it is
+used only by development and tests and is not included in the static
+deployment. The initial CI pipeline should:
 
 1. Restore tools and packages.
 2. Build TypeScript assets if present.

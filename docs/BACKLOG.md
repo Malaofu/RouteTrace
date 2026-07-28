@@ -5,23 +5,19 @@ This is a planning document. Implementation agents should use the identifier in
 
 Status values: `Not started`, `In progress`, `Blocked`, `Done`.
 
-## PBI-000 — Repository, Aspire development, and static application baseline
+## PBI-000 — Repository and static application baseline
 
-**Status:** Not started
+**Status:** In progress
 
-**Goal:** Establish a minimal .NET 10 solution that builds, tests, runs with
-Aspire development telemetry, and publishes the Web project as static assets.
+**Goal:** Establish a minimal .NET 10 solution that builds, tests, and publishes
+the Web project as static assets.
 
 **Tasks:**
 
-- Create the solution and `AppHost`, `Core`, `Web`, and `Core.Tests` projects.
+- Create the solution and `Core`, `Web`, and `Core.Tests` projects.
 - Enable nullable references, warnings, central package management, formatting,
   and deterministic builds.
 - Add a minimal application shell and error boundary.
-- Use the Aspire Blazor hosting integration and development Blazor Gateway to
-  expose the Web app and forward browser telemetry to the Aspire dashboard.
-- Pin and document the compatible Aspire version; record that the Blazor
-  hosting integration is preview if that remains true when implemented.
 - Add build/test/publish commands to the README.
 - Add CI that builds and tests; deployment can remain manual.
 - Verify the published WebAssembly output can be served by a plain static file
@@ -30,10 +26,7 @@ Aspire development telemetry, and publishes the Web project as static assets.
 **Acceptance criteria:**
 
 - A clean clone can build and test with documented commands.
-- The AppHost runs the Web project and exposes the Aspire dashboard.
-- A documented smoke check demonstrates browser telemetry in the dashboard.
 - Published output works from a static server.
-- Published output does not require AppHost or a gateway.
 - No production server/API, map package, authentication, or database has been
   added.
 
@@ -458,3 +451,31 @@ compatibility evidence.
 - Manual compatibility results include device/service, firmware/app version,
   date, and observed behaviour.
 - Do not claim universal compatibility from a single successful import.
+
+## PBI-210 — Development orchestration and telemetry
+
+**Status:** Not started
+
+**Goal:** Add optional Aspire-based local orchestration and browser telemetry
+without changing the statically hosted production application.
+
+**Tasks:**
+
+- Add an Aspire AppHost for local development.
+- Evaluate the Aspire Blazor hosting integration and development Blazor Gateway
+  for the pinned .NET SDK.
+- Pin and document a compatible Aspire version and record whether the required
+  integration remains preview.
+- Forward browser OpenTelemetry through a development-only, same-origin
+  endpoint to the local Aspire dashboard.
+- Document local startup and a browser-telemetry smoke check.
+
+**Acceptance criteria:**
+
+- The AppHost runs the Web project and exposes the Aspire dashboard.
+- A documented smoke check demonstrates browser telemetry in the dashboard.
+- A normal Web project publish still produces static assets that run without
+  AppHost, the gateway, or a telemetry backend.
+- No dashboard credentials or telemetry ingestion secrets are exposed to the
+  browser.
+- No production server or production telemetry dependency is introduced.

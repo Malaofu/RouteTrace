@@ -55,6 +55,7 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 | PBI-180 | FX-ELE-001 | Ask before enrichment and calculation tests. |
 | PBI-190 | FX-GPX-004 | Ask only if it is absent. |
 | PBI-200 | FX-GPX-004, FX-DEVICE-001 | Ask early; real-device verification may take more than one weekend. |
+| PBI-210 | None | State that none are needed. |
 
 ## Fixture request template
 

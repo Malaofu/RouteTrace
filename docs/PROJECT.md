@@ -36,8 +36,8 @@ Human correction is an expected part of the workflow.
 - **Static-first:** the UI must be deployable as static assets.
 - **Local-first:** images, projects, and GPX processing remain on the client by
   default.
-- **Observable development:** use Aspire orchestration and local telemetry from
-  the first PBI without making production hosting depend on Aspire.
+- **Optional observable development:** Aspire orchestration and local telemetry
+  may be added later without making production hosting depend on Aspire.
 - **Progressive automation:** manual tracing must work before automatic image
   recognition exists.
 - **User-controlled ambiguity:** uncertain map matches are shown for correction,

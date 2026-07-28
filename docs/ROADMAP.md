@@ -5,7 +5,7 @@ The roadmap is ordered by usable capability. PBI identifiers refer to
 
 ## Phase 0 — Foundation
 
-- PBI-000: Repository, Aspire development, and static application baseline.
+- PBI-000: Repository and static application baseline.
 - PBI-010: Interactive map shell and attribution.
 
 Outcome: an empty but deployable mapping application.
@@ -54,6 +54,13 @@ Outcome: semi-automatic image-to-route conversion with explicit user review.
 - PBI-200: TCX/FIT evaluation and device compatibility suite.
 
 Outcome: richer files and tested interoperability with common cycling devices.
+
+## Later development infrastructure
+
+- PBI-210: Optional Aspire development orchestration and telemetry.
+
+This work is deliberately outside the product delivery path and can be
+scheduled when local observability becomes useful.
 
 ## Release markers
 

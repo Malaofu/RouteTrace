@@ -1,8 +1,9 @@
 # Project status
 
-**Phase:** Pre-implementation planning  
-**Current PBI:** PBI-000 — Repository, Aspire development, and static
-application baseline  
+**Phase:** Foundation implementation
+
+**Current PBI:** PBI-000 — Repository and static application baseline
+
 **Last updated:** 2026-07-28
 
 ## Completed
@@ -11,17 +12,26 @@ application baseline
 - Static-first architecture direction defined.
 - Ordered roadmap and initial PBI backlog created.
 - Codex scope-control workflow defined.
-- Aspire development telemetry and fixture-gate conventions defined.
+- .NET 10 solution with Core, Web, Core.Tests, and Web.Tests projects created.
+- Nullable references and central package management enabled.
+- Debug build, formatting verification, and Release Web publish succeed.
+- Aspire development orchestration and telemetry deferred to PBI-210.
 
 ## Next
 
-- Create the .NET 10 repository in Rider.
-- Copy these project notes into the repository.
-- Implement only the PBI identified by `CURRENT_PBI.md`.
+- Align the test projects with the Microsoft.Testing.Platform runner selected
+  in `global.json`, or remove that runner selection.
+- Replace placeholder tests with focused baseline tests where useful.
+- Add the application error boundary.
+- Document build, test, publish, and static-server smoke-check commands.
+- Add CI for build and test.
+- Serve the published output from a plain static server and record the manual
+  verification.
 
 ## Blockers
 
-None.
+- `dotnet test RouteTrace.slnx --no-build` fails because both test projects use
+  VSTest while `global.json` selects Microsoft.Testing.Platform.
 
 ## Deferred choices
 
@@ -29,8 +39,11 @@ None.
 - Map library and map-data provider.
 - Routing and map-matching provider.
 - Image-processing implementation.
+- Timing and compatible package version for optional Aspire telemetry
+  (PBI-210).
 
 ## Handoff note
 
-No application code exists yet. Do not infer that any backlog feature has been
-implemented.
+PBI-000 is in progress. Do not start PBI-010 until the remaining baseline
+acceptance criteria are complete and the user explicitly advances
+`CURRENT_PBI.md`.
