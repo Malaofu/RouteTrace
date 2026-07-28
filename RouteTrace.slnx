@@ -1,4 +1,26 @@
 <Solution>
+  <Folder Name="/.github/">
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/ARCHITECTURE.md" />
+    <File Path="docs/BACKLOG.md" />
+    <File Path="docs/CURRENT_PBI.md" />
+    <File Path="docs/DECISIONS.md" />
+    <File Path="docs/FIXTURES.md" />
+    <File Path="docs/PROJECT.md" />
+    <File Path="docs/ROADMAP.md" />
+    <File Path="docs/STATUS.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
   <Folder Name="/test/">
     <Project Path="test/RouteTrace.Core.Tests/RouteTrace.Core.Tests.csproj" />
     <Project Path="test/RouteTrace.Web.Tests/RouteTrace.Web.Tests.csproj" />

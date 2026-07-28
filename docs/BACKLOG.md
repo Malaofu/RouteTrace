@@ -7,7 +7,7 @@ Status values: `Not started`, `In progress`, `Blocked`, `Done`.
 
 ## PBI-000 — Repository and static application baseline
 
-**Status:** In progress
+**Status:** Done
 
 **Goal:** Establish a minimal .NET 10 solution that builds, tests, and publishes
 the Web project as static assets.

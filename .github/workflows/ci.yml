@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: Directory.Packages.props
+
+      - name: Restore
+        run: dotnet restore RouteTrace.slnx
+
+      - name: Check formatting
+        run: dotnet format RouteTrace.slnx --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build RouteTrace.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test RouteTrace.slnx -c Release --no-build
+
+      - name: Publish static application
+        run: dotnet publish src/RouteTrace.Web/RouteTrace.Web.csproj -c Release --no-restore

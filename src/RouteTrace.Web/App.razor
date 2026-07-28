@@ -1,6 +1,18 @@
 ﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        <ErrorBoundary>
+            <ChildContent>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </ChildContent>
+            <ErrorContent Context="exception">
+                <LayoutView Layout="@typeof(MainLayout)">
+                    <PageTitle>Unexpected error</PageTitle>
+                    <h1>Something went wrong</h1>
+                    <p>The application encountered an unexpected error.</p>
+                    <p><a href="">Reload the application</a></p>
+                </LayoutView>
+            </ErrorContent>
+        </ErrorBoundary>
     </Found>
 </Router>

@@ -45,3 +45,33 @@ project documents when the current PBI requires them.
 6. Verify the acceptance criteria.
 7. Update `docs/STATUS.md` and mark the PBI complete in `docs/BACKLOG.md`.
 8. Select another PBI only in a later, explicit step.
+
+## Build and test
+
+Install the .NET SDK version selected by [`global.json`](global.json), then run
+these commands from the repository root:
+
+```powershell
+dotnet restore RouteTrace.slnx
+dotnet format RouteTrace.slnx --verify-no-changes --no-restore
+dotnet build RouteTrace.slnx -c Release --no-restore
+dotnet test RouteTrace.slnx -c Release --no-build
+dotnet publish src/RouteTrace.Web/RouteTrace.Web.csproj -c Release --no-restore
+```
+
+The static site is published to
+`src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot`. Serve that directory
+from a static file server rather than opening `index.html` directly. For
+example:
+
+```powershell
+dotnet tool install --global dotnet-serve
+dotnet serve --directory src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot
+```
+
+The GitHub Actions workflow runs formatting, build, test, and publish checks on
+pushes to `main` and on pull requests. It does not deploy the application.
+
+## License
+
+Route Trace is available under the [MIT License](LICENSE).
