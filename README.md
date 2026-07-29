@@ -48,8 +48,16 @@ project documents when the current PBI requires them.
 
 ## Build and test
 
-Install the .NET SDK version selected by [`global.json`](global.json), then run
-these commands from the repository root:
+Install the .NET SDK version selected by [`global.json`](global.json) and a
+current Node.js LTS release. Restore the frontend dependencies first:
+
+```powershell
+cd src/RouteTrace.Web
+npm ci
+cd ../..
+```
+
+Then run these commands from the repository root:
 
 ```powershell
 dotnet restore RouteTrace.slnx
@@ -71,6 +79,22 @@ dotnet serve --directory src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot
 
 The GitHub Actions workflow runs formatting, build, test, and publish checks on
 pushes to `main` and on pull requests. It does not deploy the application.
+
+## Manual map verification
+
+Run the Web project and open the displayed local URL in a desktop browser:
+
+```powershell
+dotnet run --project src/RouteTrace.Web/RouteTrace.Web.csproj
+```
+
+Verify the following after map-shell changes:
+
+1. The map fills the area below the header and beside the navigation.
+2. Dragging pans the map, and the mouse wheel and `+`/`−` controls zoom it.
+3. Resizing the browser does not leave gaps or misalign map controls.
+4. The initial view fits Denmark and surrounding countries.
+5. The OpenStreetMap attribution remains visible in the bottom-right corner.
 
 ## License
 

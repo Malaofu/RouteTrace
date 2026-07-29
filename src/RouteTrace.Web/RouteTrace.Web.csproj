@@ -18,4 +18,8 @@
     <ProjectReference Include="..\RouteTrace.Core\RouteTrace.Core.csproj" />
   </ItemGroup>
 
+  <Target Name="BuildFrontend" BeforeTargets="Build">
+    <Exec Command="npm run build" />
+  </Target>
+
 </Project>

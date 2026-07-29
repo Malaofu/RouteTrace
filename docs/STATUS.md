@@ -1,10 +1,10 @@
 # Project status
 
-**Phase:** Foundation implementation
+**Phase:** Interactive map foundation
 
-**Current PBI:** PBI-000 — Repository and static application baseline
+**Current PBI:** PBI-010 — Interactive map shell
 
-**Last updated:** 2026-07-28
+**Last updated:** 2026-07-29
 
 ## Completed
 
@@ -28,12 +28,20 @@
   folders expose tests, documentation, CI, and repository-level files in Rider
   and Visual Studio.
 - PBI-000 acceptance criteria completed.
+- OpenLayers 10.10.0 selected behind a strict TypeScript adapter.
+- Responsive map shell supports pan, zoom, resize observation, disposal, and
+  WGS 84 fit-to-bounds.
+- Standard OpenStreetMap raster tiles selected for light development use with
+  visible attribution and documented provider constraints.
+- esbuild and TypeScript integrated into local builds and CI.
+- PBI-010 acceptance criteria completed.
 
 ## Next
 
-- Keep `CURRENT_PBI.md` at PBI-000 until the user explicitly selects the next
+- Keep `CURRENT_PBI.md` at PBI-010 until the user explicitly selects the next
   PBI.
-- Replace placeholder tests when custom behavior is introduced by a later PBI.
+- Repeat the documented browser interaction checks after future map-shell
+  changes.
 
 ## Blockers
 
@@ -42,7 +50,7 @@ None.
 ## Deferred choices
 
 - Final product/solution name.
-- Map library and map-data provider.
+- Production map-data provider.
 - Routing and map-matching provider.
 - Image-processing implementation.
 - Timing and compatible package version for optional Aspire telemetry
@@ -50,8 +58,9 @@ None.
 
 ## Handoff note
 
-PBI-000 is complete. On 2026-07-28 the solution formatted and built with zero
-warnings, both tests passed, the Web project published successfully, and a
-plain local static server returned HTTP 200 for both `index.html` and the
-fingerprinted Blazor framework script. Do not start PBI-010 until the user
-explicitly advances `CURRENT_PBI.md`.
+PBI-010 is complete. On 2026-07-29 the strict TypeScript build, formatting,
+warnings-as-errors Release build, both .NET tests, and static publish passed. A
+headless browser rendered the map, zoom controls, fitted initial view, and
+visible OpenStreetMap attribution at both 1440×900 and 600×800. Manual pan,
+zoom, resize, and attribution verification steps are recorded in the README.
+Do not start PBI-020 until the user explicitly advances `CURRENT_PBI.md`.

@@ -32,7 +32,7 @@ the Web project as static assets.
 
 ## PBI-010 — Interactive map shell
 
-**Status:** Not started
+**Status:** Done
 
 **Goal:** Display a world map suitable for later route and image overlays.
 

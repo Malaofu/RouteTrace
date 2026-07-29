@@ -292,6 +292,7 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+src/RouteTrace.Web/wwwroot/generated/
 
 # Visual Studio 6 build log
 *.plg
@@ -480,3 +481,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Open AI
+.codex/

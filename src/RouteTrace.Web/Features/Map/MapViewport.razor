@@ -1,0 +1,44 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JavaScript
+
+<div id="@elementId"
+     class="map-viewport"
+     role="application"
+     aria-label="Interactive route map">
+</div>
+
+@code {
+    private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
+    private IJSObjectReference? module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        module = await JavaScript.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./generated/mapAdapter.js");
+        await module.InvokeVoidAsync("initialize", elementId);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await module.InvokeVoidAsync("dispose", elementId);
+            await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The browser has already disconnected, so there is nothing to clean up.
+        }
+    }
+}

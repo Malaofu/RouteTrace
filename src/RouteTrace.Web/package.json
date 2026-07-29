@@ -1,0 +1,15 @@
+{
+  "name": "routetrace-web",
+  "private": true,
+  "scripts": {
+    "build": "npm run typecheck && esbuild Scripts/mapAdapter.ts Scripts/map.css --bundle --format=esm --sourcemap --outdir=wwwroot/generated",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ol": "10.10.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "typescript": "7.0.2"
+  }
+}

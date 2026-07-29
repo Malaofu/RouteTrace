@@ -2,10 +2,16 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 main {
+    display: flex;
+    flex-direction: column;
     flex: 1;
+    min-height: 0;
+    min-width: 0;
 }
 
 .sidebar {
@@ -19,6 +25,12 @@ main {
     height: 3.5rem;
     display: flex;
     align-items: center;
+    flex: 0 0 auto;
+}
+
+.content {
+    flex: 1;
+    min-height: 0;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
@@ -70,7 +82,7 @@ main {
         width: 0;
     }
 
-    .top-row, article {
+    .top-row {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }

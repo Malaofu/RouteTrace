@@ -1,0 +1,9 @@
+.map-viewport {
+    height: 100%;
+    min-height: 24rem;
+    width: 100%;
+}
+
+::deep .ol-attribution {
+    font-size: 0.75rem;
+}

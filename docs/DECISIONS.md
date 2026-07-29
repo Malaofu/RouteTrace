@@ -100,6 +100,29 @@ If implemented, they remain development-only infrastructure. The Web project
 must continue to publish and run as static assets without AppHost, a gateway,
 or a telemetry backend.
 
+## D-009 — OpenLayers with OpenStreetMap development tiles
+
+**Status:** Accepted
+**Date:** 2026-07-29
+
+Use OpenLayers 10.10.0 behind a feature-scoped TypeScript adapter. OpenLayers
+was selected over MapLibre GL JS because Route Trace prioritises raster/image
+layers, explicit projections, and editable vector geometry; OpenLayers exposes
+these directly, while MapLibre is primarily organised around GPU-rendered
+vector styles. Razor components may call the adapter but must not call
+OpenLayers APIs directly.
+
+Use the standard OpenStreetMap raster endpoint for light development and early
+manual testing only. Keep its URL inside the adapter so it can be replaced
+without changing Razor components. The map must show OpenStreetMap attribution,
+honour normal browser caching and referrer behaviour, and must not add tile
+prefetch, bulk download, or offline-map features. The service is best-effort
+and has no SLA, so select a suitable hosted or self-hosted provider before
+expecting material public traffic.
+
+Bundle the adapter and OpenLayers CSS with esbuild. TypeScript remains strict,
+and the npm surface is limited to OpenLayers, TypeScript, and esbuild.
+
 ## Decision template
 
 ```markdown

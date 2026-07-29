@@ -92,3 +92,15 @@ A PBI is complete only when:
 - `docs/STATUS.md` reflects the result and remaining blockers.
 
 Do not automatically select or start the next PBI.
+
+## Command execution
+
+- Run ordinary read, search, build, and test commands without requesting
+  confirmation when permitted by the active sandbox.
+- Prefer direct commands over explicit `pwsh -Command` wrappers when possible.
+- Keep commands separate unless combining them is necessary.
+- Use `rg` or `rg --files` for repository searches.
+- Use `Get-Content` only for simple file reads where `rg` is unsuitable.
+- Do not request elevated execution merely because an ordinary command failed;
+  first determine whether the failure is caused by its arguments, working
+  directory, or sandbox access.
