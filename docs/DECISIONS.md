@@ -123,6 +123,32 @@ expecting material public traffic.
 Bundle the adapter and OpenLayers CSS with esbuild. TypeScript remains strict,
 and the npm surface is limited to OpenLayers, TypeScript, and esbuild.
 
+## D-010 — App-owned theme and styling foundation
+
+**Status:** Accepted
+**Date:** 2026-07-29
+
+Use a small app-owned design system based on semantic CSS custom properties
+instead of Bootstrap or another component framework. Light and dark palettes
+are first-class, and the user can select Light, Dark, or Auto. Auto follows the
+browser's operating-system preference. Store only the theme preference in
+browser local storage and apply it before Blazor starts to avoid a flash of the
+wrong theme.
+
+Author global styles in structured SCSS modules and compile them to expanded,
+readable static CSS in the existing npm build. Author component styles as
+matching `.razor.scss` files. The build discovers these files automatically and
+generates `.razor.css` intermediates under `.generated/scopedcss-input`,
+preserving project-relative paths. One wildcard `ScopedCssInput` maps the
+generated files back to their components before Blazor performs CSS isolation.
+The ignored staging tree sits outside `wwwroot`, so the raw inputs are not
+published. Add reusable controls only as product PBIs need them; the shared
+tokens for colour, spacing, radii, focus states, and elevation are the stable
+foundation.
+
+Keep executable scripts and SVG artwork in dedicated resource files. HTML and
+Razor files reference those resources rather than embedding them inline.
+
 ## Decision template
 
 ```markdown

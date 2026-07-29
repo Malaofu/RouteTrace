@@ -35,6 +35,11 @@
   visible attribution and documented provider constraints.
 - esbuild and TypeScript integrated into local builds and CI.
 - PBI-010 acceptance criteria completed.
+- Bootstrap and the default Counter/Weather samples removed.
+- Structured global and component-level SCSS, design tokens, and responsive
+  application chrome added; generated component CSS feeds Blazor isolation.
+- Light, Dark, and system-following Auto themes added with a persisted browser
+  preference and pre-Blazor theme application through external scripts.
 
 ## Next
 
@@ -58,9 +63,10 @@ None.
 
 ## Handoff note
 
-PBI-010 is complete. On 2026-07-29 the strict TypeScript build, formatting,
-warnings-as-errors Release build, both .NET tests, and static publish passed. A
-headless browser rendered the map, zoom controls, fitted initial view, and
-visible OpenStreetMap attribution at both 1440×900 and 600×800. Manual pan,
-zoom, resize, and attribution verification steps are recorded in the README.
-Do not start PBI-020 until the user explicitly advances `CURRENT_PBI.md`.
+PBI-010 is complete. On 2026-07-29 the SCSS and strict TypeScript builds,
+formatting, warnings-as-errors Release build, both .NET tests, and static
+publish passed. A headless browser previously rendered the map, zoom controls,
+fitted initial view, and visible OpenStreetMap attribution at both 1440×900 and
+600×800. Manual map and Light/Dark/Auto theme checks are recorded in the
+README. Do not start PBI-020 until the user explicitly advances
+`CURRENT_PBI.md`.

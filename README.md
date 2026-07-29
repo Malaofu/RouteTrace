@@ -80,6 +80,21 @@ dotnet serve --directory src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot
 The GitHub Actions workflow runs formatting, build, test, and publish checks on
 pushes to `main` and on pull requests. It does not deploy the application.
 
+### Frontend styling
+
+Global styles are authored under `src/RouteTrace.Web/Styles`, with `app.scss`
+as the entry point and partials grouped by purpose. Component styles live beside
+their components as `.razor.scss` files.
+
+`npm run styles` discovers all `.razor.scss` files automatically. It creates
+the ignored browser stylesheet at `wwwroot/generated/app.css` and component
+CSS intermediates under `.generated/scopedcss-input`, preserving their
+project-relative paths. A single wildcard maps those intermediates back to
+their Razor components before Blazor's CSS-isolation processing. The staging
+tree sits outside `wwwroot`, so only Blazor's processed style bundle is
+published. A clean build therefore requires only `npm ci`; generated CSS
+should not be edited or committed.
+
 ## Manual map verification
 
 Run the Web project and open the displayed local URL in a desktop browser:
@@ -90,11 +105,15 @@ dotnet run --project src/RouteTrace.Web/RouteTrace.Web.csproj
 
 Verify the following after map-shell changes:
 
-1. The map fills the area below the header and beside the navigation.
+1. The map fills the area below the application header.
 2. Dragging pans the map, and the mouse wheel and `+`/`−` controls zoom it.
 3. Resizing the browser does not leave gaps or misalign map controls.
 4. The initial view fits Denmark and surrounding countries.
 5. The OpenStreetMap attribution remains visible in the bottom-right corner.
+6. Light and Dark immediately change the application chrome, and the selected
+   preference survives a reload.
+7. Auto follows the operating-system colour preference, including changes made
+   while the application is open.
 
 ## License
 

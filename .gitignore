@@ -293,6 +293,7 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 src/RouteTrace.Web/wwwroot/generated/
+src/RouteTrace.Web/.generated/
 
 # Visual Studio 6 build log
 *.plg

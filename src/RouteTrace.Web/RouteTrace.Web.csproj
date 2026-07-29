@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <EnableDefaultScopedCssItems>false</EnableDefaultScopedCssItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,8 +19,18 @@
     <ProjectReference Include="..\RouteTrace.Core\RouteTrace.Core.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildFrontend" BeforeTargets="Build">
+  <ItemGroup>
+    <Folder Include="wwwroot\css\" />
+  </ItemGroup>
+
+  <Target Name="BuildFrontend" BeforeTargets="ResolveScopedCssInputs">
     <Exec Command="npm run build" />
+    <ItemGroup>
+      <_GeneratedScopedCss Include=".generated\scopedcss-input\**\*.razor.css" />
+      <ScopedCssInput Include="@(_GeneratedScopedCss)">
+        <RazorComponent>%(RecursiveDir)%(Filename)</RazorComponent>
+      </ScopedCssInput>
+    </ItemGroup>
   </Target>
 
 </Project>

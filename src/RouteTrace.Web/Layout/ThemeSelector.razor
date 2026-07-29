@@ -1,0 +1,72 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JavaScript
+
+<div class="theme-selector" role="group" aria-label="Color theme">
+    @foreach (var option in Options)
+    {
+        <button type="button"
+                class="theme-option"
+                aria-label="@($"{option.Label} theme")"
+                aria-pressed="@(preference == option.Value)"
+                title="@($"{option.Label} theme")"
+                @onclick="() => SetThemeAsync(option.Value)">
+            <span aria-hidden="true">@option.Icon</span>
+            <span class="theme-label">@option.Label</span>
+        </button>
+    }
+</div>
+
+@code {
+    private static readonly ThemeOption[] Options =
+    [
+        new("light", "Light", "☀"),
+        new("dark", "Dark", "☾"),
+        new("auto", "Auto", "◐")
+    ];
+
+    private IJSObjectReference? module;
+    private string preference = "auto";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        module = await JavaScript.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./generated/theme.js");
+        preference = await module.InvokeAsync<string>("initialize");
+        StateHasChanged();
+    }
+
+    private async Task SetThemeAsync(string value)
+    {
+        preference = value;
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("setPreference", value);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await module.InvokeVoidAsync("dispose");
+            await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The browser has already disconnected, so there is nothing to clean up.
+        }
+    }
+
+    private sealed record ThemeOption(string Value, string Label, string Icon);
+}

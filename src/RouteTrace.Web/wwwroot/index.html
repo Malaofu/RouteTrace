@@ -4,11 +4,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RouteTrace.Web</title>
+    <title>Route Trace</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
-    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/app.css" />
+    <script src="generated/themeBootstrap.js"></script>
+    <link rel="stylesheet" href="generated/app.css" />
     <link rel="stylesheet" href="generated/map.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="RouteTrace.Web.styles.css" rel="stylesheet" />
@@ -20,10 +20,7 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
+        <div class="loading-progress" role="status" aria-label="Loading Route Trace"></div>
         <div class="loading-progress-text"></div>
     </div>
 
@@ -33,7 +30,7 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
+    <script src="generated/serviceWorker.js"></script>
 </body>
 
 </html>

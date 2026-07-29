@@ -1,1 +1,5 @@
 @import "ol/ol.css";
+
+.map-viewport .ol-attribution {
+  font-size: 0.75rem;
+}
