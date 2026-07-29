@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Route Trace</title>
+
+  <!-- The solid tile keeps the mark readable as a browser favicon. -->
+  <rect width="64" height="64" rx="14" fill="#0B2239"/>
+
+  <!-- Three high-contrast panels keep the map readable at favicon size. -->
+  <path d="M11 18 26 12v36L11 53Z" fill="#B9D8E8"/>
+  <path d="M26 12 40 17v36l-14-5Z" fill="#F2F8FB"/>
+  <path d="m40 17 13-5v35L40 53Z" fill="#94BDD2"/>
+
+  <!-- The route is deliberately bold enough to survive at 16 px. -->
+  <path d="M18 43c0-8 11-5 11-14s7-10 17-8"
+        fill="none"
+        stroke="#F5A800"
+        stroke-width="6"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <circle cx="18" cy="43" r="5.5" fill="#0B2239" stroke="#FFF" stroke-width="2"/>
+  <circle cx="18" cy="43" r="2.4" fill="#F5A800"/>
+  <circle cx="46" cy="21" r="5.5" fill="#0B2239" stroke="#FFF" stroke-width="2"/>
+  <circle cx="46" cy="21" r="2.4" fill="#F5A800"/>
+</svg>

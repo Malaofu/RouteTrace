@@ -95,6 +95,10 @@ tree sits outside `wwwroot`, so only Blazor's processed style bundle is
 published. A clean build therefore requires only `npm ci`; generated CSS
 should not be edited or committed.
 
+`npm run icons` uses `wwwroot/images/route-trace-icon.svg` as the authored icon
+and generates the ignored 192px and 512px PNG variants required for Apple touch
+icons and broad PWA compatibility.
+
 ## Manual map verification
 
 Run the Web project and open the displayed local URL in a desktop browser:

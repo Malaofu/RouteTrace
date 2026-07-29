@@ -38,17 +38,12 @@
   width: 2rem;
   height: 2rem;
   place-items: center;
-  border-radius: var(--radius-md);
-  color: var(--color-accent-contrast);
-  background: var(--color-accent);
   box-shadow: var(--shadow-accent);
 
-  &::before {
-    content: "";
-    width: 1.35rem;
-    height: 1.35rem;
-    background: currentColor;
-    mask: url("../images/route-trace-mark.svg") center / contain no-repeat;
+  img {
+    display: block;
+    width: 2rem;
+    height: 2rem;
   }
 }
 
