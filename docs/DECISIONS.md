@@ -149,6 +149,37 @@ foundation.
 Keep executable scripts and SVG artwork in dedicated resource files. HTML and
 Razor files reference those resources rather than embedding them inline.
 
+## D-011 — Minimal immutable route primitives
+
+**Status:** Accepted
+**Date:** 2026-07-30
+
+The canonical route model uses small, read-only WGS 84 domain primitives.
+Tracks contain ordered segments, and each segment is continuous; a segment
+boundary is the explicit representation of a discontinuity. Routes and
+waypoints share the same point representation, whose elevation and timestamp
+are optional.
+
+Coordinates reject non-finite and out-of-range values at construction.
+Collections are defensively copied, and document bounds are derived across
+track points, route points, and waypoints. GPX metadata and extension fields
+remain boundary concerns until a product PBI demonstrates that they belong in
+the editable model.
+
+## D-012 — Consistent .NET test stack
+
+**Status:** Accepted
+**Date:** 2026-07-30
+
+.NET test projects use xUnit.net v3 as the test framework, Shouldly for
+assertions, FakeItEasy for test doubles, and Coverlet's collector for code
+coverage. Package versions are centrally managed, and every test project
+references the same stack.
+
+Test-runner and coverage packages remain private assets. Production projects
+must not reference test packages, and tests should not introduce a fake when a
+small real value or implementation communicates the behaviour more clearly.
+
 ## Decision template
 
 ```markdown

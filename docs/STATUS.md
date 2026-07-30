@@ -1,10 +1,10 @@
 # Project status
 
-**Phase:** Interactive map foundation
+**Phase:** Canonical route foundation
 
-**Current PBI:** PBI-010 — Interactive map shell
+**Current PBI:** PBI-020 — Canonical route model
 
-**Last updated:** 2026-07-29
+**Last updated:** 2026-07-30
 
 ## Completed
 
@@ -40,13 +40,22 @@
   application chrome added; generated component CSS feeds Blazor isolation.
 - Light, Dark, and system-following Auto themes added with a persisted browser
   preference and pre-Blazor theme application through external scripts.
+- Provider- and UI-independent WGS 84 route primitives added to Core.
+- Route documents support tracks, explicit segment discontinuities, routes,
+  waypoints, optional elevation and time, and derived geographic bounds.
+- Invalid coordinates and null collection entries are rejected; model
+  collections are defensively copied.
+- Core tests cover empty documents, multiple tracks and segments, aggregate
+  bounds, invalid coordinates, and optional point data.
+- Test projects consistently use xUnit.net v3, Shouldly, FakeItEasy, and
+  Coverlet with centrally managed versions.
+- PBI-020 acceptance criteria completed.
 
 ## Next
 
-- Keep `CURRENT_PBI.md` at PBI-010 until the user explicitly selects the next
+- Keep `CURRENT_PBI.md` at PBI-020 until the user explicitly selects the next
   PBI.
-- Repeat the documented browser interaction checks after future map-shell
-  changes.
+- Acquire the PBI-030 GPX fixtures before finalising its parser fixture suite.
 
 ## Blockers
 
@@ -63,10 +72,8 @@ None.
 
 ## Handoff note
 
-PBI-010 is complete. On 2026-07-29 the SCSS and strict TypeScript builds,
-formatting, warnings-as-errors Release build, both .NET tests, and static
-publish passed. A headless browser previously rendered the map, zoom controls,
-fitted initial view, and visible OpenStreetMap attribution at both 1440×900 and
-600×800. Manual map and Light/Dark/Auto theme checks are recorded in the
-README. Do not start PBI-020 until the user explicitly advances
-`CURRENT_PBI.md`.
+PBI-020 is complete. On 2026-07-30 formatting, the warnings-as-errors Release
+build, all xUnit.net v3 tests, Coverlet collection, and the static Web publish
+passed. No manual verification is required because this PBI introduces only
+non-visual domain logic. Do not start PBI-030 until the user explicitly
+advances `CURRENT_PBI.md`.

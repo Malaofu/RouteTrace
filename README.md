@@ -67,6 +67,13 @@ dotnet test RouteTrace.slnx -c Release --no-build
 dotnet publish src/RouteTrace.Web/RouteTrace.Web.csproj -c Release --no-restore
 ```
 
+The .NET test stack is xUnit.net v3, Shouldly, FakeItEasy, and Coverlet. Collect
+Cobertura coverage reports with:
+
+```powershell
+dotnet test RouteTrace.slnx -c Release --collect:"XPlat Code Coverage"
+```
+
 The static site is published to
 `src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot`. Serve that directory
 from a static file server rather than opening `index.html` directly. For

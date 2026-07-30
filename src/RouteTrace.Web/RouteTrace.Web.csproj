@@ -19,10 +19,6 @@
     <ProjectReference Include="..\RouteTrace.Core\RouteTrace.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="wwwroot\css\" />
-  </ItemGroup>
-
   <Target Name="BuildFrontend" BeforeTargets="ResolveScopedCssInputs">
     <Exec Command="npm run build" />
     <ItemGroup>

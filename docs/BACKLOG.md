@@ -54,7 +54,7 @@ the Web project as static assets.
 
 ## PBI-020 — Canonical route model
 
-**Status:** Not started
+**Status:** Done
 
 **Goal:** Define the provider- and UI-independent representation used by later
 GPX and editing features.
