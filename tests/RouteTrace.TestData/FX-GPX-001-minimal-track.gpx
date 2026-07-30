@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     version="1.1"
+     creator="RouteTrace synthetic fixture">
+  <metadata>
+    <name>Minimal elevated track</name>
+    <time>2020-01-01T08:00:00Z</time>
+  </metadata>
+  <trk>
+    <name>Minimal track</name>
+    <trkseg>
+      <trkpt lat="55.67000" lon="12.56000">
+        <ele>12.5</ele>
+        <time>2020-01-01T08:00:00Z</time>
+      </trkpt>
+      <trkpt lat="55.67100" lon="12.56200">
+        <ele>14.0</ele>
+        <time>2020-01-01T08:01:00Z</time>
+      </trkpt>
+      <trkpt lat="55.67200" lon="12.56400">
+        <ele>13.25</ele>
+        <time>2020-01-01T08:02:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

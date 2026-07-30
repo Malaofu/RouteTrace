@@ -21,9 +21,9 @@
     <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>
-  <Folder Name="/test/">
-    <Project Path="test/RouteTrace.Core.Tests/RouteTrace.Core.Tests.csproj" />
-    <Project Path="test/RouteTrace.Web.Tests/RouteTrace.Web.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/RouteTrace.Core.Tests/RouteTrace.Core.Tests.csproj" />
+    <Project Path="tests/RouteTrace.Web.Tests/RouteTrace.Web.Tests.csproj" />
   </Folder>
   <Project Path="src/RouteTrace.Core/RouteTrace.Core.csproj" />
   <Project Path="src/RouteTrace.Web/RouteTrace.Web.csproj" />

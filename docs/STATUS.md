@@ -1,8 +1,8 @@
 # Project status
 
-**Phase:** Canonical route foundation
+**Phase:** GPX import and validation
 
-**Current PBI:** PBI-020 — Canonical route model
+**Current PBI:** PBI-030 — GPX import and validation
 
 **Last updated:** 2026-07-30
 
@@ -53,12 +53,15 @@
   summaries, with detailed reports retained as a workflow artifact.
 - GitHub-maintained workflow actions use Node.js 24-compatible major versions.
 - PBI-020 acceptance criteria completed.
+- All four PBI-030 GPX fixtures are prepared and documented, including a
+  sanitised real Strava/Wahoo export and a supplemented RideWithGPS export.
+- Test projects and fixture data are consistently located under the
+  architecture-defined `tests/` directory.
 
 ## Next
 
-- Keep `CURRENT_PBI.md` at PBI-020 until the user explicitly selects the next
-  PBI.
-- Acquire the PBI-030 GPX fixtures before finalising its parser fixture suite.
+- Implement GPX 1.1 parsing and validation against the prepared fixtures.
+- Add browser-local file selection and drag-and-drop over the parser boundary.
 
 ## Blockers
 
@@ -75,8 +78,7 @@ None.
 
 ## Handoff note
 
-PBI-020 is complete. On 2026-07-30 formatting, the warnings-as-errors Release
-build, all xUnit.net v3 tests, Coverlet collection, and the static Web publish
-passed. No manual verification is required because this PBI introduces only
-non-visual domain logic. Do not start PBI-030 until the user explicitly
-advances `CURRENT_PBI.md`.
+PBI-030 fixture preparation is complete. The raw user-supplied GPX and FIT
+files remain only in ignored `tmp/`; committed candidates are sanitised,
+synthetic, or explicitly supplemented and documented. Parser and browser UI
+implementation have not started.

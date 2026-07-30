@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Local staging for private or unsanitised source files
+/tmp/
+
 # User-specific files
 *.rsuser
 *.suo
