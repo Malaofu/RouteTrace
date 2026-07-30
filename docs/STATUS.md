@@ -49,6 +49,9 @@
   bounds, invalid coordinates, and optional point data.
 - Test projects consistently use xUnit.net v3, Shouldly, FakeItEasy, and
   Coverlet with centrally managed versions.
+- GitHub CI presents TRX test results and combined coverage in checks and job
+  summaries, with detailed reports retained as a workflow artifact.
+- GitHub-maintained workflow actions use Node.js 24-compatible major versions.
 - PBI-020 acceptance criteria completed.
 
 ## Next

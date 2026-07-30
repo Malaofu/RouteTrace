@@ -180,6 +180,22 @@ Test-runner and coverage packages remain private assets. Production projects
 must not reference test packages, and tests should not introduce a fake when a
 small real value or implementation communicates the behaviour more clearly.
 
+## D-013 — GitHub-native test and coverage reporting
+
+**Status:** Accepted
+**Date:** 2026-07-30
+
+CI emits TRX and Cobertura files from the existing .NET test run. A test
+reporter presents TRX results as a GitHub check and job summary, while a pinned
+repository-local ReportGenerator tool creates a combined Markdown coverage
+summary and detailed HTML report. Raw and rendered reports are retained as a
+short-lived workflow artifact.
+
+This provides useful reporting without an external coverage service, account,
+or token. Check creation is skipped for fork pull requests because their
+workflow token is read-only; their test output, coverage summary, and artifacts
+remain available in the workflow run.
+
 ## Decision template
 
 ```markdown

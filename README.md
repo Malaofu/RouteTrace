@@ -74,6 +74,12 @@ Cobertura coverage reports with:
 dotnet test RouteTrace.slnx -c Release --collect:"XPlat Code Coverage"
 ```
 
+CI publishes the TRX results as a `.NET tests` check and job summary. It also
+adds a combined coverage table to the job summary and retains the detailed
+HTML, Cobertura, and TRX reports as the `test-and-coverage-reports` workflow
+artifact for 14 days. GitHub does not provide Azure DevOps-style test and
+coverage tabs, so these checks, summaries, and artifacts form the CI view.
+
 The static site is published to
 `src/RouteTrace.Web/bin/Release/net10.0/publish/wwwroot`. Serve that directory
 from a static file server rather than opening `index.html` directly. For
