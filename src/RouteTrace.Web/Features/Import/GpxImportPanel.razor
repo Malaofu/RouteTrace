@@ -1,8 +1,9 @@
 @using RouteTrace.Core.Gpx
 @using RouteTrace.Core.Routes
 @using RouteTrace.Web.Features.Map
+@inject IJSRuntime JavaScript
 
-<section class="gpx-import" aria-labelledby="gpx-import-title">
+<section class="gpx-import" aria-labelledby="gpx-import-title" aria-busy="@isImporting">
     <h2 id="gpx-import-title">Import GPX</h2>
     <label class="gpx-import__drop-zone">
         <span>Drop a GPX file here or choose a file</span>
@@ -11,7 +12,7 @@
 
     @if (isImporting)
     {
-        <p role="status">Importing locally…</p>
+        <p role="status" class="gpx-import__busy">Reading and processing locally…</p>
     }
     else if (error is not null)
     {
@@ -57,15 +58,20 @@
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
     {
+        await JavaScript.InvokeVoidAsync("performance.clearMarks");
+        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.start");
         isImporting = true;
         error = null;
         summary = null;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
 
         try
         {
             IBrowserFile file = eventArgs.File;
             await using Stream stream = file.OpenReadStream(MaximumFileSize);
             GpxImportResult result = await GpxImporter.ImportAsync(stream);
+            await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.parsed");
             if (!result.IsSuccess)
             {
                 error = result.Error;
@@ -92,6 +98,14 @@
         finally
         {
             isImporting = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (isImporting)
+        {
+            await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.busy-rendered");
         }
     }
 

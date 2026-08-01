@@ -15,15 +15,17 @@ public static class GpxImporter
 
         try
         {
+            await using var bufferedInput = new MemoryStream();
+            await input.CopyToAsync(bufferedInput, cancellationToken);
+            byte[] sourceXml = bufferedInput.ToArray();
             var settings = new XmlReaderSettings
             {
-                Async = true,
                 DtdProcessing = DtdProcessing.Prohibit,
                 XmlResolver = null
             };
-            using XmlReader reader = XmlReader.Create(input, settings);
-            XDocument xml = await XDocument.LoadAsync(reader, LoadOptions.PreserveWhitespace, cancellationToken);
-            return Import(xml);
+            using var parseInput = new MemoryStream(sourceXml, writable: false);
+            using XmlReader reader = XmlReader.Create(parseInput, settings);
+            return Import(reader, sourceXml, cancellationToken);
         }
         catch (XmlException exception)
         {
@@ -35,49 +37,217 @@ public static class GpxImporter
         }
     }
 
-    private static GpxImportResult Import(XDocument xml)
+    private static GpxImportResult Import(XmlReader reader, byte[] sourceXml, CancellationToken cancellationToken)
     {
-        XElement? root = xml.Root;
-        if (root?.Name != Gpx + "gpx" || (string?)root.Attribute("version") != "1.1")
+        var tracks = new List<Track>();
+        var routes = new List<Route>();
+        var waypoints = new List<Waypoint>();
+        var extensionNamespaces = new HashSet<string>(StringComparer.Ordinal);
+        RouteMetadata? metadata = null;
+        string? trackName = null;
+        List<TrackSegment>? trackSegments = null;
+        List<RoutePoint>? segmentPoints = null;
+        string? routeName = null;
+        List<RoutePoint>? routePoints = null;
+        bool foundRoot = false;
+
+        while (reader.Read())
         {
-            return GpxImportResult.Failure("The file must be a GPX 1.1 document.");
+            cancellationToken.ThrowIfCancellationRequested();
+            if (reader.NodeType == XmlNodeType.Element)
+            {
+                XName name = Gpx + reader.LocalName;
+                if (!foundRoot)
+                {
+                    if (name != Gpx + "gpx" || reader.NamespaceURI != Gpx.NamespaceName ||
+                        reader.GetAttribute("version") != "1.1")
+                    {
+                        return GpxImportResult.Failure("The file must be a GPX 1.1 document.");
+                    }
+
+                    foundRoot = true;
+                    continue;
+                }
+
+                if (reader.NamespaceURI != Gpx.NamespaceName)
+                {
+                    continue;
+                }
+
+                if (name == Gpx + "metadata")
+                {
+                    XElement element = ReadElement(reader);
+                    metadata = new RouteMetadata(
+                        Text(element, "name"), Text(element, "desc"),
+                        OptionalTime(element.Element(Gpx + "time")), element.Elements(Gpx + "link").Select(ParseLink));
+                    CollectExtensionNamespaces(element, extensionNamespaces);
+                }
+                else if (name == Gpx + "trk")
+                {
+                    trackName = null;
+                    trackSegments = [];
+                }
+                else if (name == Gpx + "trkseg")
+                {
+                    segmentPoints = [];
+                }
+                else if (name == Gpx + "trkpt")
+                {
+                    segmentPoints!.Add(ParsePoint(reader, extensionNamespaces, out _));
+                }
+                else if (name == Gpx + "rte")
+                {
+                    routeName = null;
+                    routePoints = [];
+                }
+                else if (name == Gpx + "rtept")
+                {
+                    routePoints!.Add(ParsePoint(reader, extensionNamespaces, out _));
+                }
+                else if (name == Gpx + "wpt")
+                {
+                    RoutePoint point = ParsePoint(reader, extensionNamespaces, out string? waypointName);
+                    waypoints.Add(new Waypoint(point, waypointName));
+                }
+                else if (name == Gpx + "name" &&
+                         ((trackSegments is not null && segmentPoints is null) || routePoints is not null))
+                {
+                    string value = ReadElement(reader).Value;
+                    if (trackSegments is not null) trackName = value;
+                    else if (routePoints is not null) routeName = value;
+                }
+                else if (name == Gpx + "extensions")
+                {
+                    CollectExtensionNamespaces(reader, extensionNamespaces);
+                }
+            }
+            else if (reader.NodeType == XmlNodeType.EndElement && reader.NamespaceURI == Gpx.NamespaceName)
+            {
+                if (reader.LocalName == "trkseg")
+                {
+                    trackSegments!.Add(new TrackSegment(segmentPoints));
+                    segmentPoints = null;
+                }
+                else if (reader.LocalName == "trk")
+                {
+                    tracks.Add(new Track(trackName, trackSegments));
+                    trackSegments = null;
+                }
+                else if (reader.LocalName == "rte")
+                {
+                    routes.Add(new Route(routeName, routePoints));
+                    routePoints = null;
+                }
+            }
         }
 
-        try
-        {
-            XElement? metadataElement = root.Element(Gpx + "metadata");
-            RouteMetadata? metadata = metadataElement is null
-                ? null
-                : new RouteMetadata(
-                    Text(metadataElement, "name"),
-                    Text(metadataElement, "desc"),
-                    OptionalTime(metadataElement.Element(Gpx + "time")),
-                    metadataElement.Elements(Gpx + "link").Select(ParseLink));
+        return foundRoot
+            ? GpxImportResult.Success(new RouteDocument(
+                tracks, routes, waypoints, metadata, new LazyExtensionXml(sourceXml),
+                extensionNamespaces.Order(StringComparer.Ordinal).ToArray()))
+            : GpxImportResult.Failure("The file must be a GPX 1.1 document.");
+    }
 
-            Track[] tracks = root.Elements(Gpx + "trk")
-                .Select(track => new Track(
-                    Text(track, "name"),
-                    track.Elements(Gpx + "trkseg")
-                        .Select(segment => new TrackSegment(segment.Elements(Gpx + "trkpt").Select(ParsePoint)))))
-                .ToArray();
-            Route[] routes = root.Elements(Gpx + "rte")
-                .Select(route => new Route(Text(route, "name"), route.Elements(Gpx + "rtept").Select(ParsePoint)))
-                .ToArray();
-            Waypoint[] waypoints = root.Elements(Gpx + "wpt")
-                .Select(point => new Waypoint(ParsePoint(point), Text(point, "name")))
-                .ToArray();
-            string[] extensions = root.Descendants(Gpx + "extensions")
-                .Elements()
-                .Where(element => element.Name.Namespace != Gpx)
-                .Select(element => element.ToString(SaveOptions.DisableFormatting))
-                .ToArray();
-
-            return GpxImportResult.Success(new RouteDocument(tracks, routes, waypoints, metadata, extensions));
-        }
-        catch (InvalidDataException exception)
+    private static void CollectExtensionNamespaces(
+        XElement parent,
+        ISet<string> extensionNamespaces)
+    {
+        IEnumerable<XElement> extensionElements = parent.Name == Gpx + "extensions"
+            ? parent.Elements()
+            : parent.Descendants(Gpx + "extensions").Elements();
+        foreach (XElement element in extensionElements.Where(element => element.Name.Namespace != Gpx))
         {
-            return GpxImportResult.Failure(exception.Message);
+            if (!string.IsNullOrWhiteSpace(element.Name.NamespaceName))
+            {
+                extensionNamespaces.Add(element.Name.NamespaceName);
+            }
         }
+    }
+
+    private static void CollectExtensionNamespaces(
+        XmlReader reader,
+        ISet<string> extensionNamespaces)
+    {
+        int containerDepth = reader.Depth;
+        bool advance = true;
+        while (true)
+        {
+            if (advance && !reader.Read())
+            {
+                return;
+            }
+
+            advance = true;
+            if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == containerDepth)
+            {
+                return;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.Depth != containerDepth + 1 ||
+                reader.NamespaceURI == Gpx.NamespaceName)
+            {
+                continue;
+            }
+
+            string namespaceName = reader.NamespaceURI;
+            reader.Skip();
+            advance = false;
+            if (!string.IsNullOrWhiteSpace(namespaceName))
+            {
+                extensionNamespaces.Add(namespaceName);
+            }
+        }
+    }
+
+    private static XElement ReadElement(XmlReader reader) => (XElement)XNode.ReadFrom(reader);
+
+    private static RoutePoint ParsePoint(
+        XmlReader reader,
+        ISet<string> extensionNamespaces,
+        out string? name)
+    {
+        double latitude = RequiredCoordinate(reader.GetAttribute("lat"), "lat", -90, 90);
+        double longitude = RequiredCoordinate(reader.GetAttribute("lon"), "lon", -180, 180);
+        double? elevation = null;
+        DateTimeOffset? time = null;
+        name = null;
+        int pointDepth = reader.Depth;
+        if (reader.IsEmptyElement)
+        {
+            return new RoutePoint(new GeoCoordinate(latitude, longitude));
+        }
+
+        while (reader.Read())
+        {
+            if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == pointDepth)
+            {
+                break;
+            }
+
+            if (reader.NodeType != XmlNodeType.Element || reader.NamespaceURI != Gpx.NamespaceName)
+            {
+                continue;
+            }
+
+            if (reader.LocalName == "ele")
+            {
+                elevation = OptionalNumber(reader.ReadString(), "elevation");
+            }
+            else if (reader.LocalName == "time")
+            {
+                time = OptionalTime(reader.ReadString());
+            }
+            else if (reader.LocalName == "name")
+            {
+                name = reader.ReadString();
+            }
+            else if (reader.LocalName == "extensions")
+            {
+                CollectExtensionNamespaces(reader, extensionNamespaces);
+            }
+        }
+
+        return new RoutePoint(new GeoCoordinate(latitude, longitude), elevation, time);
     }
 
     private static RoutePoint ParsePoint(XElement element)
@@ -91,8 +261,10 @@ public static class GpxImporter
     }
 
     private static double RequiredCoordinate(XElement element, string attributeName, double minimum, double maximum)
+        => RequiredCoordinate((string?)element.Attribute(attributeName), attributeName, minimum, maximum);
+
+    private static double RequiredCoordinate(string? text, string attributeName, double minimum, double maximum)
     {
-        string? text = (string?)element.Attribute(attributeName);
         if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) ||
             !double.IsFinite(value) || value < minimum || value > maximum)
         {
@@ -109,9 +281,14 @@ public static class GpxImporter
             return null;
         }
 
-        if (!double.TryParse(element.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
+        return OptionalNumber(element.Value, field);
+    }
+
+    private static double OptionalNumber(string text, string field)
+    {
+        if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
         {
-            throw new InvalidDataException($"A GPX point has an invalid {field} value: '{element.Value}'.");
+            throw new InvalidDataException($"A GPX point has an invalid {field} value: '{text}'.");
         }
 
         return value;
@@ -124,12 +301,19 @@ public static class GpxImporter
             return null;
         }
 
-        if (!DateTimeOffset.TryParse(element.Value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset value))
-        {
-            throw new InvalidDataException($"The GPX file has an invalid timestamp: '{element.Value}'.");
-        }
+        return OptionalTime(element.Value);
+    }
 
-        return value;
+    private static DateTimeOffset OptionalTime(string text)
+    {
+        try
+        {
+            return XmlConvert.ToDateTimeOffset(text);
+        }
+        catch (FormatException)
+        {
+            throw new InvalidDataException($"The GPX file has an invalid timestamp: '{text}'.");
+        }
     }
 
     private static string? Text(XElement parent, string localName) =>

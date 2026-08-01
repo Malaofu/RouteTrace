@@ -47,9 +47,10 @@ public sealed class GpxImporterTests
     }
 
     [Fact]
-    public async Task ImportsFullDensitySanitisedPerformanceFixture()
+    public async Task StreamsFullDensitySanitisedPerformanceFixture()
     {
         GpxImportResult result = await ImportFixture("FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
+        RouteStatistics statistics = RouteStatisticsCalculator.Calculate(result.Document!);
 
         result.IsSuccess.ShouldBeTrue(result.Error);
         TrackSegment segment = result.Document!.Tracks.Single().Segments.Single();
@@ -57,6 +58,21 @@ public sealed class GpxImporterTests
         segment.Points[0].Time.ShouldBe(DateTimeOffset.Parse("2020-01-01T09:00:00Z"));
         segment.Points[^1].Time.ShouldBe(DateTimeOffset.Parse("2020-01-01T11:09:36Z"));
         result.Document.UnsupportedExtensionXml.Count.ShouldBe(6987);
+        statistics.ExtensionNamespaces.ShouldBe(["http://www.garmin.com/xmlschemas/TrackPointExtension/v1"]);
+    }
+
+    [Fact]
+    public async Task ImportsFromAsyncOnlyBrowserStyleStream()
+    {
+        string path = Path.Combine(
+            AppContext.BaseDirectory, "TestData", "FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
+        await using FileStream file = File.OpenRead(path);
+        await using var stream = new AsyncOnlyStream(file);
+
+        GpxImportResult result = await GpxImporter.ImportAsync(stream, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue(result.Error);
+        result.Document!.Tracks.Single().Segments.Single().Points.Count.ShouldBe(6987);
     }
 
     [Fact]
@@ -90,5 +106,43 @@ public sealed class GpxImporterTests
         string path = Path.Combine(AppContext.BaseDirectory, "TestData", name);
         await using FileStream stream = File.OpenRead(path);
         return await GpxImporter.ImportAsync(stream, TestContext.Current.CancellationToken);
+    }
+
+    private sealed class AsyncOnlyStream(Stream inner) : Stream
+    {
+        public override bool CanRead => inner.CanRead;
+        public override bool CanSeek => inner.CanSeek;
+        public override bool CanWrite => false;
+        public override long Length => inner.Length;
+        public override long Position { get => inner.Position; set => inner.Position = value; }
+        public override void Flush() => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException("Synchronous reads are not supported.");
+        public override int Read(Span<byte> buffer) =>
+            throw new NotSupportedException("Synchronous reads are not supported.");
+        public override int ReadByte() =>
+            throw new NotSupportedException("Synchronous reads are not supported.");
+        public override ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default) => inner.ReadAsync(buffer, cancellationToken);
+        public override Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken) => inner.ReadAsync(buffer, offset, count, cancellationToken);
+        public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) inner.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await inner.DisposeAsync();
+            GC.SuppressFinalize(this);
+        }
     }
 }

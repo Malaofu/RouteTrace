@@ -61,6 +61,14 @@ jobs:
           --results-directory artifacts/test-results
           --collect:"XPlat Code Coverage"
 
+      - name: Install browser for UI tests
+        working-directory: src/RouteTrace.Web
+        run: npx playwright install --with-deps chromium
+
+      - name: Test large-file browser performance
+        working-directory: src/RouteTrace.Web
+        run: npm run test:ui -- --reporter=line
+
       - name: Publish test results
         if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: dorny/test-reporter@v3

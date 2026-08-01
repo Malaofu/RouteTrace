@@ -79,11 +79,13 @@ export function renderGeometry(
     selectedTrack: number | null,
     selectedSegment: number | null,
 ): void {
+    performance.mark("routeTrace.map.render.start");
     const handle = getMap(elementId);
     handle.geometrySource.clear();
     handle.geometryLayer.setStyle(featureStyle(selectedTrack, selectedSegment));
 
     if (!geometry) {
+        performance.mark("routeTrace.map.render.end");
         return;
     }
 
@@ -125,6 +127,7 @@ export function renderGeometry(
             padding: [64, 64, 64, 64],
         });
     }
+    performance.mark("routeTrace.map.render.end");
 }
 
 export function fitBounds(

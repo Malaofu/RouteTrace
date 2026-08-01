@@ -9,13 +9,17 @@ public sealed class RouteDocument
         IEnumerable<Route>? routes = null,
         IEnumerable<Waypoint>? waypoints = null,
         RouteMetadata? metadata = null,
-        IEnumerable<string>? unsupportedExtensionXml = null)
+        IEnumerable<string>? unsupportedExtensionXml = null,
+        IEnumerable<string>? unsupportedExtensionNamespaces = null)
     {
         Tracks = Snapshot(tracks, nameof(tracks));
         Routes = Snapshot(routes, nameof(routes));
         Waypoints = Snapshot(waypoints, nameof(waypoints));
         Metadata = metadata;
         UnsupportedExtensionXml = SnapshotValues(unsupportedExtensionXml, nameof(unsupportedExtensionXml));
+        UnsupportedExtensionNamespaces = unsupportedExtensionNamespaces is null
+            ? ExtensionNamespaces(UnsupportedExtensionXml)
+            : SnapshotValues(unsupportedExtensionNamespaces, nameof(unsupportedExtensionNamespaces));
     }
 
     public IReadOnlyList<Track> Tracks { get; }
@@ -27,6 +31,24 @@ public sealed class RouteDocument
     public RouteMetadata? Metadata { get; }
 
     public IReadOnlyList<string> UnsupportedExtensionXml { get; }
+
+    public IReadOnlyList<string> UnsupportedExtensionNamespaces { get; }
+
+    internal RouteDocument(
+        IEnumerable<Track> tracks,
+        IEnumerable<Route> routes,
+        IEnumerable<Waypoint> waypoints,
+        RouteMetadata? metadata,
+        IReadOnlyList<string> unsupportedExtensionXml,
+        IReadOnlyList<string> unsupportedExtensionNamespaces)
+    {
+        Tracks = Snapshot(tracks, nameof(tracks));
+        Routes = Snapshot(routes, nameof(routes));
+        Waypoints = Snapshot(waypoints, nameof(waypoints));
+        Metadata = metadata;
+        UnsupportedExtensionXml = unsupportedExtensionXml;
+        UnsupportedExtensionNamespaces = unsupportedExtensionNamespaces;
+    }
 
     public GeoBounds? CalculateBounds()
     {
@@ -95,6 +117,14 @@ public sealed class RouteDocument
 
         return Array.AsReadOnly(snapshot);
     }
+
+    private static IReadOnlyList<string> ExtensionNamespaces(IEnumerable<string> extensionXml) =>
+        extensionXml.Select(xml => System.Xml.Linq.XDocument.Parse(xml).Root?.Name.NamespaceName)
+            .Where(namespaceName => !string.IsNullOrWhiteSpace(namespaceName))
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .Cast<string>()
+            .ToArray();
 }
 
 public sealed class RouteMetadata

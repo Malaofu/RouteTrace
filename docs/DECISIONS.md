@@ -239,6 +239,46 @@ reported only when every track point has elevation. Missing elevation and time
 remain absent rather than becoming zero. Extension elements are reported by
 their distinct namespace URI without interpreting vendor-specific content.
 
+## D-017 — Extract extension namespaces during GPX import
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+The GPX importer copies the browser file asynchronously into bounded in-memory
+storage, then reads that buffer forward-only. Track, route, and waypoint data
+is parsed directly from the reader; only the small metadata subtree is
+materialised. This keeps browser I/O async-only without paying for an async
+continuation at every XML node. It records distinct unsupported-extension
+namespace names while each small subtree is available. The canonical document
+retains both the opaque extension XML and this small derived index, so statistics and UI
+consumers do not reparse every extension fragment. Documents constructed by
+other callers derive the same index from their opaque XML for compatibility.
+
+GPX loading therefore retains one byte buffer but does not retain insignificant
+whitespace, construct thousands of point XML trees, or duplicate the file as a
+large XML DOM. Unsupported extension fragments remain opaque and complete.
+This reduces browser CPU cost without interpreting or dropping vendor data.
+
+## D-018 — Browser-measured loading performance
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+Large-file performance is verified end to end with Playwright against the
+actual Blazor WebAssembly application and full-density fixture. Browser
+performance marks separate parsing, component propagation, inspector rendering,
+interop, and OpenLayers feature construction. CI installs Chromium and enforces
+the complete import-to-render budget; local Windows runs use the installed Edge.
+The import panel commits an accessible busy state before CPU-heavy parsing and
+uses a compositor-friendly activity indicator. Browser tests separately enforce
+that feedback appears within 100 ms, so perceived responsiveness does not rely
+only on the eventual completion budget.
+
+Opaque extension XML is retained lazily from the browser-local source buffer.
+Import records extension namespaces eagerly for the inspector, while the 6,987
+individual XML fragments in the performance fixture are materialised only when
+a consumer such as export requests them.
+
 ## Decision template
 
 ```markdown

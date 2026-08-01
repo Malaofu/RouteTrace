@@ -6,12 +6,14 @@
     "icons": "node Scripts/buildIcons.mjs",
     "scripts": "esbuild Scripts/mapAdapter.ts Scripts/map.css Scripts/theme.ts --bundle --format=esm --sourcemap --outdir=wwwroot/generated && esbuild Scripts/themeBootstrap.ts Scripts/serviceWorker.ts --bundle --format=iife --sourcemap --outdir=wwwroot/generated",
     "styles": "node Scripts/buildStyles.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "ol": "10.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@resvg/resvg-js": "2.6.2",
     "esbuild": "0.28.1",
     "sass": "1.89.2",

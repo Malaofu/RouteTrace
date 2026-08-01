@@ -1,5 +1,3 @@
-using System.Xml.Linq;
-
 namespace RouteTrace.Core.Routes;
 
 public static class RouteStatisticsCalculator
@@ -30,7 +28,7 @@ public static class RouteStatisticsCalculator
             segments.Sum(segment => segment.DistanceMetres),
             Elevation(document.Tracks.SelectMany(track => track.Segments).ToArray()),
             Time(trackPoints),
-            ExtensionNamespaces(document.UnsupportedExtensionXml));
+            document.UnsupportedExtensionNamespaces);
     }
 
     private static double Distance(IReadOnlyList<RoutePoint> points)
@@ -95,14 +93,6 @@ public static class RouteStatisticsCalculator
             ? null
             : new TimeStatistics(values[0], values[^1], values.Length > 1 ? values[^1] - values[0] : null);
     }
-
-    private static IReadOnlyList<string> ExtensionNamespaces(IEnumerable<string> extensionXml) =>
-        extensionXml.Select(xml => XDocument.Parse(xml).Root?.Name.NamespaceName)
-            .Where(namespaceName => !string.IsNullOrWhiteSpace(namespaceName))
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .Cast<string>()
-            .ToArray();
 
     private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180;
 }

@@ -38,6 +38,26 @@
   color: var(--color-danger);
 }
 
+.gpx-import__busy::before {
+  display: inline-block;
+  width: .8rem;
+  height: .8rem;
+  margin-right: .5rem;
+  border: .125rem solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  content: "";
+  animation: import-spin .7s linear infinite;
+}
+
+@keyframes import-spin {
+  to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gpx-import__busy::before { animation: none; }
+}
+
 .gpx-import__selection {
   display: grid;
   gap: var(--space-1);
