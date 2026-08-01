@@ -119,7 +119,7 @@ GPX and editing features.
 
 ## PBI-050 — GPX inspector and statistics
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Explain what is inside an imported GPX file.
 

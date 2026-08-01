@@ -62,3 +62,13 @@ tokens, or private start/end locations.
   history were present. The source describes a purpose-created test route.
 - **Expected content:** Metadata, track and route points, four waypoints,
   elevation, and unsupported extension XML in a non-GPX namespace.
+
+## FX-ELE-001-elevation-coverage.gpx
+
+- **Fixture ID:** FX-ELE-001
+- **Provenance:** Synthetic, created for Route Trace with user approval.
+- **Expected content:** Three equivalent short track samples with respectively
+  complete, partial, and absent elevation. The complete sample has elevations
+  `10, 15, 12, 20` metres for deterministic range and ascent/descent checks.
+- **Sanitisation:** Coordinates are synthetic points near latitude/longitude
+  zero and contain no movement history or identifiers.

@@ -224,6 +224,21 @@ Track and segment indices provide local feature identity for highlighting.
 This avoids introducing editable entity identifiers before an editing PBI
 requires them, while keeping OpenLayers types out of the domain model.
 
+## D-016 — Conservative route statistics
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+Route statistics are calculated in `RouteTrace.Core` from canonical WGS 84
+geometry. Distances use a spherical haversine calculation and are accumulated
+within individual track segments only; segment boundaries never create an
+implied connecting distance or elevation change.
+
+Elevation range may use the available samples, but ascent and descent are
+reported only when every track point has elevation. Missing elevation and time
+remain absent rather than becoming zero. Extension elements are reported by
+their distinct namespace URI without interpreting vendor-specific content.
+
 ## Decision template
 
 ```markdown

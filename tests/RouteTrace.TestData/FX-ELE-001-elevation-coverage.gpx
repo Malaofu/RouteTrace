@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     version="1.1"
+     creator="RouteTrace synthetic fixture">
+  <metadata>
+    <name>Elevation coverage</name>
+  </metadata>
+  <trk>
+    <name>Complete elevation</name>
+    <trkseg>
+      <trkpt lat="0.00000" lon="0.00000"><ele>10</ele></trkpt>
+      <trkpt lat="0.00000" lon="0.00100"><ele>15</ele></trkpt>
+      <trkpt lat="0.00000" lon="0.00200"><ele>12</ele></trkpt>
+      <trkpt lat="0.00000" lon="0.00300"><ele>20</ele></trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>Partial elevation</name>
+    <trkseg>
+      <trkpt lat="0.01000" lon="0.00000"><ele>5</ele></trkpt>
+      <trkpt lat="0.01000" lon="0.00100" />
+      <trkpt lat="0.01000" lon="0.00200"><ele>9</ele></trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>Absent elevation</name>
+    <trkseg>
+      <trkpt lat="0.02000" lon="0.00000" />
+      <trkpt lat="0.02000" lon="0.00100" />
+    </trkseg>
+  </trk>
+</gpx>

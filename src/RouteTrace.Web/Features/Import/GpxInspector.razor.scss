@@ -1,0 +1,66 @@
+.gpx-inspector {
+  position: absolute;
+  z-index: 950;
+  top: 1rem;
+  left: 1rem;
+  width: min(24rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  overflow: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
+  box-shadow: var(--shadow-md);
+}
+
+.gpx-inspector h2,
+.gpx-inspector h3,
+.gpx-inspector p {
+  margin-top: 0;
+}
+
+.gpx-inspector h3 {
+  margin-bottom: var(--space-2);
+  font-size: 1rem;
+}
+
+.gpx-inspector__summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3);
+}
+
+.gpx-inspector__summary dd {
+  margin: 0;
+  text-align: right;
+}
+
+.gpx-inspector__track ul,
+.gpx-inspector__extensions {
+  margin-top: var(--space-1);
+  padding-left: var(--space-5);
+}
+
+.gpx-inspector button {
+  border: 0;
+  padding: var(--space-1);
+  color: var(--color-accent);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gpx-inspector button:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.gpx-inspector code {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 52rem) {
+  .gpx-inspector {
+    top: 11rem;
+    max-height: calc(100% - 12rem);
+  }
+}

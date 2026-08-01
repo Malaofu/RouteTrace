@@ -1,0 +1,129 @@
+@using System.Globalization
+@using RouteTrace.Core.Routes
+@using RouteTrace.Web.Features.Map
+
+<aside class="gpx-inspector" aria-labelledby="gpx-inspector-title">
+    <h2 id="gpx-inspector-title">GPX inspector</h2>
+
+    @if (!string.IsNullOrWhiteSpace(Document.Metadata?.Name))
+    {
+        <h3>@Document.Metadata.Name</h3>
+    }
+    @if (!string.IsNullOrWhiteSpace(Document.Metadata?.Description))
+    {
+        <p>@Document.Metadata.Description</p>
+    }
+    @if (Document.Metadata?.Time is not null)
+    {
+        <p>Document time: @Document.Metadata.Time.Value.ToString("u")</p>
+    }
+    @if (Document.Metadata?.Links.Count > 0)
+    {
+        <ul>
+            @foreach (RouteLink link in Document.Metadata.Links)
+            {
+                <li>@(link.Text ?? "Link"): <code>@link.Href</code></li>
+            }
+        </ul>
+    }
+
+    <dl class="gpx-inspector__summary">
+        <dt>Tracks</dt><dd>@statistics.TrackCount</dd>
+        <dt>Segments</dt><dd>@statistics.SegmentCount</dd>
+        <dt>Track points</dt><dd>@statistics.TrackPointCount</dd>
+        <dt>Routes</dt><dd>@statistics.RouteCount (@statistics.RoutePointCount points)</dd>
+        <dt>Waypoints</dt><dd>@statistics.WaypointCount</dd>
+        <dt>Track distance</dt><dd>@Distance(statistics.TotalTrackDistanceMetres)</dd>
+    </dl>
+
+    @if (statistics.Segments.Count > 0)
+    {
+        <h3>Tracks and segments</h3>
+        @foreach (var trackGroup in statistics.Segments.GroupBy(segment => segment.TrackIndex))
+        {
+            Track track = Document.Tracks[trackGroup.Key];
+            <section class="gpx-inspector__track">
+                <button type="button" @onclick="() => Select(trackGroup.Key, null)">
+                    Track @(trackGroup.Key + 1): @(track.Name ?? "Unnamed")
+                </button>
+                <ul>
+                    @foreach (SegmentStatistics segment in trackGroup)
+                    {
+                        <li>
+                            <button type="button" @onclick="() => Select(segment.TrackIndex, segment.SegmentIndex)">
+                                Segment @(segment.SegmentIndex + 1): @Distance(segment.DistanceMetres)
+                                (@segment.PointCount points)
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    }
+
+    <h3>Elevation</h3>
+    @if (statistics.Elevation is null)
+    {
+        <p>Not available</p>
+    }
+    else
+    {
+        <p>@Number(statistics.Elevation.MinimumMetres)–@Number(statistics.Elevation.MaximumMetres) m</p>
+        @if (statistics.Elevation.AscentMetres is not null && statistics.Elevation.DescentMetres is not null)
+        {
+            <p>Ascent @Number(statistics.Elevation.AscentMetres.Value) m · descent @Number(statistics.Elevation.DescentMetres.Value) m</p>
+        }
+        else if (!statistics.Elevation.IsComplete)
+        {
+            <p>Ascent and descent unavailable because elevation is incomplete.</p>
+        }
+        else
+        {
+            <p>Ascent and descent require at least two elevated points.</p>
+        }
+    }
+
+    <h3>Time</h3>
+    @if (statistics.Time is null)
+    {
+        <p>Not available</p>
+    }
+    else
+    {
+        <p>@statistics.Time.Start.ToString("u") – @statistics.Time.End.ToString("u")</p>
+        <p>Duration: @(statistics.Time.Duration?.ToString("c") ?? "Not available")</p>
+    }
+
+    @if (statistics.ExtensionNamespaces.Count > 0)
+    {
+        <h3>Extension namespaces</h3>
+        <ul class="gpx-inspector__extensions">
+            @foreach (string extensionNamespace in statistics.ExtensionNamespaces)
+            {
+                <li><code>@extensionNamespace</code></li>
+            }
+        </ul>
+    }
+</aside>
+
+@code {
+    [Parameter, EditorRequired]
+    public required RouteDocument Document { get; set; }
+
+    [Parameter]
+    public EventCallback<MapSelection> SelectionChanged { get; set; }
+
+    private RouteStatistics statistics = null!;
+
+    protected override void OnParametersSet() =>
+        statistics = RouteStatisticsCalculator.Calculate(Document);
+
+    private Task Select(int trackIndex, int? segmentIndex) =>
+        SelectionChanged.InvokeAsync(new MapSelection(trackIndex, segmentIndex));
+
+    private static string Distance(double metres) => metres < 1000
+        ? $"{Number(metres)} m"
+        : $"{Number(metres / 1000)} km";
+
+    private static string Number(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+}

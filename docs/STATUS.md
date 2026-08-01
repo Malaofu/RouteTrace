@@ -1,20 +1,20 @@
 # Project status
 
-**Phase:** GPX map visualisation complete
+**Phase:** GPX inspector and statistics complete
 
-**Current PBI:** PBI-040 — GPX map visualisation
+**Current PBI:** PBI-050 — GPX inspector and statistics
 
 **Last updated:** 2026-08-01
 
 ## Progress
 
-- PBI-000 through PBI-040 are complete.
-- Imported tracks, disconnected segments, routes, and waypoints are projected
-  at the OpenLayers boundary and rendered with distinct styles.
-- The map fits imported content, and the import panel can highlight a complete
-  track or an individual segment.
-- Empty GPX documents produce an intentional map and import-panel message.
-- All 19 tests pass and the application builds with no warnings.
+- PBI-000 through PBI-050 are complete.
+- The GPX inspector displays metadata, geometry counts, per-segment and total
+  track distance, meaningful elevation/time statistics, and extension
+  namespaces.
+- Inspector track and segment items drive the existing map highlighting.
+- Synthetic FX-ELE-001 covers complete, partial, and absent elevation data.
+- All 24 tests pass and the application builds with no warnings.
 
 ## Next action
 
@@ -26,13 +26,14 @@ None.
 
 ## Manual verification
 
-- Run the Web project and import FX-GPX-003. Confirm both tracks render, the
-  deliberate segment gap is not connected, and each track/segment highlights
-  from the selector.
-- Import FX-GPX-004. Confirm its route is dashed, its waypoints appear as
-  markers, and the view fits all imported content.
-- Import an empty GPX 1.1 document and confirm the intentional empty-state
-  message appears without disturbing the base map.
+- Import FX-GPX-003 and confirm the inspector lists two tracks and three
+  segments without including either segment gap in total distance.
+- Select each inspector track and segment and confirm the corresponding map
+  geometry highlights.
+- Import FX-ELE-001 and confirm incomplete and absent elevation do not display
+  invented ascent, descent, or zero-valued measurements.
+- Import FX-GPX-002 and confirm its time range and Garmin extension namespace
+  are shown.
 
 ## Deferred choices
 
