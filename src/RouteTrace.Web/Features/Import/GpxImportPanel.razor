@@ -61,6 +61,7 @@
     private string? error;
     private string? summary;
     private RouteDocument? document;
+    private string? importedFileName;
     private IJSObjectReference? downloadModule;
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
@@ -86,6 +87,7 @@
             }
 
             document = result.Document!;
+            importedFileName = file.Name;
             int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
                 + document.Routes.Sum(route => route.Points.Count)
                 + document.Waypoints.Count;
@@ -143,7 +145,8 @@
         stream.Position = 0;
         using var streamReference = new DotNetStreamReference(stream);
         downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        await downloadModule.InvokeVoidAsync("downloadStream", "route-trace.gpx", "application/gpx+xml", streamReference);
+        string downloadFileName = GpxDownloadFileName.From(document.Metadata?.Name, importedFileName);
+        await downloadModule.InvokeVoidAsync("downloadStream", downloadFileName, "application/gpx+xml", streamReference);
         await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.downloaded");
         summary = result.OmittedExtensionNamespaces.Count == 0
             ? $"Downloaded GPX with {result.RetainedExtensionCount} retained extension element(s)."

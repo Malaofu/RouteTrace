@@ -35,9 +35,14 @@
 }
 
 .gpx-inspector__track ul,
-.gpx-inspector__extensions {
+.gpx-inspector__extensions,
+.gpx-inspector__waypoints {
   margin-top: var(--space-1);
   padding-left: var(--space-5);
+}
+
+.gpx-inspector__waypoints p {
+  margin-bottom: var(--space-1);
 }
 
 .gpx-inspector button {

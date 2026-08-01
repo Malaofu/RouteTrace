@@ -27,6 +27,23 @@
             }
         </ul>
     }
+    @if (Document.Metadata?.Author is not null)
+    {
+        RouteAuthor author = Document.Metadata.Author;
+        <h3>Author</h3>
+        @if (!string.IsNullOrWhiteSpace(author.Name))
+        {
+            <p>@author.Name</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(author.EmailId) && !string.IsNullOrWhiteSpace(author.EmailDomain))
+        {
+            <p><code>@author.EmailId@@@author.EmailDomain</code></p>
+        }
+        @if (author.Link is not null)
+        {
+            <p>@(author.Link.Text ?? "Author link"): <code>@author.Link.Href</code></p>
+        }
+    }
 
     <dl class="gpx-inspector__summary">
         <dt>Tracks</dt><dd>@statistics.TrackCount</dd>
@@ -46,6 +63,10 @@
             <section class="gpx-inspector__track">
                 <button type="button" @onclick="() => Select(trackGroup.Key, null)">
                     Track @(trackGroup.Key + 1): @(track.Name ?? "Unnamed")
+                    @if (!string.IsNullOrWhiteSpace(track.Type))
+                    {
+                        <span> · @track.Type</span>
+                    }
                 </button>
                 <ul>
                     @foreach (SegmentStatistics segment in trackGroup)
@@ -60,6 +81,44 @@
                 </ul>
             </section>
         }
+    }
+
+    @if (Document.Routes.Count > 0)
+    {
+        <h3>Routes</h3>
+        <ul>
+            @for (int routeIndex = 0; routeIndex < Document.Routes.Count; routeIndex++)
+            {
+                Route route = Document.Routes[routeIndex];
+                <li>Route @(routeIndex + 1): @(route.Name ?? "Unnamed") (@route.Points.Count points)</li>
+            }
+        </ul>
+    }
+
+    @if (Document.Waypoints.Count > 0)
+    {
+        <h3>Waypoints</h3>
+        <ul class="gpx-inspector__waypoints">
+            @for (int waypointIndex = 0; waypointIndex < Document.Waypoints.Count; waypointIndex++)
+            {
+                Waypoint waypoint = Document.Waypoints[waypointIndex];
+                <li>
+                    <strong>@(waypoint.Name ?? $"Waypoint {waypointIndex + 1}")</strong>
+                    @if (!string.IsNullOrWhiteSpace(waypoint.Symbol))
+                    {
+                        <span> · @waypoint.Symbol</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(waypoint.Description ?? waypoint.Comment))
+                    {
+                        <p>@(waypoint.Description ?? waypoint.Comment)</p>
+                    }
+                    @foreach (RouteLink link in waypoint.Links)
+                    {
+                        <p>@(link.Text ?? "Link"): <code>@link.Href</code></p>
+                    }
+                </li>
+            }
+        </ul>
     }
 
     <h3>Elevation</h3>

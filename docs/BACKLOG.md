@@ -156,7 +156,7 @@ GPX and editing features.
 
 ## PBI-060 — GPX export and round trip
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Export the canonical document as valid GPX 1.1.
 

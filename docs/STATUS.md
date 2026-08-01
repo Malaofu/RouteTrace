@@ -1,6 +1,6 @@
 # Project status
 
-**Phase:** GPX export awaiting independent-viewer verification
+**Phase:** GPX export and round trip complete
 
 **Current PBI:** PBI-060 — GPX export and round trip
 
@@ -8,8 +8,7 @@
 
 ## Progress
 
-- PBI-000 through PBI-051 are complete. PBI-060 implementation is complete but
-  its independent-viewer acceptance check remains open.
+- PBI-000 through PBI-060 are complete.
 - The core exporter writes ordered GPX 1.1 with a required creator and retains
   metadata including author, annotated and linked waypoints, routes, tracks,
   segment boundaries, elevation, and time.
@@ -23,8 +22,10 @@
   per-extension declarations are removed.
 - Exported elevation always includes a decimal point and at least one
   fractional digit.
-- The Web application downloads the current document locally as
-  `route-trace.gpx`.
+- The inspector shows mapped author/contact details, track types, route names,
+  and waypoint annotations and links in addition to statistics.
+- Downloads use the GPX metadata name when available, otherwise the imported
+  filename, with `route-trace.gpx` as the final fallback.
 - Round-trip tests cover all required GPX fixtures and validate output offline
   against the official Topografix GPX 1.1 schema.
 - File-level round-trip comparison covers every committed GPX fixture. Only the
@@ -37,24 +38,27 @@
 - Browser tests measure full-density export. Local AOT export completes in about
   170 ms versus roughly 2.1–3.4 seconds interpreted; budgets are 500 ms AOT and
   5 seconds for interpreted development runs.
-- All 41 .NET tests pass and the application builds with no warnings. Three
+- All 47 .NET tests pass and the application builds with no warnings. Three
   Playwright performance tests cover import, export, and parser profiling.
 
 ## Next action
 
-Open a downloaded file in an independent GPX viewer and record the result.
+Select the next PBI explicitly; none has been started automatically.
 
 ## Blockers
 
-- Independent GPX viewer verification has not yet been performed in this
-  workspace.
+None.
 
 ## Manual verification
 
-- Import FX-GPX-003, choose **Download GPX**, and confirm the browser downloads
-  `route-trace.gpx`.
-- Open that file in an independent GPX viewer and confirm both tracks render and
-  the gap between the first track's two segments is not joined.
+- The user reviewed input/output differences across the supplied GPX examples
+  and explicitly accepted PBI-060 completion.
+- Browser automation confirms the full-density document downloads with its
+  imported filename and remains within the export performance budget.
+- No named independent-viewer run was performed in this workspace. Product
+  sign-off accepts the official GPX 1.1 schema validation and complete
+  file-level round-trip comparison as sufficient compatibility evidence for
+  this PBI.
 
 ## Deferred choices
 

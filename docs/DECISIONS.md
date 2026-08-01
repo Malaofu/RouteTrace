@@ -341,6 +341,12 @@ and test-suite state. The AOT published application exports in about
 170 ms, including roughly 23 ms of browser download handoff. Tests enforce a
 500 ms AOT budget and a wider 5-second interpreted development budget.
 
+Browser downloads use the metadata name when it is present and fall back to
+the imported filename, then to `route-trace.gpx`. Names are stripped of
+cross-platform filename metacharacters and receive a `.gpx` extension when
+needed. This keeps naming a UI adapter concern rather than adding source-file
+identity to the canonical route document.
+
 ## Decision template
 
 ```markdown
