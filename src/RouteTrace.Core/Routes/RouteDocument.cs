@@ -7,11 +7,15 @@ public sealed class RouteDocument
     public RouteDocument(
         IEnumerable<Track>? tracks = null,
         IEnumerable<Route>? routes = null,
-        IEnumerable<Waypoint>? waypoints = null)
+        IEnumerable<Waypoint>? waypoints = null,
+        RouteMetadata? metadata = null,
+        IEnumerable<string>? unsupportedExtensionXml = null)
     {
         Tracks = Snapshot(tracks, nameof(tracks));
         Routes = Snapshot(routes, nameof(routes));
         Waypoints = Snapshot(waypoints, nameof(waypoints));
+        Metadata = metadata;
+        UnsupportedExtensionXml = SnapshotValues(unsupportedExtensionXml, nameof(unsupportedExtensionXml));
     }
 
     public IReadOnlyList<Track> Tracks { get; }
@@ -19,6 +23,10 @@ public sealed class RouteDocument
     public IReadOnlyList<Route> Routes { get; }
 
     public IReadOnlyList<Waypoint> Waypoints { get; }
+
+    public RouteMetadata? Metadata { get; }
+
+    public IReadOnlyList<string> UnsupportedExtensionXml { get; }
 
     public GeoBounds? CalculateBounds()
     {
@@ -71,7 +79,48 @@ public sealed class RouteDocument
 
         return new ReadOnlyCollection<T>(snapshot);
     }
+
+    private static IReadOnlyList<T> SnapshotValues<T>(IEnumerable<T>? items, string parameterName)
+    {
+        if (items is null)
+        {
+            return [];
+        }
+
+        T[] snapshot = [.. items];
+        if (snapshot.Any(item => item is null))
+        {
+            throw new ArgumentException("Collections cannot contain null items.", parameterName);
+        }
+
+        return Array.AsReadOnly(snapshot);
+    }
 }
+
+public sealed class RouteMetadata
+{
+    public RouteMetadata(
+        string? name = null,
+        string? description = null,
+        DateTimeOffset? time = null,
+        IEnumerable<RouteLink>? links = null)
+    {
+        Name = name;
+        Description = description;
+        Time = time;
+        Links = links is null ? [] : Array.AsReadOnly(links.ToArray());
+    }
+
+    public string? Name { get; }
+
+    public string? Description { get; }
+
+    public DateTimeOffset? Time { get; }
+
+    public IReadOnlyList<RouteLink> Links { get; }
+}
+
+public sealed record RouteLink(string Href, string? Text = null, string? MimeType = null);
 
 public sealed class Track
 {

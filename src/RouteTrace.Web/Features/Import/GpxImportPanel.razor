@@ -1,0 +1,63 @@
+@using RouteTrace.Core.Gpx
+
+<section class="gpx-import" aria-labelledby="gpx-import-title">
+    <h2 id="gpx-import-title">Import GPX</h2>
+    <label class="gpx-import__drop-zone">
+        <span>Drop a GPX file here or choose a file</span>
+        <InputFile OnChange="ImportAsync" accept=".gpx,application/gpx+xml,application/xml,text/xml" />
+    </label>
+
+    @if (isImporting)
+    {
+        <p role="status">Importing locally…</p>
+    }
+    else if (error is not null)
+    {
+        <p role="alert" class="gpx-import__error">@error</p>
+    }
+    else if (summary is not null)
+    {
+        <p role="status">@summary</p>
+    }
+</section>
+
+@code {
+    private const long MaximumFileSize = 50 * 1024 * 1024;
+    private bool isImporting;
+    private string? error;
+    private string? summary;
+
+    private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
+    {
+        isImporting = true;
+        error = null;
+        summary = null;
+
+        try
+        {
+            IBrowserFile file = eventArgs.File;
+            await using Stream stream = file.OpenReadStream(MaximumFileSize);
+            GpxImportResult result = await GpxImporter.ImportAsync(stream);
+            if (!result.IsSuccess)
+            {
+                error = result.Error;
+                return;
+            }
+
+            var document = result.Document!;
+            int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
+                + document.Routes.Sum(route => route.Points.Count)
+                + document.Waypoints.Count;
+            summary = $"Imported {file.Name}: {document.Tracks.Count} track(s), {document.Routes.Count} route(s), " +
+                $"{document.Waypoints.Count} waypoint(s), and {pointCount} point(s).";
+        }
+        catch (IOException exception)
+        {
+            error = $"The file could not be read: {exception.Message}";
+        }
+        finally
+        {
+            isImporting = false;
+        }
+    }
+}

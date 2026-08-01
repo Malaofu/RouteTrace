@@ -1,0 +1,39 @@
+.gpx-import {
+  position: absolute;
+  z-index: 1000;
+  top: 1rem;
+  right: 1rem;
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1rem;
+  border-radius: .5rem;
+  background: color-mix(in srgb, var(--rt-surface, white) 94%, transparent);
+  box-shadow: 0 .25rem 1rem rgb(0 0 0 / 20%);
+}
+
+.gpx-import h2 {
+  margin: 0 0 .5rem;
+  font-size: 1rem;
+}
+
+.gpx-import__drop-zone {
+  position: relative;
+  display: block;
+  padding: 1rem;
+  border: .125rem dashed currentColor;
+  border-radius: .375rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.gpx-import__drop-zone ::deep input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.gpx-import__error {
+  color: var(--rt-danger, #a40000);
+}

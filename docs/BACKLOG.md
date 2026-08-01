@@ -76,7 +76,7 @@ GPX and editing features.
 
 ## PBI-030 — GPX import and validation
 
-**Status:** In progress
+**Status:** Complete
 
 **Goal:** Import GPX 1.1 into the canonical model and report useful errors.
 

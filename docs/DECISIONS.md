@@ -196,6 +196,20 @@ or token. Check creation is skipped for fork pull requests because their
 workflow token is read-only; their test output, coverage summary, and artifacts
 remain available in the workflow run.
 
+## D-014 — Browser-independent GPX import boundary
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+Parse GPX 1.1 in `RouteTrace.Core` from a stream into the canonical route
+model. The parser has no browser or UI dependencies, prohibits DTD processing,
+validates numeric coordinates and optional values, and returns user-readable
+failures instead of exposing XML exceptions.
+
+The Web project supplies only the browser-local file stream and displays the
+result. Unsupported namespaced elements inside GPX extension containers are
+retained as opaque XML so vendor data is not silently reinterpreted or lost.
+
 ## Decision template
 
 ```markdown

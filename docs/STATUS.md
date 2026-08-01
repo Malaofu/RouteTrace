@@ -1,26 +1,35 @@
 # Project status
 
-**Phase:** GPX import and validation
+**Phase:** GPX import and validation complete
 
 **Current PBI:** PBI-030 — GPX import and validation
 
-**Last updated:** 2026-07-30
+**Last updated:** 2026-08-01
 
 ## Progress
 
-- PBI-000, PBI-010, and PBI-020 are complete.
-- PBI-030 fixture preparation is complete. All required GPX fixtures are
-  present, sanitised where necessary, and documented.
-- GPX parser, validation, and browser import UI have not started.
+- PBI-000 through PBI-030 are complete.
+- The browser-independent GPX 1.1 importer parses metadata, tracks, segments,
+  routes, waypoints, elevation, timestamps, and preserves unsupported extension
+  XML.
+- Browser-local file selection and drag-and-drop report an import summary or a
+  user-readable validation error.
+- All 18 tests pass and the application builds with no warnings.
 
 ## Next action
 
-Implement the browser-independent GPX 1.1 parser and validation against the
-prepared fixtures, then add browser-local file selection and drag-and-drop.
+Select the next PBI explicitly; none has been started automatically.
 
 ## Blockers
 
 None.
+
+## Manual verification
+
+- Run the Web project, choose or drop each `.gpx` fixture onto the import panel,
+  and confirm that a local import summary appears.
+- Drop malformed XML or a GPX point with an out-of-range coordinate and confirm
+  that a readable error appears while the map remains usable.
 
 ## Deferred choices
 
