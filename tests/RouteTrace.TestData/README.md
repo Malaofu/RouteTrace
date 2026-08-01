@@ -3,6 +3,9 @@
 These files support PBI-030 parser tests. They contain no account identifiers,
 tokens, or private start/end locations.
 
+`gpx-1.1.xsd` is the official Topografix GPX 1.1 schema downloaded from
+`https://www.topografix.com/GPX/1/1/gpx.xsd` for offline export validation.
+
 ## FX-GPX-001-minimal-track.gpx
 
 - **Fixture ID:** FX-GPX-001
@@ -72,3 +75,14 @@ tokens, or private start/end locations.
   `10, 15, 12, 20` metres for deterministic range and ascent/descent checks.
 - **Sanitisation:** Coordinates are synthetic points near latitude/longitude
   zero and contain no movement history or identifiers.
+
+## FX-GPX-005-full-schema-surface.gpx
+
+- **Fixture ID:** FX-GPX-005
+- **Provenance:** Synthetic, created from the official Topografix GPX 1.1 XSD
+  with explicit user approval.
+- **Expected content:** Every GPX 1.1 standard element and attribute is populated
+  at least once, repeated links are represented, and opaque extensions occur at
+  every schema-supported scope.
+- **Sanitisation:** All coordinates, names, URLs, and identifiers are synthetic;
+  the fixture contains no movement history or personal information.

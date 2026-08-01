@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <None Include="..\RouteTrace.TestData\*.gpx" Link="TestData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\RouteTrace.TestData\*.xsd" Link="TestData\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

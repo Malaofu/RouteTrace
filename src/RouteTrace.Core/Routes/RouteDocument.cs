@@ -133,12 +133,34 @@ public sealed class RouteMetadata
         string? name = null,
         string? description = null,
         DateTimeOffset? time = null,
-        IEnumerable<RouteLink>? links = null)
+        IEnumerable<RouteLink>? links = null,
+        RouteAuthor? author = null,
+        IEnumerable<string>? unsupportedExtensionXml = null)
     {
         Name = name;
         Description = description;
         Time = time;
-        Links = links is null ? [] : Array.AsReadOnly(links.ToArray());
+        Links = links is null ? [] : Array.AsReadOnly([.. links]);
+        Author = author;
+        UnsupportedExtensionXml = unsupportedExtensionXml is null
+            ? []
+            : Array.AsReadOnly([.. unsupportedExtensionXml]);
+    }
+
+    internal RouteMetadata(
+        string? name,
+        string? description,
+        DateTimeOffset? time,
+        IReadOnlyList<RouteLink> links,
+        RouteAuthor? author,
+        IReadOnlyList<string> unsupportedExtensionXml)
+    {
+        Name = name;
+        Description = description;
+        Time = time;
+        Links = links;
+        Author = author;
+        UnsupportedExtensionXml = unsupportedExtensionXml;
     }
 
     public string? Name { get; }
@@ -148,16 +170,23 @@ public sealed class RouteMetadata
     public DateTimeOffset? Time { get; }
 
     public IReadOnlyList<RouteLink> Links { get; }
+
+    public RouteAuthor? Author { get; }
+
+    public IReadOnlyList<string> UnsupportedExtensionXml { get; }
 }
 
 public sealed record RouteLink(string Href, string? Text = null, string? MimeType = null);
 
+public sealed record RouteAuthor(string? Name = null, string? EmailId = null, string? EmailDomain = null, RouteLink? Link = null);
+
 public sealed class Track
 {
-    public Track(string? name = null, IEnumerable<TrackSegment>? segments = null)
+    public Track(string? name = null, IEnumerable<TrackSegment>? segments = null, string? type = null)
     {
         Name = name;
         Segments = RouteDocument.Snapshot(segments, nameof(segments));
+        Type = type;
     }
 
     public string? Name { get; }
@@ -167,6 +196,8 @@ public sealed class Track
     /// an explicit discontinuity in the track.
     /// </summary>
     public IReadOnlyList<TrackSegment> Segments { get; }
+
+    public string? Type { get; }
 }
 
 public sealed class TrackSegment
@@ -181,19 +212,45 @@ public sealed class TrackSegment
 
 public sealed class Route
 {
-    public Route(string? name = null, IEnumerable<RoutePoint>? points = null)
+    public Route(
+        string? name = null,
+        IEnumerable<RoutePoint>? points = null,
+        IEnumerable<string>? unsupportedExtensionXml = null)
     {
         Name = name;
         Points = RouteDocument.Snapshot(points, nameof(points));
+        UnsupportedExtensionXml = unsupportedExtensionXml is null
+            ? []
+            : Array.AsReadOnly([.. unsupportedExtensionXml]);
+    }
+
+    internal Route(
+        string? name,
+        IReadOnlyList<RoutePoint> points,
+        IReadOnlyList<string> unsupportedExtensionXml)
+    {
+        Name = name;
+        Points = points;
+        UnsupportedExtensionXml = unsupportedExtensionXml;
     }
 
     public string? Name { get; }
 
     public IReadOnlyList<RoutePoint> Points { get; }
+
+    public IReadOnlyList<string> UnsupportedExtensionXml { get; }
 }
 
-public sealed record Waypoint(RoutePoint Point, string? Name = null)
+public sealed record Waypoint(
+    RoutePoint Point,
+    string? Name = null,
+    string? Comment = null,
+    string? Description = null,
+    string? Symbol = null,
+    IReadOnlyList<RouteLink>? Links = null)
 {
     public RoutePoint Point { get; } =
         Point ?? throw new ArgumentNullException(nameof(Point));
+
+    public IReadOnlyList<RouteLink> Links { get; } = Links ?? [];
 }

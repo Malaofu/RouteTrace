@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpx creator="Route Trace synthetic fixture" version="1.1"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:rt="https://routetrace.app/xmlschemas/fixture/v1"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>Full GPX 1.1 surface</name>
+    <desc>Synthetic coverage of every GPX 1.1 field.</desc>
+    <author>
+      <name>Fixture Author</name>
+      <email id="fixture" domain="example.invalid" />
+      <link href="https://example.invalid/author"><text>Author page</text><type>text/html</type></link>
+    </author>
+    <copyright author="Fixture Author"><year>2026</year><license>https://example.invalid/license</license></copyright>
+    <link href="https://example.invalid/metadata-one"><text>Metadata one</text><type>text/html</type></link>
+    <link href="https://example.invalid/metadata-two"><text>Metadata two</text><type>application/json</type></link>
+    <time>2026-08-01T10:11:12.345Z</time>
+    <keywords>synthetic,complete,gpx</keywords>
+    <bounds minlat="-12.3456780" minlon="-23.4567890" maxlat="12.3456780" maxlon="23.4567890" />
+    <extensions><rt:metadata flag="true">metadata extension</rt:metadata></extensions>
+  </metadata>
+  <wpt lat="1.2345670" lon="2.3456780">
+    <ele>47</ele><time>2026-08-01T10:12:13Z</time><magvar>12.5</magvar><geoidheight>3.25</geoidheight>
+    <name>Complete waypoint</name><cmt>Waypoint comment</cmt><desc>Waypoint description</desc><src>Synthetic source</src>
+    <link href="https://example.invalid/waypoint"><text>Waypoint link</text><type>text/plain</type></link>
+    <sym>Flag</sym><type>poi</type><fix>3d</fix><sat>9</sat><hdop>0.8</hdop><vdop>1.1</vdop><pdop>1.4</pdop>
+    <ageofdgpsdata>2.5</ageofdgpsdata><dgpsid>42</dgpsid>
+    <extensions><rt:waypoint code="wpt">waypoint extension</rt:waypoint></extensions>
+  </wpt>
+  <rte>
+    <name>Complete route</name><cmt>Route comment</cmt><desc>Route description</desc><src>Route source</src>
+    <link href="https://example.invalid/route"><text>Route link</text><type>text/html</type></link>
+    <number>7</number><type>cycling</type>
+    <extensions><rt:route code="rte">route extension</rt:route></extensions>
+    <rtept lat="3.4567890" lon="4.5678900">
+      <ele>51.25</ele><time>2026-08-01T10:13:14Z</time><magvar>13.5</magvar><geoidheight>4.25</geoidheight>
+      <name>Complete route point</name><cmt>Route point comment</cmt><desc>Route point description</desc><src>Route point source</src>
+      <link href="https://example.invalid/route-point"><text>Route point link</text><type>text/plain</type></link>
+      <sym>Turn Right</sym><type>turn</type><fix>dgps</fix><sat>10</sat><hdop>0.7</hdop><vdop>1.0</vdop><pdop>1.3</pdop>
+      <ageofdgpsdata>1.5</ageofdgpsdata><dgpsid>43</dgpsid>
+      <extensions><rt:routePoint code="rtept">route point extension</rt:routePoint></extensions>
+    </rtept>
+  </rte>
+  <trk>
+    <name>Complete track</name><cmt>Track comment</cmt><desc>Track description</desc><src>Track source</src>
+    <link href="https://example.invalid/track"><text>Track link</text><type>application/gpx+xml</type></link>
+    <number>8</number><type>gravel</type>
+    <extensions><rt:track code="trk">track extension</rt:track></extensions>
+    <trkseg>
+      <trkpt lat="5.6789010" lon="6.7890120">
+        <ele>53</ele><time>2026-08-01T10:14:15Z</time><magvar>14.5</magvar><geoidheight>5.25</geoidheight>
+        <name>Complete track point</name><cmt>Track point comment</cmt><desc>Track point description</desc><src>Track point source</src>
+        <link href="https://example.invalid/track-point"><text>Track point link</text><type>text/plain</type></link>
+        <sym>Dot</sym><type>sample</type><fix>pps</fix><sat>11</sat><hdop>0.6</hdop><vdop>0.9</vdop><pdop>1.2</pdop>
+        <ageofdgpsdata>0.5</ageofdgpsdata><dgpsid>44</dgpsid>
+        <extensions><rt:trackPoint code="trkpt">track point extension</rt:trackPoint></extensions>
+      </trkpt>
+      <extensions><rt:segment code="trkseg">segment extension</rt:segment></extensions>
+    </trkseg>
+  </trk>
+  <extensions><rt:document code="gpx">document extension</rt:document></extensions>
+</gpx>

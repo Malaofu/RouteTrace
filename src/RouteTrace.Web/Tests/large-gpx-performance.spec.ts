@@ -38,6 +38,36 @@ test("loads and renders the full-density GPX with measured phases", async ({ pag
     expect(timings.totalMs).toBeLessThan(completionBudgetMs);
 });
 
+test("exports the full-density GPX within the UI budget", async ({ page }) => {
+    await page.route("https://tile.openstreetmap.org/**", route => route.abort());
+    await page.goto("/");
+    await page.locator("input[type=file]").setInputFiles(fixturePath);
+    await expect(page.getByText(/6987 point\(s\)/)).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download GPX" }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("route-trace.gpx");
+    await page.waitForFunction(() =>
+        performance.getEntriesByName("routeTrace.export.downloaded").length > 0);
+
+    const timings = await page.evaluate(() => {
+        const mark = (name: string) => performance.getEntriesByName(name).at(-1)!.startTime;
+        const start = mark("routeTrace.export.start");
+        const serialized = mark("routeTrace.export.serialized");
+        const downloaded = mark("routeTrace.export.downloaded");
+        return {
+            serializationMs: serialized - start,
+            downloadInteropMs: downloaded - serialized,
+            totalMs: downloaded - start,
+        };
+    });
+
+    console.log(`GPX export UI timings: ${JSON.stringify(timings)}`);
+    const completionBudgetMs = process.env.ROUTETRACE_PUBLISHED_ROOT ? 500 : 5_000;
+    expect(timings.totalMs).toBeLessThan(completionBudgetMs);
+});
+
 test("profiles costly GPX features in the browser", async ({ page }) => {
     test.slow();
     await page.route("https://tile.openstreetmap.org/**", route => route.abort());

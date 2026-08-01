@@ -18,6 +18,7 @@ public static class GpxImporter
             await using var bufferedInput = new MemoryStream();
             await input.CopyToAsync(bufferedInput, cancellationToken);
             byte[] sourceXml = bufferedInput.ToArray();
+            var preservedXml = new LazyExtensionXml(sourceXml);
             var settings = new XmlReaderSettings
             {
                 DtdProcessing = DtdProcessing.Prohibit,
@@ -25,7 +26,7 @@ public static class GpxImporter
             };
             using var parseInput = new MemoryStream(sourceXml, writable: false);
             using XmlReader reader = XmlReader.Create(parseInput, settings);
-            return Import(reader, sourceXml, cancellationToken);
+            return Import(reader, preservedXml, cancellationToken);
         }
         catch (XmlException exception)
         {
@@ -37,7 +38,10 @@ public static class GpxImporter
         }
     }
 
-    private static GpxImportResult Import(XmlReader reader, byte[] sourceXml, CancellationToken cancellationToken)
+    private static GpxImportResult Import(
+        XmlReader reader,
+        LazyExtensionXml preservedXml,
+        CancellationToken cancellationToken)
     {
         var tracks = new List<Track>();
         var routes = new List<Route>();
@@ -45,10 +49,12 @@ public static class GpxImporter
         var extensionNamespaces = new HashSet<string>(StringComparer.Ordinal);
         RouteMetadata? metadata = null;
         string? trackName = null;
+        string? trackType = null;
         List<TrackSegment>? trackSegments = null;
         List<RoutePoint>? segmentPoints = null;
         string? routeName = null;
         List<RoutePoint>? routePoints = null;
+        int routeIndex = -1;
         bool foundRoot = false;
 
         while (reader.Read())
@@ -79,12 +85,15 @@ public static class GpxImporter
                     XElement element = ReadElement(reader);
                     metadata = new RouteMetadata(
                         Text(element, "name"), Text(element, "desc"),
-                        OptionalTime(element.Element(Gpx + "time")), element.Elements(Gpx + "link").Select(ParseLink));
+                        OptionalTime(element.Element(Gpx + "time")), element.Elements(Gpx + "link").Select(ParseLink).ToArray(),
+                        ParseAuthor(element.Element(Gpx + "author")),
+                        preservedXml.StringViewAt(GpxExtensionScope.Metadata));
                     CollectExtensionNamespaces(element, extensionNamespaces);
                 }
                 else if (name == Gpx + "trk")
                 {
                     trackName = null;
+                    trackType = null;
                     trackSegments = [];
                 }
                 else if (name == Gpx + "trkseg")
@@ -93,21 +102,26 @@ public static class GpxImporter
                 }
                 else if (name == Gpx + "trkpt")
                 {
-                    segmentPoints!.Add(ParsePoint(reader, extensionNamespaces, out _));
+                    segmentPoints!.Add(ParsePoint(reader, extensionNamespaces));
                 }
                 else if (name == Gpx + "rte")
                 {
                     routeName = null;
                     routePoints = [];
+                    routeIndex = routes.Count;
                 }
                 else if (name == Gpx + "rtept")
                 {
-                    routePoints!.Add(ParsePoint(reader, extensionNamespaces, out _));
+                    routePoints!.Add(ParsePoint(reader, extensionNamespaces));
                 }
                 else if (name == Gpx + "wpt")
                 {
-                    RoutePoint point = ParsePoint(reader, extensionNamespaces, out string? waypointName);
-                    waypoints.Add(new Waypoint(point, waypointName));
+                    XElement element = ReadElement(reader);
+                    waypoints.Add(new Waypoint(
+                        ParsePoint(element), Text(element, "name"), Text(element, "cmt"),
+                        Text(element, "desc"), Text(element, "sym"),
+                        element.Elements(Gpx + "link").Select(ParseLink).ToArray()));
+                    CollectExtensionNamespaces(element, extensionNamespaces);
                 }
                 else if (name == Gpx + "name" &&
                          ((trackSegments is not null && segmentPoints is null) || routePoints is not null))
@@ -116,9 +130,20 @@ public static class GpxImporter
                     if (trackSegments is not null) trackName = value;
                     else if (routePoints is not null) routeName = value;
                 }
+                else if (name == Gpx + "type" && trackSegments is not null && segmentPoints is null)
+                {
+                    trackType = ReadElement(reader).Value;
+                }
                 else if (name == Gpx + "extensions")
                 {
-                    CollectExtensionNamespaces(reader, extensionNamespaces);
+                    if (routePoints is not null)
+                    {
+                        CollectExtensionNamespaces(reader, extensionNamespaces);
+                    }
+                    else
+                    {
+                        CollectExtensionNamespaces(reader, extensionNamespaces);
+                    }
                 }
             }
             else if (reader.NodeType == XmlNodeType.EndElement && reader.NamespaceURI == Gpx.NamespaceName)
@@ -130,20 +155,24 @@ public static class GpxImporter
                 }
                 else if (reader.LocalName == "trk")
                 {
-                    tracks.Add(new Track(trackName, trackSegments));
+                    tracks.Add(new Track(trackName, trackSegments, trackType));
                     trackSegments = null;
                 }
                 else if (reader.LocalName == "rte")
                 {
-                    routes.Add(new Route(routeName, routePoints));
+                    routes.Add(new Route(
+                        routeName,
+                        routePoints!,
+                        preservedXml.StringViewAt(GpxExtensionScope.Route, routeIndex)));
                     routePoints = null;
+                    routeIndex = -1;
                 }
             }
         }
 
         return foundRoot
             ? GpxImportResult.Success(new RouteDocument(
-                tracks, routes, waypoints, metadata, new LazyExtensionXml(sourceXml),
+                tracks, routes, waypoints, metadata, preservedXml,
                 extensionNamespaces.Order(StringComparer.Ordinal).ToArray()))
             : GpxImportResult.Failure("The file must be a GPX 1.1 document.");
     }
@@ -203,14 +232,14 @@ public static class GpxImporter
 
     private static RoutePoint ParsePoint(
         XmlReader reader,
-        ISet<string> extensionNamespaces,
-        out string? name)
+        ISet<string> extensionNamespaces)
     {
-        double latitude = RequiredCoordinate(reader.GetAttribute("lat"), "lat", -90, 90);
-        double longitude = RequiredCoordinate(reader.GetAttribute("lon"), "lon", -180, 180);
+        string? latitudeText = reader.GetAttribute("lat");
+        string? longitudeText = reader.GetAttribute("lon");
+        double latitude = RequiredCoordinate(latitudeText, "lat", -90, 90);
+        double longitude = RequiredCoordinate(longitudeText, "lon", -180, 180);
         double? elevation = null;
         DateTimeOffset? time = null;
-        name = null;
         int pointDepth = reader.Depth;
         if (reader.IsEmptyElement)
         {
@@ -236,10 +265,6 @@ public static class GpxImporter
             else if (reader.LocalName == "time")
             {
                 time = OptionalTime(reader.ReadString());
-            }
-            else if (reader.LocalName == "name")
-            {
-                name = reader.ReadString();
             }
             else if (reader.LocalName == "extensions")
             {
@@ -329,4 +354,18 @@ public static class GpxImporter
 
         return new RouteLink(href, Text(element, "text"), Text(element, "type"));
     }
+
+    private static RouteAuthor? ParseAuthor(XElement? element)
+    {
+        if (element is null) return null;
+
+        XElement? email = element.Element(Gpx + "email");
+        XElement? link = element.Element(Gpx + "link");
+        return new RouteAuthor(
+            Text(element, "name"),
+            (string?)email?.Attribute("id"),
+            (string?)email?.Attribute("domain"),
+            link is null ? null : ParseLink(link));
+    }
+
 }

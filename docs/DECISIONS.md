@@ -295,6 +295,52 @@ published assets from approximately 3.01 MiB to 5.61 MiB. The application is
 installable and service-worker cached, so repeat visits amortise the larger
 initial download.
 
+## D-020 — Export opaque extensions at document scope
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+GPX export is implemented in `RouteTrace.Core` as an ordered, forward-only GPX
+1.1 writer. It preserves the canonical tracks, segment boundaries, routes,
+waypoints, elevation, time, and metadata without depending on browser APIs.
+The Web application supplies the required creator and adapts the resulting
+stream to a local browser download.
+
+Opaque extension XML retains its GPX owner path in a lazy index, allowing
+export to restore metadata, route, track, segment, and point extensions to
+their schema-valid containers. Building that index and materialising the XML
+is deferred until export requests it, preserving large-file import performance.
+Prefixed namespace declarations from the imported GPX root are restored on the
+exported root so vendor prefixes such as `gpxtpx` remain available to the
+extension elements and compatibility-oriented consumers. Redundant declarations
+introduced while extracting opaque fragments are removed during export, so the
+root declaration remains the single declaration when it is already in scope.
+The export result explicitly reports retained and omitted extensions; the
+current implementation omits none.
+
+Coordinates remain numeric WGS 84 values in the canonical model. GPX export
+always formats latitude and longitude with exactly seven fractional digits,
+independent of the lexical formatting used by the imported file.
+Elevation is normalised to include at least one fractional digit for consistent
+device-friendly output, so an integral value is written as `47.0` rather than
+`47`.
+
+Standard GPX fields that Route Trace does not yet interpret are retained in a
+shared lazy owner-path snapshot and written back at their original schema scope
+and order. Metadata, routes, the document, and the exporter expose views over
+that same snapshot rather than copying extension XML into separate stores. The
+snapshot parses the source once and retains XML elements directly, avoiding a
+serialize/parse cycle for every preserved field and extension. It is built only
+when preserved content is inspected or exported, so ordinary import remains
+streaming and does not materialise every point subtree.
+
+Browser performance marks measure serialization separately from download
+interop. On the 6,987-point fixture, consolidation reduced interpreted export
+from about 5.70 seconds to roughly 2.1–3.4 seconds locally, depending on browser
+and test-suite state. The AOT published application exports in about
+170 ms, including roughly 23 ms of browser download handoff. Tests enforce a
+500 ms AOT budget and a wider 5-second interpreted development budget.
+
 ## Decision template
 
 ```markdown

@@ -2,6 +2,7 @@
 @using RouteTrace.Core.Routes
 @using RouteTrace.Web.Features.Map
 @inject IJSRuntime JavaScript
+@implements IAsyncDisposable
 
 <section class="gpx-import" aria-labelledby="gpx-import-title" aria-busy="@isImporting">
     <h2 id="gpx-import-title">Import GPX</h2>
@@ -41,6 +42,11 @@
             </select>
         </label>
     }
+
+    @if (document is not null)
+    {
+        <button type="button" class="gpx-import__export" @onclick="ExportAsync">Download GPX</button>
+    }
 </section>
 
 @code {
@@ -55,6 +61,7 @@
     private string? error;
     private string? summary;
     private RouteDocument? document;
+    private IJSObjectReference? downloadModule;
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
     {
@@ -120,5 +127,34 @@
             _ => MapSelection.None
         };
         await SelectionChanged.InvokeAsync(selection);
+    }
+
+    private async Task ExportAsync()
+    {
+        if (document is null) return;
+
+        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.start");
+        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.serialized");
+        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.downloaded");
+        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.start");
+        await using var stream = new MemoryStream();
+        GpxExportResult result = await GpxExporter.ExportAsync(document, stream, "Route Trace");
+        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.serialized");
+        stream.Position = 0;
+        using var streamReference = new DotNetStreamReference(stream);
+        downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
+        await downloadModule.InvokeVoidAsync("downloadStream", "route-trace.gpx", "application/gpx+xml", streamReference);
+        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.downloaded");
+        summary = result.OmittedExtensionNamespaces.Count == 0
+            ? $"Downloaded GPX with {result.RetainedExtensionCount} retained extension element(s)."
+            : $"Downloaded GPX; omitted: {string.Join(", ", result.OmittedExtensionNamespaces)}.";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (downloadModule is not null)
+        {
+            await downloadModule.DisposeAsync();
+        }
     }
 }

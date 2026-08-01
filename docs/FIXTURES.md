@@ -31,6 +31,7 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 | FX-GPX-002-a | Same source as FX-GPX-002 with realistic full-density point count                  | User-supplied and sanitised; retain the interior point density needed by the performance test. |
 | FX-GPX-003   | Multiple tracks and segments, including a deliberate segment gap                   | Synthetic is acceptable. |
 | FX-GPX-004   | Routes, waypoints, metadata, and at least one vendor extension namespace           | Prefer a user-supplied sanitised export; synthetic extension XML may supplement it. |
+| FX-GPX-005   | Synthetic GPX 1.1 document populating the complete standard schema surface          | Synthetic, generated from the official GPX 1.1 XSD with user approval. |
 | FX-IMG-001   | Clean digital route-map image with a distinct route colour                         | User-supplied or purpose-created; PNG/JPEG/WebP. |
 | FX-IMG-002   | Route image containing labels, markers, crossings, and anti-aliased edges          | User-supplied or purpose-created; PNG/JPEG/WebP. |
 | FX-IMG-003   | Rotated or perspective-distorted photograph/scan of a route                        | User-supplied; PNG/JPEG/WebP. |
@@ -48,7 +49,7 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 | PBI-040         | Reuse PBI-030 GPX fixtures                     | Ask only if they are absent. |
 | PBI-050         | Reuse PBI-030 plus FX-ELE-001                  | Ask before statistics tests. |
 | PBI-051         | FX-GPX-002-a                                   | Ask before performance tests. |
-| PBI-060         | Reuse PBI-030 GPX fixtures                     | Ask only if they are absent. |
+| PBI-060         | Reuse PBI-030 GPX fixtures plus FX-GPX-005     | Ask only if they are absent. |
 | PBI-070–PBI-090 | None                                           | State that none are needed. Real routing locations may be suggested but are not file fixtures. |
 | PBI-100–PBI-110 | FX-IMG-001, FX-IMG-002, FX-IMG-003             | Ask before image validation/calibration tests. |
 | PBI-120         | FX-PAIR-001                                    | Ask before acceptance testing of the complete tracing workflow. |

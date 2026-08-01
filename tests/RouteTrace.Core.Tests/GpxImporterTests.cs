@@ -40,8 +40,16 @@ public sealed class GpxImporterTests
         result.Document!.Routes.Single().Points.Count.ShouldBe(5);
         result.Document.Metadata!.Name.ShouldBe("Test GPX");
         result.Document.Metadata.Description.ShouldBe("This is a simple test pgx file");
+        result.Document.Metadata.Author.ShouldBe(new RouteAuthor(
+            "gpx.studio", Link: new RouteLink("https://gpx.studio")));
+        result.Document.Metadata.UnsupportedExtensionXml.Count.ShouldBe(1);
         result.Document.Waypoints.Select(waypoint => waypoint.Name)
             .ShouldBe(["Golf Course", "Shopping", "Trees", "Parking"]);
+        result.Document.Waypoints[0].Comment.ShouldBe("This is a golf course.\nMake sure not to get hit.");
+        result.Document.Waypoints[0].Description.ShouldBe("This is a golf course.\nMake sure not to get hit.");
+        result.Document.Waypoints[0].Symbol.ShouldBe("Park");
+        result.Document.Waypoints[1].Links.ShouldBe([new RouteLink("https://www.bilka.dk/")]);
+        result.Document.Routes.Single().UnsupportedExtensionXml.Count.ShouldBe(1);
         result.Document.UnsupportedExtensionXml.Count.ShouldBe(2);
         result.Document.UnsupportedExtensionXml.ShouldAllBe(xml => xml.Contains("https://routetrace.app/xmlschemas/fixture/v1"));
     }
@@ -82,6 +90,7 @@ public sealed class GpxImporterTests
 
         result.IsSuccess.ShouldBeTrue(result.Error);
         result.Document!.Tracks.Single().Segments.Single().Points.Count.ShouldBe(196);
+        result.Document.Tracks.Single().Type.ShouldBe("gravel_biking");
         result.Document.UnsupportedExtensionXml.ShouldNotBeEmpty();
         result.Document.UnsupportedExtensionXml.ShouldContain(xml => xml.Contains("TrackPointExtension"));
     }

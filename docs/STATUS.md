@@ -1,46 +1,60 @@
 # Project status
 
-**Phase:** Large GPX loading performance complete
+**Phase:** GPX export awaiting independent-viewer verification
 
-**Current PBI:** PBI-051 — Loading performance
+**Current PBI:** PBI-060 — GPX export and round trip
 
 **Last updated:** 2026-08-01
 
 ## Progress
 
-- PBI-000 through PBI-051 are complete.
-- Large GPX imports copy browser files asynchronously in large chunks, then use
-  a forward-only reader over memory instead of thousands of per-node async
-  continuations or a complete XML DOM. Points are parsed directly without
-  constructing thousands of temporary XML trees.
-- The full-density 2.3 MB, 6,987-point fixture covers streaming import,
-  extension preservation, and statistics semantics.
-- Playwright measures the real file-selection-to-map-render path. Local Edge
-  measurements improved from about 2,030 ms to roughly 1,300–1,420 ms;
-  OpenLayers itself takes about 2 ms. CI enforces a two-second end-to-end
-  budget.
-- The accessible loading state now renders before parsing starts. Playwright
-  measured feedback in under 1 ms and enforces a 100 ms feedback budget.
-- Release publishing uses WebAssembly AOT. The published application imports
-  and renders FX-GPX-002-a in about 182 ms locally, with parsing around 102 ms;
-  CI enforces a 500 ms AOT budget.
-- All 25 tests pass and the application builds with no warnings.
+- PBI-000 through PBI-051 are complete. PBI-060 implementation is complete but
+  its independent-viewer acceptance check remains open.
+- The core exporter writes ordered GPX 1.1 with a required creator and retains
+  metadata including author, annotated and linked waypoints, routes, tracks,
+  segment boundaries, elevation, and time.
+- Metadata and route extensions retain their original ownership. Other opaque
+  extensions retain a lazy owner-path index so track-point extensions return to
+  their original containers without slowing initial import.
+- Track type is retained. Latitude and longitude are exported consistently with
+  exactly seven fractional digits.
+- Imported root namespace declarations are restored, including Garmin's
+  `xmlns:gpxtpx` declaration used by TrackPointExtension elements; redundant
+  per-extension declarations are removed.
+- Exported elevation always includes a decimal point and at least one
+  fractional digit.
+- The Web application downloads the current document locally as
+  `route-trace.gpx`.
+- Round-trip tests cover all required GPX fixtures and validate output offline
+  against the official Topografix GPX 1.1 schema.
+- File-level round-trip comparison covers every committed GPX fixture. Only the
+  creator and numerically equivalent decimal formatting may differ.
+- FX-GPX-005 synthetically populates every GPX 1.1 standard field and extension
+  scope defined by the official XSD. Uninterpreted standard fields use lazy
+  owner-scoped pass-through so their values and ordering remain intact.
+- Preserved standard fields and extensions share one lazy owner-scoped snapshot;
+  export parses it once and writes retained XML elements directly.
+- Browser tests measure full-density export. Local AOT export completes in about
+  170 ms versus roughly 2.1–3.4 seconds interpreted; budgets are 500 ms AOT and
+  5 seconds for interpreted development runs.
+- All 41 .NET tests pass and the application builds with no warnings. Three
+  Playwright performance tests cover import, export, and parser profiling.
 
 ## Next action
 
-Select the next PBI explicitly; none has been started automatically.
+Open a downloaded file in an independent GPX viewer and record the result.
 
 ## Blockers
 
-None.
+- Independent GPX viewer verification has not yet been performed in this
+  workspace.
 
 ## Manual verification
 
-- Import FX-GPX-002-a and confirm the busy indicator clears promptly, the map
-  renders the complete track, and the inspector reports 6,987 points and the
-  Garmin TrackPointExtension namespace.
-- Confirm the loading message and activity indicator appear immediately after
-  choosing the file rather than only after parsing completes.
+- Import FX-GPX-003, choose **Download GPX**, and confirm the browser downloads
+  `route-trace.gpx`.
+- Open that file in an independent GPX viewer and confirm both tracks render and
+  the gap between the first track's two segments is not joined.
 
 ## Deferred choices
 
