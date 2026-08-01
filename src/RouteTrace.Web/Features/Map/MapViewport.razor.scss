@@ -3,3 +3,14 @@
   height: 100%;
   min-height: 24rem;
 }
+
+.map-viewport__empty {
+  position: absolute;
+  z-index: 900;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+}

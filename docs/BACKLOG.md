@@ -99,7 +99,7 @@ GPX and editing features.
 
 ## PBI-040 — GPX map visualisation
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Display imported tracks, routes, segment breaks, and waypoints.
 

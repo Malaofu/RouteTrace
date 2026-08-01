@@ -6,7 +6,7 @@
   width: min(22rem, calc(100% - 2rem));
   padding: 1rem;
   border-radius: .5rem;
-  background: color-mix(in srgb, var(--rt-surface, white) 94%, transparent);
+  background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
   box-shadow: 0 .25rem 1rem rgb(0 0 0 / 20%);
 }
 
@@ -35,5 +35,15 @@
 }
 
 .gpx-import__error {
-  color: var(--rt-danger, #a40000);
+  color: var(--color-danger);
+}
+
+.gpx-import__selection {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.gpx-import__selection select {
+  max-width: 100%;
 }

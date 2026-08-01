@@ -1,13 +1,24 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JavaScript
+@using RouteTrace.Core.Routes
 
 <div id="@elementId"
      class="map-viewport"
      role="application"
      aria-label="Interactive route map">
 </div>
+@if (Document is not null && Document.CalculateBounds() is null)
+{
+    <div class="map-viewport__empty" role="status">This GPX document contains no mappable content.</div>
+}
 
 @code {
+    [Parameter]
+    public RouteDocument? Document { get; set; }
+
+    [Parameter]
+    public MapSelection Selection { get; set; }
+
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
     private IJSObjectReference? module;
 
@@ -22,6 +33,26 @@
             "import",
             "./generated/mapAdapter.js");
         await module.InvokeVoidAsync("initialize", elementId);
+        await RenderDocumentAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (module is not null)
+        {
+            await RenderDocumentAsync();
+        }
+    }
+
+    private async Task RenderDocumentAsync()
+    {
+        MapGeometry? geometry = Document is null ? null : MapGeometry.FromDocument(Document);
+        await module!.InvokeVoidAsync(
+            "renderGeometry",
+            elementId,
+            geometry,
+            Selection.TrackIndex,
+            Selection.SegmentIndex);
     }
 
     public async ValueTask DisposeAsync()

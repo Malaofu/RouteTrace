@@ -1,4 +1,6 @@
 @using RouteTrace.Core.Gpx
+@using RouteTrace.Core.Routes
+@using RouteTrace.Web.Features.Map
 
 <section class="gpx-import" aria-labelledby="gpx-import-title">
     <h2 id="gpx-import-title">Import GPX</h2>
@@ -19,13 +21,39 @@
     {
         <p role="status">@summary</p>
     }
+
+    @if (document is not null && document.Tracks.Count > 0)
+    {
+        <label class="gpx-import__selection">
+            Highlight
+            <select @onchange="SelectGeometry">
+                <option value="">Nothing</option>
+                @for (int trackIndex = 0; trackIndex < document.Tracks.Count; trackIndex++)
+                {
+                    Track track = document.Tracks[trackIndex];
+                    <option value="t:@trackIndex">Track @(trackIndex + 1): @(track.Name ?? "Unnamed")</option>
+                    @for (int segmentIndex = 0; segmentIndex < track.Segments.Count; segmentIndex++)
+                    {
+                        <option value="s:@trackIndex:@segmentIndex">— Segment @(segmentIndex + 1)</option>
+                    }
+                }
+            </select>
+        </label>
+    }
 </section>
 
 @code {
+    [Parameter]
+    public EventCallback<RouteDocument> DocumentImported { get; set; }
+
+    [Parameter]
+    public EventCallback<MapSelection> SelectionChanged { get; set; }
+
     private const long MaximumFileSize = 50 * 1024 * 1024;
     private bool isImporting;
     private string? error;
     private string? summary;
+    private RouteDocument? document;
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
     {
@@ -44,12 +72,18 @@
                 return;
             }
 
-            var document = result.Document!;
+            document = result.Document!;
             int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
                 + document.Routes.Sum(route => route.Points.Count)
                 + document.Waypoints.Count;
             summary = $"Imported {file.Name}: {document.Tracks.Count} track(s), {document.Routes.Count} route(s), " +
                 $"{document.Waypoints.Count} waypoint(s), and {pointCount} point(s).";
+            if (pointCount == 0)
+            {
+                summary += " The document contains no mappable content.";
+            }
+
+            await DocumentImported.InvokeAsync(document);
         }
         catch (IOException exception)
         {
@@ -59,5 +93,18 @@
         {
             isImporting = false;
         }
+    }
+
+    private async Task SelectGeometry(ChangeEventArgs eventArgs)
+    {
+        string? value = eventArgs.Value?.ToString();
+        string[] parts = value?.Split(':') ?? [];
+        MapSelection selection = parts.Length switch
+        {
+            2 when parts[0] == "t" => new(int.Parse(parts[1]), null),
+            3 when parts[0] == "s" => new(int.Parse(parts[1]), int.Parse(parts[2])),
+            _ => MapSelection.None
+        };
+        await SelectionChanged.InvokeAsync(selection);
     }
 }

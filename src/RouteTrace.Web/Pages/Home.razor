@@ -2,9 +2,23 @@
 
 @using RouteTrace.Web.Features.Map
 @using RouteTrace.Web.Features.Import
+@using RouteTrace.Core.Routes
 
 <PageTitle>Route Trace</PageTitle>
 
 <h1 class="visually-hidden">Route Trace map</h1>
-<MapViewport />
-<GpxImportPanel />
+<MapViewport Document="document" Selection="selection" />
+<GpxImportPanel DocumentImported="HandleDocumentImported" SelectionChanged="HandleSelectionChanged" />
+
+@code {
+    private RouteDocument? document;
+    private MapSelection selection = MapSelection.None;
+
+    private void HandleDocumentImported(RouteDocument importedDocument)
+    {
+        document = importedDocument;
+        selection = MapSelection.None;
+    }
+
+    private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
+}

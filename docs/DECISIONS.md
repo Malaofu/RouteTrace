@@ -210,6 +210,20 @@ The Web project supplies only the browser-local file stream and displays the
 result. Unsupported namespaced elements inside GPX extension containers are
 retained as opaque XML so vendor data is not silently reinterpreted or lost.
 
+## D-015 — Map geometry projection and feature identity
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+The Web feature maps the canonical document to a serialization-only geometry
+payload while retaining track and segment boundaries. The OpenLayers adapter
+performs the WGS 84-to-Web Mercator projection and creates one feature per
+segment, preventing discontinuities from being joined visually.
+
+Track and segment indices provide local feature identity for highlighting.
+This avoids introducing editable entity identifiers before an editing PBI
+requires them, while keeping OpenLayers types out of the domain model.
+
 ## Decision template
 
 ```markdown

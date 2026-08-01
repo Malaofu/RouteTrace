@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\RouteTrace.Web\RouteTrace.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="FakeItEasy" />
     <Using Include="Shouldly" />
     <Using Include="Xunit" />
