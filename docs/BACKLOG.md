@@ -141,7 +141,7 @@ GPX and editing features.
 
 ## PBI-051 — Loading performance
 
-**Status:** In progress
+**Status:** Complete
 
 **Goal:** Load large GPX files in a reasonable time
 

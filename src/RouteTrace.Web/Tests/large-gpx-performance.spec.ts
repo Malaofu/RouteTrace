@@ -34,7 +34,8 @@ test("loads and renders the full-density GPX with measured phases", async ({ pag
 
     console.log(`GPX UI timings: ${JSON.stringify(timings)}`);
     expect(timings.busyFeedbackMs).toBeLessThan(100);
-    expect(timings.totalMs).toBeLessThan(2_000);
+    const completionBudgetMs = process.env.ROUTETRACE_PUBLISHED_ROOT ? 500 : 2_000;
+    expect(timings.totalMs).toBeLessThan(completionBudgetMs);
 });
 
 test("profiles costly GPX features in the browser", async ({ page }) => {

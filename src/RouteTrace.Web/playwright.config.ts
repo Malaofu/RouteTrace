@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+const publishedRoot = process.env.ROUTETRACE_PUBLISHED_ROOT;
+
 export default defineConfig({
     testDir: "Tests",
     timeout: 30_000,
@@ -10,7 +12,9 @@ export default defineConfig({
         headless: true,
     },
     webServer: {
-        command: `dotnet run --no-build --configuration ${process.env.CI ? "Release" : "Debug"} --urls http://127.0.0.1:5187`,
+        command: publishedRoot
+            ? `python -m http.server 5187 --bind 127.0.0.1 --directory "${publishedRoot}"`
+            : `dotnet run --no-build --configuration ${process.env.CI ? "Release" : "Debug"} --urls http://127.0.0.1:5187`,
         url: "http://127.0.0.1:5187",
         reuseExistingServer: false,
         timeout: 30_000,

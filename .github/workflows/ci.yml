@@ -65,8 +65,13 @@ jobs:
         working-directory: src/RouteTrace.Web
         run: npx playwright install --with-deps chromium
 
+      - name: Publish AOT static application
+        run: dotnet publish src/RouteTrace.Web/RouteTrace.Web.csproj -c Release --no-restore -o artifacts/publish
+
       - name: Test large-file browser performance
         working-directory: src/RouteTrace.Web
+        env:
+          ROUTETRACE_PUBLISHED_ROOT: ${{ github.workspace }}/artifacts/publish/wwwroot
         run: npm run test:ui -- --reporter=line
 
       - name: Publish test results
@@ -100,6 +105,3 @@ jobs:
             artifacts/coverage
           if-no-files-found: error
           retention-days: 14
-
-      - name: Publish static application
-        run: dotnet publish src/RouteTrace.Web/RouteTrace.Web.csproj -c Release --no-restore

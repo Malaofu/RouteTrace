@@ -279,6 +279,22 @@ Import records extension namespaces eagerly for the inspector, while the 6,987
 individual XML fragments in the performance fixture are materialised only when
 a consumer such as export requests them.
 
+## D-019 — AOT-compile published WebAssembly
+
+**Status:** Accepted
+**Date:** 2026-08-01
+
+Release publishing uses WebAssembly ahead-of-time compilation; Debug builds
+remain interpreted for fast iteration. Browser tests run against the published
+AOT artifact and enforce a 500 ms full-density import-to-render budget.
+
+Local Edge measurements improved from roughly 1.3–1.4 seconds interpreted to
+182 ms AOT, with parsing falling from about 1,050 ms to 102 ms. The tradeoff is
+a clean publish time of roughly 102 seconds and an increase in Brotli-compressed
+published assets from approximately 3.01 MiB to 5.61 MiB. The application is
+installable and service-worker cached, so repeat visits amortise the larger
+initial download.
+
 ## Decision template
 
 ```markdown
