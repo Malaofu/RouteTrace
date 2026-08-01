@@ -24,38 +24,40 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 
 ## Fixture catalogue
 
-| ID | Description | Source and handling |
-|---|---|---|
-| FX-GPX-001 | Minimal GPX 1.1 track with elevation and timestamps | Synthetic is acceptable. |
-| FX-GPX-002 | Real GPX exported from a common cycling service or device | User-supplied and sanitised; retain only the fields needed by the test. |
-| FX-GPX-003 | Multiple tracks and segments, including a deliberate segment gap | Synthetic is acceptable. |
-| FX-GPX-004 | Routes, waypoints, metadata, and at least one vendor extension namespace | Prefer a user-supplied sanitised export; synthetic extension XML may supplement it. |
-| FX-IMG-001 | Clean digital route-map image with a distinct route colour | User-supplied or purpose-created; PNG/JPEG/WebP. |
-| FX-IMG-002 | Route image containing labels, markers, crossings, and anti-aliased edges | User-supplied or purpose-created; PNG/JPEG/WebP. |
-| FX-IMG-003 | Rotated or perspective-distorted photograph/scan of a route | User-supplied; PNG/JPEG/WebP. |
-| FX-PAIR-001 | A route image and reference GPX representing the same route | User-supplied or purpose-created; sanitise both consistently. |
+| ID           | Description                                                                        | Source and handling |
+|--------------|------------------------------------------------------------------------------------|---|
+| FX-GPX-001   | Minimal GPX 1.1 track with elevation and timestamps                                | Synthetic is acceptable. |
+| FX-GPX-002   | Real GPX exported from a common cycling service or device                          | User-supplied and sanitised; retain only the fields needed by the test. |
+| FX-GPX-002-a | Same source as FX-GPX-002 with realistic full-density point count                  | User-supplied and sanitised; retain the interior point density needed by the performance test. |
+| FX-GPX-003   | Multiple tracks and segments, including a deliberate segment gap                   | Synthetic is acceptable. |
+| FX-GPX-004   | Routes, waypoints, metadata, and at least one vendor extension namespace           | Prefer a user-supplied sanitised export; synthetic extension XML may supplement it. |
+| FX-IMG-001   | Clean digital route-map image with a distinct route colour                         | User-supplied or purpose-created; PNG/JPEG/WebP. |
+| FX-IMG-002   | Route image containing labels, markers, crossings, and anti-aliased edges          | User-supplied or purpose-created; PNG/JPEG/WebP. |
+| FX-IMG-003   | Rotated or perspective-distorted photograph/scan of a route                        | User-supplied; PNG/JPEG/WebP. |
+| FX-PAIR-001  | A route image and reference GPX representing the same route                        | User-supplied or purpose-created; sanitise both consistently. |
 | FX-MATCH-001 | Approximate traces for known ambiguous, disconnected, restricted, or one-way areas | User identifies non-sensitive test areas; coordinate JSON or GPX is acceptable. |
-| FX-ELE-001 | Equivalent route samples with complete, partial, and absent elevation | Synthetic is acceptable. |
-| FX-DEVICE-001 | Files tested through Wahoo and Garmin import workflows, plus observed results | User/friend supplies manual evidence; remove account data and note device/app versions. |
+| FX-ELE-001   | Equivalent route samples with complete, partial, and absent elevation              | Synthetic is acceptable. |
+| FX-DEVICE-001 | Files tested through Wahoo and Garmin import workflows, plus observed results      | User/friend supplies manual evidence; remove account data and note device/app versions. |
 
 ## PBI requirements
 
-| PBI | Required fixtures | When to ask |
-|---|---|---|
-| PBI-000–PBI-020 | None | State that none are needed. |
-| PBI-030 | FX-GPX-001, FX-GPX-002, FX-GPX-003, FX-GPX-004 | Ask before designing the final parser fixture suite. Synthetic work may begin for 001/003. |
-| PBI-040 | Reuse PBI-030 GPX fixtures | Ask only if they are absent. |
-| PBI-050 | Reuse PBI-030 plus FX-ELE-001 | Ask before statistics tests. |
-| PBI-060 | Reuse PBI-030 GPX fixtures | Ask only if they are absent. |
-| PBI-070–PBI-090 | None | State that none are needed. Real routing locations may be suggested but are not file fixtures. |
-| PBI-100–PBI-110 | FX-IMG-001, FX-IMG-002, FX-IMG-003 | Ask before image validation/calibration tests. |
-| PBI-120 | FX-PAIR-001 | Ask before acceptance testing of the complete tracing workflow. |
-| PBI-130–PBI-150 | FX-IMG-001, FX-IMG-002, FX-PAIR-001 | Ask before choosing tolerances or acceptance thresholds. |
-| PBI-160–PBI-170 | FX-PAIR-001, FX-MATCH-001 | Ask before provider evaluation and correction tests. |
-| PBI-180 | FX-ELE-001 | Ask before enrichment and calculation tests. |
-| PBI-190 | FX-GPX-004 | Ask only if it is absent. |
-| PBI-200 | FX-GPX-004, FX-DEVICE-001 | Ask early; real-device verification may take more than one weekend. |
-| PBI-210 | None | State that none are needed. |
+| PBI             | Required fixtures                              | When to ask |
+|-----------------|------------------------------------------------|---|
+| PBI-000–PBI-020 | None                                           | State that none are needed. |
+| PBI-030         | FX-GPX-001, FX-GPX-002, FX-GPX-003, FX-GPX-004 | Ask before designing the final parser fixture suite. Synthetic work may begin for 001/003. |
+| PBI-040         | Reuse PBI-030 GPX fixtures                     | Ask only if they are absent. |
+| PBI-050         | Reuse PBI-030 plus FX-ELE-001                  | Ask before statistics tests. |
+| PBI-051         | FX-GPX-002-a                                   | Ask before performance tests. |
+| PBI-060         | Reuse PBI-030 GPX fixtures                     | Ask only if they are absent. |
+| PBI-070–PBI-090 | None                                           | State that none are needed. Real routing locations may be suggested but are not file fixtures. |
+| PBI-100–PBI-110 | FX-IMG-001, FX-IMG-002, FX-IMG-003             | Ask before image validation/calibration tests. |
+| PBI-120         | FX-PAIR-001                                    | Ask before acceptance testing of the complete tracing workflow. |
+| PBI-130–PBI-150 | FX-IMG-001, FX-IMG-002, FX-PAIR-001            | Ask before choosing tolerances or acceptance thresholds. |
+| PBI-160–PBI-170 | FX-PAIR-001, FX-MATCH-001                      | Ask before provider evaluation and correction tests. |
+| PBI-180         | FX-ELE-001                                     | Ask before enrichment and calculation tests. |
+| PBI-190         | FX-GPX-004                                     | Ask only if it is absent. |
+| PBI-200         | FX-GPX-004, FX-DEVICE-001                      | Ask early; real-device verification may take more than one weekend. |
+| PBI-210         | None                                           | State that none are needed. |
 
 ## Fixture request template
 

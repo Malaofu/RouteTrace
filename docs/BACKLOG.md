@@ -139,6 +139,21 @@ GPX and editing features.
 - Segment gaps do not contribute a straight-line distance.
 - The user can correlate an inspector item with map highlighting.
 
+## PBI-051 — Loading performance
+
+**Status:** Not started
+
+**Goal:** Load large GPX files in a reasonable time
+
+**Tasks:**
+
+- Figure out why files with many points loads very slowly
+- Improve the performance of loading large gpx files
+
+**Acceptance criteria:**
+
+- Import of large gpx files run in reasonable time
+
 ## PBI-060 — GPX export and round trip
 
 **Status:** Not started

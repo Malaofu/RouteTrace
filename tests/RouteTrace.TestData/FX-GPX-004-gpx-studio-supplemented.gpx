@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpx creator="https://gpx.studio" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/PowerExtension/v1 http://www.garmin.com/xmlschemas/PowerExtensionv1.xsd http://www.topografix.com/GPX/gpx_style/0/2 http://www.topografix.com/GPX/gpx_style/0/2/gpx_style.xsd" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3" xmlns:gpxpx="http://www.garmin.com/xmlschemas/PowerExtension/v1" xmlns:gpx_style="http://www.topografix.com/GPX/gpx_style/0/2">
+  <metadata>
+    <name>Test GPX</name>
+    <desc>This is a simple test pgx file</desc>
+    <author>
+      <name>gpx.studio</name>
+      <link href="https://gpx.studio" />
+    </author>
+    <extensions>
+      <rt:fixture supplement="synthetic" xmlns:rt="https://routetrace.app/xmlschemas/fixture/v1">
+        <rt:source>gpx.studio export supplemented only for route and extension parser coverage</rt:source>
+      </rt:fixture>
+    </extensions>
+  </metadata>
+  <wpt lat="55.634771" lon="12.570824">
+    <ele>0.26527805027806045</ele>
+    <name>Golf Course</name>
+    <cmt>This is a golf course.
+Make sure not to get hit.</cmt>
+    <desc>This is a golf course.
+Make sure not to get hit.</desc>
+    <sym>Park</sym>
+  </wpt>
+  <wpt lat="55.631066" lon="12.577006">
+    <ele>1.7013619834021219</ele>
+    <name>Shopping</name>
+    <cmt>A Shopping Mall.</cmt>
+    <desc>A Shopping Mall.</desc>
+    <link href="https://www.bilka.dk/" />
+    <sym>Convenience Store</sym>
+  </wpt>
+  <wpt lat="55.631898" lon="12.568307">
+    <ele>0.0625</ele>
+    <name>Trees</name>
+    <sym>Park</sym>
+  </wpt>
+  <wpt lat="55.638719" lon="12.573981">
+    <ele>0.4406138925558697</ele>
+    <name>Parking</name>
+    <cmt>Not sure if public</cmt>
+    <desc>Not sure if public</desc>
+    <sym>Parking Area</sym>
+  </wpt>
+  <rte>
+    <name>Derived fixture route</name>
+    <extensions>
+      <rt:profile xmlns:rt="https://routetrace.app/xmlschemas/fixture/v1">parser-fixture</rt:profile>
+    </extensions>
+    <rtept lat="55.638018" lon="12.574553">
+      <ele>1</ele>
+    </rtept>
+    <rtept lat="55.631475" lon="12.571788">
+      <ele>1</ele>
+    </rtept>
+    <rtept lat="55.630265" lon="12.567753">
+      <ele>4</ele>
+    </rtept>
+    <rtept lat="55.637267" lon="12.571195">
+      <ele>0</ele>
+    </rtept>
+    <rtept lat="55.638148" lon="12.57304">
+      <ele>0.01</ele>
+    </rtept>
+  </rte>
+  <trk>
+    <name>Test GPX</name>
+    <trkseg>
+      <trkpt lat="55.638018" lon="12.574553">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.636615" lon="12.573975">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.636489" lon="12.573894">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.635708" lon="12.573573">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.632919" lon="12.572402">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.632573" lon="12.572286">
+        <ele>1.2</ele>
+      </trkpt>
+      <trkpt lat="55.631673" lon="12.571911">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.631477" lon="12.571884">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.631477" lon="12.571887">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.631475" lon="12.571788">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.631446" lon="12.57173">
+        <ele>1</ele>
+      </trkpt>
+      <trkpt lat="55.630717" lon="12.571318">
+        <ele>0.2</ele>
+      </trkpt>
+      <trkpt lat="55.630348" lon="12.571145">
+        <ele>0.97</ele>
+      </trkpt>
+      <trkpt lat="55.62984" lon="12.570939">
+        <ele>1.01</ele>
+      </trkpt>
+      <trkpt lat="55.629756" lon="12.570876">
+        <ele>1.23</ele>
+      </trkpt>
+      <trkpt lat="55.629715" lon="12.570762">
+        <ele>0.29</ele>
+      </trkpt>
+      <trkpt lat="55.629708" lon="12.570559">
+        <ele>0.37</ele>
+      </trkpt>
+      <trkpt lat="55.629734" lon="12.570298">
+        <ele>0.17</ele>
+      </trkpt>
+      <trkpt lat="55.629817" lon="12.56976">
+        <ele>1.34</ele>
+      </trkpt>
+      <trkpt lat="55.630038" lon="12.568822">
+        <ele>3.94</ele>
+      </trkpt>
+      <trkpt lat="55.630226" lon="12.568018">
+        <ele>4.03</ele>
+      </trkpt>
+      <trkpt lat="55.630264" lon="12.567761">
+        <ele>4</ele>
+      </trkpt>
+      <trkpt lat="55.630265" lon="12.567753">
+        <ele>4</ele>
+      </trkpt>
+      <trkpt lat="55.631401" lon="12.567857">
+        <ele>-0.92</ele>
+      </trkpt>
+      <trkpt lat="55.63387" lon="12.568053">
+        <ele>-0.78</ele>
+      </trkpt>
+      <trkpt lat="55.634006" lon="12.568088">
+        <ele>-0.58</ele>
+      </trkpt>
+      <trkpt lat="55.634298" lon="12.568195">
+        <ele>0.13</ele>
+      </trkpt>
+      <trkpt lat="55.634611" lon="12.568396">
+        <ele>2.97</ele>
+      </trkpt>
+      <trkpt lat="55.635013" lon="12.568811">
+        <ele>0.54</ele>
+      </trkpt>
+      <trkpt lat="55.637267" lon="12.571195">
+        <ele>0</ele>
+      </trkpt>
+      <trkpt lat="55.637664" lon="12.571702">
+        <ele>0</ele>
+      </trkpt>
+      <trkpt lat="55.638117" lon="12.5721">
+        <ele>0</ele>
+      </trkpt>
+      <trkpt lat="55.638003" lon="12.572322">
+        <ele>0.12</ele>
+      </trkpt>
+      <trkpt lat="55.637982" lon="12.572451">
+        <ele>0.67</ele>
+      </trkpt>
+      <trkpt lat="55.637985" lon="12.572623">
+        <ele>0.89</ele>
+      </trkpt>
+      <trkpt lat="55.638001" lon="12.572747">
+        <ele>0.6</ele>
+      </trkpt>
+      <trkpt lat="55.638046" lon="12.572902">
+        <ele>0.6</ele>
+      </trkpt>
+      <trkpt lat="55.638088" lon="12.572977">
+        <ele>0.29</ele>
+      </trkpt>
+      <trkpt lat="55.638148" lon="12.57304">
+        <ele>0.01</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

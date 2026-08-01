@@ -26,6 +26,22 @@ tokens, or private start/end locations.
 - **Expected content:** One GPX 1.1 track and segment with real exporter
   structure and unsupported Garmin extension XML.
 
+## FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx
+
+- **Fixture ID:** FX-GPX-002-a
+- **Provenance:** Derived from the same user-supplied Wahoo ELEMNT Bolt v2
+  activity and Strava GPX export as FX-GPX-002.
+- **Sanitisation:** The same private start and end portions were removed by
+  retaining source points 299 through 7285 inclusive. The track name was
+  replaced, and all timestamps were shifted so the first retained point is
+  `2020-01-01T09:00:00Z`.
+- **Retained intentionally:** All 6,987 interior points without sampling,
+  coordinates outside the private endpoint areas, elevation, relative timestamp
+  intervals, and Garmin TrackPointExtension values.
+- **Not committed:** The original full GPX and Wahoo FIT files.
+- **Expected content:** One full-density GPX 1.1 track and segment for import
+  performance validation.
+
 ## FX-GPX-003-multiple-tracks-segments.gpx
 
 - **Fixture ID:** FX-GPX-003
@@ -33,17 +49,16 @@ tokens, or private start/end locations.
 - **Expected content:** Two tracks and three segments. The two segments in the
   first track are geographically separated to represent a deliberate gap.
 
-## FX-GPX-004-ridewithgps-supplemented.gpx
+## FX-GPX-004-gpx-studio-supplemented.gpx
 
 - **Fixture ID:** FX-GPX-004
-- **Provenance:** Based on a short user-supplied public-road GPX Track exported
-  from the free RideWithGPS service.
-- **Unmodified exporter content:** GPX creator, track geometry, elevations, and
-  document name.
-- **Sanitisation:** The public RideWithGPS route URL was replaced with a
-  reserved `example.test` URL while preserving the metadata-link structure.
-- **Synthetic supplement:** Three waypoints named `Golf Course`, `Crosswalk`,
-  and `Tree`; a five-point GPX route; Route Trace fixture-extension elements;
-  and a deterministic metadata timestamp.
-- **Expected content:** Metadata, a real RideWithGPS track, route points,
-  waypoints, elevation, and unsupported extension XML in a non-GPX namespace.
+- **Provenance:** A user-supplied purpose-created GPX exported from gpx.studio.
+- **Unmodified exporter content:** GPX creator and metadata, 39-point track,
+  elevations, and four user-created waypoints with names and optional details.
+- **Synthetic supplement:** A five-point route derived from the supplied track
+  and two Route Trace fixture-extension elements provide parser coverage that
+  gpx.studio does not export.
+- **Sanitisation:** No personal identifiers, timestamps, or private movement
+  history were present. The source describes a purpose-created test route.
+- **Expected content:** Metadata, track and route points, four waypoints,
+  elevation, and unsupported extension XML in a non-GPX namespace.

@@ -34,16 +34,29 @@ public sealed class GpxImporterTests
     [Fact]
     public async Task ImportsRoutesWaypointsAndUnsupportedExtensions()
     {
-        GpxImportResult result = await ImportFixture("FX-GPX-004-ridewithgps-supplemented.gpx");
+        GpxImportResult result = await ImportFixture("FX-GPX-004-gpx-studio-supplemented.gpx");
 
         result.IsSuccess.ShouldBeTrue(result.Error);
         result.Document!.Routes.Single().Points.Count.ShouldBe(5);
-        result.Document.Metadata!.Links.Single().Href.ShouldBe("https://example.test/routes/fixture");
-        result.Document.Metadata.Links.Single().Text.ShouldBe("Test Map");
+        result.Document.Metadata!.Name.ShouldBe("Test GPX");
+        result.Document.Metadata.Description.ShouldBe("This is a simple test pgx file");
         result.Document.Waypoints.Select(waypoint => waypoint.Name)
-            .ShouldBe(["Golf Course", "Crosswalk", "Tree"]);
+            .ShouldBe(["Golf Course", "Shopping", "Trees", "Parking"]);
         result.Document.UnsupportedExtensionXml.Count.ShouldBe(2);
         result.Document.UnsupportedExtensionXml.ShouldAllBe(xml => xml.Contains("https://routetrace.app/xmlschemas/fixture/v1"));
+    }
+
+    [Fact]
+    public async Task ImportsFullDensitySanitisedPerformanceFixture()
+    {
+        GpxImportResult result = await ImportFixture("FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
+
+        result.IsSuccess.ShouldBeTrue(result.Error);
+        TrackSegment segment = result.Document!.Tracks.Single().Segments.Single();
+        segment.Points.Count.ShouldBe(6987);
+        segment.Points[0].Time.ShouldBe(DateTimeOffset.Parse("2020-01-01T09:00:00Z"));
+        segment.Points[^1].Time.ShouldBe(DateTimeOffset.Parse("2020-01-01T11:09:36Z"));
+        result.Document.UnsupportedExtensionXml.Count.ShouldBe(6987);
     }
 
     [Fact]
