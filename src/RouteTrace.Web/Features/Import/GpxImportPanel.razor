@@ -1,6 +1,7 @@
 @using RouteTrace.Core.Gpx
 @using RouteTrace.Core.Routes
 @using RouteTrace.Web.Features.Map
+@using RouteTrace.Web.Features.Workspaces
 @inject IJSRuntime JavaScript
 @implements IAsyncDisposable
 
@@ -24,15 +25,15 @@
         <p role="status">@summary</p>
     }
 
-    @if (document is not null && document.Tracks.Count > 0)
+    @if (ActiveDocument is not null && ActiveDocument.Document.Tracks.Count > 0)
     {
         <label class="gpx-import__selection">
             Highlight
             <select @onchange="SelectGeometry">
                 <option value="">Nothing</option>
-                @for (int trackIndex = 0; trackIndex < document.Tracks.Count; trackIndex++)
+                @for (int trackIndex = 0; trackIndex < ActiveDocument.Document.Tracks.Count; trackIndex++)
                 {
-                    Track track = document.Tracks[trackIndex];
+                    Track track = ActiveDocument.Document.Tracks[trackIndex];
                     <option value="t:@trackIndex">Track @(trackIndex + 1): @(track.Name ?? "Unnamed")</option>
                     @for (int segmentIndex = 0; segmentIndex < track.Segments.Count; segmentIndex++)
                     {
@@ -43,7 +44,7 @@
         </label>
     }
 
-    @if (document is not null)
+    @if (ActiveDocument is not null)
     {
         <button type="button" class="gpx-import__export" @onclick="ExportAsync">Download GPX</button>
     }
@@ -51,7 +52,10 @@
 
 @code {
     [Parameter]
-    public EventCallback<RouteDocument> DocumentImported { get; set; }
+    public EventCallback<ImportedGpxDocument> DocumentImported { get; set; }
+
+    [Parameter]
+    public WorkspaceDocument? ActiveDocument { get; set; }
 
     [Parameter]
     public EventCallback<MapSelection> SelectionChanged { get; set; }
@@ -60,8 +64,6 @@
     private bool isImporting;
     private string? error;
     private string? summary;
-    private RouteDocument? document;
-    private string? importedFileName;
     private IJSObjectReference? downloadModule;
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
@@ -72,7 +74,8 @@
         error = null;
         summary = null;
         await InvokeAsync(StateHasChanged);
-        await Task.Delay(1);
+        await JavaScript.InvokeVoidAsync("routeTrace.waitForAnimationFrame");
+        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.busy-rendered");
 
         try
         {
@@ -86,8 +89,7 @@
                 return;
             }
 
-            document = result.Document!;
-            importedFileName = file.Name;
+            RouteDocument document = result.Document!;
             int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
                 + document.Routes.Sum(route => route.Points.Count)
                 + document.Waypoints.Count;
@@ -98,7 +100,7 @@
                 summary += " The document contains no mappable content.";
             }
 
-            await DocumentImported.InvokeAsync(document);
+            await DocumentImported.InvokeAsync(new ImportedGpxDocument(document, file.Name));
         }
         catch (IOException exception)
         {
@@ -107,14 +109,6 @@
         finally
         {
             isImporting = false;
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (isImporting)
-        {
-            await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.busy-rendered");
         }
     }
 
@@ -133,19 +127,21 @@
 
     private async Task ExportAsync()
     {
-        if (document is null) return;
+        if (ActiveDocument is null) return;
 
         await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.start");
         await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.serialized");
         await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.downloaded");
         await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.start");
         await using var stream = new MemoryStream();
-        GpxExportResult result = await GpxExporter.ExportAsync(document, stream, "Route Trace");
+        GpxExportResult result = await GpxExporter.ExportAsync(ActiveDocument.Document, stream, "Route Trace");
         await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.serialized");
         stream.Position = 0;
         using var streamReference = new DotNetStreamReference(stream);
         downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        string downloadFileName = GpxDownloadFileName.From(document.Metadata?.Name, importedFileName);
+        string downloadFileName = GpxDownloadFileName.From(
+            ActiveDocument.Document.Metadata?.Name,
+            ActiveDocument.SourceFileName);
         await downloadModule.InvokeVoidAsync("downloadStream", downloadFileName, "application/gpx+xml", streamReference);
         await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.downloaded");
         summary = result.OmittedExtensionNamespaces.Count == 0

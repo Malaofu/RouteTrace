@@ -14,3 +14,15 @@ const effectiveTheme =
 
 document.documentElement.dataset.themePreference = preference;
 document.documentElement.dataset.theme = effectiveTheme;
+
+interface RouteTraceBrowserHelpers {
+    waitForAnimationFrame(): Promise<void>;
+}
+
+interface Window {
+    routeTrace: RouteTraceBrowserHelpers;
+}
+
+window.routeTrace = {
+    waitForAnimationFrame: () => new Promise(resolve => requestAnimationFrame(() => resolve())),
+};

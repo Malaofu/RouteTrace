@@ -5,6 +5,7 @@ const publishedRoot = process.env.ROUTETRACE_PUBLISHED_ROOT;
 export default defineConfig({
     testDir: "Tests",
     timeout: 30_000,
+    workers: 1,
     use: {
         baseURL: "http://127.0.0.1:5187",
         browserName: "chromium",

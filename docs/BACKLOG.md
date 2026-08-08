@@ -199,7 +199,7 @@ Blazor WebAssembly application.
 
 ## PBI-070 — Browser-local workspace persistence
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Save and reopen a multi-document workspace without login or cloud
 storage.
@@ -209,6 +209,8 @@ storage.
 - Define a workspace containing stable document IDs, multiple canonical route
   documents, and an active-document ID.
 - Define a versioned workspace-storage DTO and store it in IndexedDB.
+- Persist workspace updates automatically and restore the most recently active
+  workspace on startup.
 - List, name, reopen, and delete saved workspaces.
 - Handle incompatible/corrupt saved data without breaking the application.
 - Keep derived map features and component state out of the persisted format.
@@ -216,7 +218,7 @@ storage.
 **Acceptance criteria:**
 
 - A workspace containing more than one route document survives browser refresh
-  and application restart.
+  and application restart without an explicit save or reopen action.
 - Workspace deletion requires deliberate user action.
 - Storage schema version is explicit.
 - Images are not yet persisted unless required by this PBI's implementation.

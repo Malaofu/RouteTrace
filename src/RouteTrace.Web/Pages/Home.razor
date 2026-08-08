@@ -2,26 +2,52 @@
 
 @using RouteTrace.Web.Features.Map
 @using RouteTrace.Web.Features.Import
+@using RouteTrace.Web.Features.Workspaces
 @using RouteTrace.Core.Routes
+@inject IWorkspaceStore WorkspaceStore
 
 <PageTitle>Route Trace</PageTitle>
 
 <h1 class="visually-hidden">Route Trace map</h1>
-<MapViewport Document="document" Selection="selection" />
-<GpxImportPanel DocumentImported="HandleDocumentImported" SelectionChanged="HandleSelectionChanged" />
-@if (document is not null)
+<MapViewport Document="workspace.ActiveDocument?.Document" Selection="selection" />
+<GpxImportPanel ActiveDocument="workspace.ActiveDocument" DocumentImported="HandleDocumentImported" SelectionChanged="HandleSelectionChanged" />
+<WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
+@if (workspace.ActiveDocument is not null)
 {
-    <GpxInspector Document="document" SelectionChanged="HandleSelectionChanged" />
+    <GpxInspector Document="workspace.ActiveDocument.Document" SelectionChanged="HandleSelectionChanged" />
 }
 
 @code {
-    private RouteDocument? document;
+    private RouteWorkspace workspace = new(Guid.NewGuid(), "Untitled workspace");
     private MapSelection selection = MapSelection.None;
 
-    private void HandleDocumentImported(RouteDocument importedDocument)
+    protected override async Task OnInitializedAsync()
     {
-        document = importedDocument;
+        WorkspaceDecodeResult? restored = await WorkspaceStore.OpenMostRecentAsync();
+        if (restored?.IsSuccess == true)
+        {
+            workspace = restored.Workspace!;
+        }
+    }
+
+    private async Task HandleDocumentImported(ImportedGpxDocument importedDocument)
+    {
+        workspace = workspace.AddDocument(importedDocument.Document, importedDocument.SourceFileName);
         selection = MapSelection.None;
+        await WorkspaceStore.SaveAsync(workspace);
+    }
+
+    private async Task HandleWorkspaceChangedAsync(RouteWorkspace updatedWorkspace)
+    {
+        workspace = updatedWorkspace;
+        selection = MapSelection.None;
+        await WorkspaceStore.SaveAsync(workspace);
+    }
+
+    private void HandleWorkspaceDeleted(Guid workspaceId)
+    {
+        if (workspace.Id == workspaceId)
+            workspace = new RouteWorkspace(Guid.NewGuid(), "Untitled workspace");
     }
 
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;

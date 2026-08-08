@@ -1,26 +1,30 @@
 # Project status
 
-**Phase:** Build reliability before workspace development
+**Phase:** Workspace development
 
-**Current PBI:** PBI-061 — Restore Release AOT CI
+**Current PBI:** PBI-070 — Browser-local workspace persistence
 
 **Last updated:** 2026-08-08
 
 ## Current state
 
-- PBI-000 through PBI-061 are complete.
+- PBI-000 through PBI-070 are complete.
 - GPX 1.1 import, inspection, map visualisation, export, schema validation, and
   semantic round-trip coverage are implemented.
-- CI installs the `wasm-tools` workload before its Release build and publish.
-- Release WebAssembly builds and publishes remain AOT compiled.
+- Workspaces contain multiple canonical route documents with stable IDs and a
+  distinct active-document ID.
+- Workspace changes are stored automatically in versioned IndexedDB records;
+  startup restores the most recently active workspace without user action.
+- Saved workspaces can still be listed, renamed, reopened, and deliberately
+  deleted without accounts or cloud storage.
+- Corrupt and incompatible saved data is reported without breaking the app.
 
 ## Verification
 
-- Release build: passed with zero warnings.
-- .NET tests: 47 passed, zero failed.
-- Release AOT publish: passed; 48 assemblies AOT compiled.
-- Playwright performance tests: 3 passed, zero failed.
-- Formatting check: passed.
+- Release build and AOT publish: passed with zero warnings.
+- .NET tests: 53 passed, zero failed.
+- Playwright tests: 4 passed, zero failed, including persistence across reload.
+- Formatting and TypeScript checks: passed.
 
 ## Blockers
 
@@ -28,7 +32,7 @@
 
 ## Next action
 
-- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-061.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-070.
 
 ## Deferred choices
 
