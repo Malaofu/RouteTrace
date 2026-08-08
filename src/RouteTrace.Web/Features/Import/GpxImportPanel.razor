@@ -1,32 +1,10 @@
-@using RouteTrace.Core.Gpx
 @using RouteTrace.Core.Routes
 @using RouteTrace.Web.Features.Map
 @using RouteTrace.Web.Features.Workspaces
-@inject IJSRuntime JavaScript
-@implements IAsyncDisposable
 
-<section class="gpx-import" aria-labelledby="gpx-import-title" aria-busy="@isImporting">
-    <h2 id="gpx-import-title">Import GPX</h2>
-    <label class="gpx-import__drop-zone">
-        <span>Drop a GPX file here or choose a file</span>
-        <InputFile OnChange="ImportAsync" accept=".gpx,application/gpx+xml,application/xml,text/xml" />
-    </label>
-
-    @if (isImporting)
-    {
-        <p role="status" class="gpx-import__busy">Reading and processing locally…</p>
-    }
-    else if (error is not null)
-    {
-        <p role="alert" class="gpx-import__error">@error</p>
-    }
-    else if (summary is not null)
-    {
-        <p role="status">@summary</p>
-    }
-
-    @if (ActiveDocument is not null && ActiveDocument.Document.Tracks.Count > 0)
-    {
+@if (ActiveDocument is not null && ActiveDocument.Document.Tracks.Count > 0)
+{
+    <section class="gpx-import" aria-label="Map highlight">
         <label class="gpx-import__selection">
             Highlight
             <select @onchange="SelectGeometry">
@@ -42,75 +20,15 @@
                 }
             </select>
         </label>
-    }
-
-    @if (ActiveDocument is not null)
-    {
-        <button type="button" class="gpx-import__export" @onclick="ExportAsync">Download GPX</button>
-    }
-</section>
+    </section>
+}
 
 @code {
-    [Parameter]
-    public EventCallback<ImportedGpxDocument> DocumentImported { get; set; }
-
     [Parameter]
     public WorkspaceDocument? ActiveDocument { get; set; }
 
     [Parameter]
     public EventCallback<MapSelection> SelectionChanged { get; set; }
-
-    private const long MaximumFileSize = 50 * 1024 * 1024;
-    private bool isImporting;
-    private string? error;
-    private string? summary;
-    private IJSObjectReference? downloadModule;
-
-    private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
-    {
-        await JavaScript.InvokeVoidAsync("performance.clearMarks");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.start");
-        isImporting = true;
-        error = null;
-        summary = null;
-        await InvokeAsync(StateHasChanged);
-        await JavaScript.InvokeVoidAsync("routeTrace.waitForAnimationFrame");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.busy-rendered");
-
-        try
-        {
-            IBrowserFile file = eventArgs.File;
-            await using Stream stream = file.OpenReadStream(MaximumFileSize);
-            GpxImportResult result = await GpxImporter.ImportAsync(stream);
-            await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.parsed");
-            if (!result.IsSuccess)
-            {
-                error = result.Error;
-                return;
-            }
-
-            RouteDocument document = result.Document!;
-            int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
-                + document.Routes.Sum(route => route.Points.Count)
-                + document.Waypoints.Count;
-            summary = $"Imported {file.Name}: {document.Tracks.Count} track(s), {document.Routes.Count} route(s), " +
-                $"{document.Waypoints.Count} waypoint(s), and {pointCount} point(s).";
-            if (pointCount == 0)
-            {
-                summary += " The document contains no mappable content.";
-            }
-
-            await DocumentImported.InvokeAsync(new ImportedGpxDocument(document, file.Name));
-        }
-        catch (IOException exception)
-        {
-            error = $"The file could not be read: {exception.Message}";
-        }
-        finally
-        {
-            isImporting = false;
-        }
-    }
 
     private async Task SelectGeometry(ChangeEventArgs eventArgs)
     {
@@ -125,35 +43,4 @@
         await SelectionChanged.InvokeAsync(selection);
     }
 
-    private async Task ExportAsync()
-    {
-        if (ActiveDocument is null) return;
-
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.start");
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.serialized");
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.downloaded");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.start");
-        await using var stream = new MemoryStream();
-        GpxExportResult result = await GpxExporter.ExportAsync(ActiveDocument.Document, stream, "Route Trace");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.serialized");
-        stream.Position = 0;
-        using var streamReference = new DotNetStreamReference(stream);
-        downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        string downloadFileName = GpxDownloadFileName.From(
-            ActiveDocument.Document.Metadata?.Name,
-            ActiveDocument.SourceFileName);
-        await downloadModule.InvokeVoidAsync("downloadStream", downloadFileName, "application/gpx+xml", streamReference);
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.downloaded");
-        summary = result.OmittedExtensionNamespaces.Count == 0
-            ? $"Downloaded GPX with {result.RetainedExtensionCount} retained extension element(s)."
-            : $"Downloaded GPX; omitted: {string.Join(", ", result.OmittedExtensionNamespaces)}.";
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (downloadModule is not null)
-        {
-            await downloadModule.DisposeAsync();
-        }
-    }
 }

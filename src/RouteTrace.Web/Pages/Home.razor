@@ -3,6 +3,7 @@
 @using RouteTrace.Web.Features.Map
 @using RouteTrace.Web.Features.Import
 @using RouteTrace.Web.Features.Workspaces
+@using RouteTrace.Web.Features.Commands
 @using RouteTrace.Core.Routes
 @inject IWorkspaceStore WorkspaceStore
 
@@ -10,9 +11,13 @@
 
 <h1 class="visually-hidden">Route Trace map</h1>
 <MapViewport Document="workspace.ActiveDocument?.Document" Selection="selection" />
-<GpxImportPanel ActiveDocument="workspace.ActiveDocument" DocumentImported="HandleDocumentImported" SelectionChanged="HandleSelectionChanged" />
+<ApplicationMenu ActiveDocument="workspace.ActiveDocument"
+                 InspectorVisible="inspectorVisible"
+                 DocumentImported="HandleDocumentImported"
+                 InspectorVisibilityChanged="HandleInspectorVisibilityChanged" />
+<GpxImportPanel ActiveDocument="workspace.ActiveDocument" SelectionChanged="HandleSelectionChanged" />
 <WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
-@if (workspace.ActiveDocument is not null)
+@if (workspace.ActiveDocument is not null && inspectorVisible)
 {
     <GpxInspector Document="workspace.ActiveDocument.Document" SelectionChanged="HandleSelectionChanged" />
 }
@@ -20,6 +25,7 @@
 @code {
     private RouteWorkspace workspace = new(Guid.NewGuid(), "Untitled workspace");
     private MapSelection selection = MapSelection.None;
+    private bool inspectorVisible = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,4 +57,6 @@
     }
 
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
+
+    private void HandleInspectorVisibilityChanged(bool visible) => inspectorVisible = visible;
 }

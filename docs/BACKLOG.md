@@ -225,7 +225,7 @@ storage.
 
 ## PBI-071 — Application menu and command surface
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Give file, edit, and view actions a central, extensible home without
 covering the map with permanent controls.

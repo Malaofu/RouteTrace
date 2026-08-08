@@ -45,7 +45,8 @@ test("exports the full-density GPX within the UI budget", async ({ page }) => {
     await expect(page.getByText(/6987 point\(s\)/)).toBeVisible();
 
     const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Download GPX" }).click();
+    await page.getByRole("button", { name: "File", exact: true }).click();
+    await page.getByRole("menuitem", { name: /Download GPX/ }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toBe("FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
     await page.waitForFunction(() =>

@@ -4,7 +4,7 @@
   "scripts": {
     "build": "npm run typecheck && npm run styles && npm run icons && npm run scripts",
     "icons": "node Scripts/buildIcons.mjs",
-    "scripts": "esbuild Scripts/mapAdapter.ts Scripts/map.css Scripts/theme.ts Scripts/download.ts Scripts/workspaceStorage.ts --bundle --format=esm --sourcemap --outdir=wwwroot/generated && esbuild Scripts/themeBootstrap.ts Scripts/serviceWorker.ts --bundle --format=iife --sourcemap --outdir=wwwroot/generated",
+    "scripts": "esbuild Scripts/mapAdapter.ts Scripts/map.css Scripts/theme.ts Scripts/download.ts Scripts/workspaceStorage.ts Scripts/applicationMenu.ts --bundle --format=esm --sourcemap --outdir=wwwroot/generated && esbuild Scripts/themeBootstrap.ts Scripts/serviceWorker.ts --bundle --format=iife --sourcemap --outdir=wwwroot/generated",
     "styles": "node Scripts/buildStyles.mjs",
     "typecheck": "tsc --noEmit",
     "test:ui": "playwright test"

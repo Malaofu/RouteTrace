@@ -1,61 +1,13 @@
 .gpx-import {
   position: absolute;
   z-index: 1000;
-  top: 1rem;
+  top: 4rem;
   right: 1rem;
   width: min(22rem, calc(100% - 2rem));
   padding: 1rem;
   border-radius: .5rem;
   background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
   box-shadow: 0 .25rem 1rem rgb(0 0 0 / 20%);
-}
-
-.gpx-import h2 {
-  margin: 0 0 .5rem;
-  font-size: 1rem;
-}
-
-.gpx-import__drop-zone {
-  position: relative;
-  display: block;
-  padding: 1rem;
-  border: .125rem dashed currentColor;
-  border-radius: .375rem;
-  text-align: center;
-  cursor: pointer;
-}
-
-.gpx-import__drop-zone ::deep input[type="file"] {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.gpx-import__error {
-  color: var(--color-danger);
-}
-
-.gpx-import__busy::before {
-  display: inline-block;
-  width: .8rem;
-  height: .8rem;
-  margin-right: .5rem;
-  border: .125rem solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  content: "";
-  animation: import-spin .7s linear infinite;
-}
-
-@keyframes import-spin {
-  to { transform: rotate(1turn); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gpx-import__busy::before { animation: none; }
 }
 
 .gpx-import__selection {
@@ -66,8 +18,4 @@
 
 .gpx-import__selection select {
   max-width: 100%;
-}
-
-.gpx-import__export {
-  margin-top: var(--space-3);
 }
