@@ -8,22 +8,27 @@
 
 ## Current state
 
-- PBI-000 through PBI-060 are complete.
+- PBI-000 through PBI-061 are complete.
 - GPX 1.1 import, inspection, map visualisation, export, schema validation, and
   semantic round-trip coverage are implemented.
-- The last verified local baseline was 47 passing .NET tests and three
-  Playwright performance tests.
-- Release WebAssembly builds use AOT compilation.
+- CI installs the `wasm-tools` workload before its Release build and publish.
+- Release WebAssembly builds and publishes remain AOT compiled.
 
-## Blocker
+## Verification
 
-- CI fails during the Release build because the clean runner does not have the
-  `wasm-tools` workload installed.
+- Release build: passed with zero warnings.
+- .NET tests: 47 passed, zero failed.
+- Release AOT publish: passed; 48 assemblies AOT compiled.
+- Playwright performance tests: 3 passed, zero failed.
+- Formatting check: passed.
+
+## Blockers
+
+- None.
 
 ## Next action
 
-- Complete PBI-061 by installing the workload in CI and verifying the existing
-  Release build, tests, publish, and AOT performance checks.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-061.
 
 ## Deferred choices
 

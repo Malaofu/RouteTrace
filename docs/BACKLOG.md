@@ -177,7 +177,7 @@ GPX and editing features.
 
 ## PBI-061 — Restore Release AOT CI
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Make the clean CI runner build and publish the existing AOT-compiled
 Blazor WebAssembly application.
