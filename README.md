@@ -11,8 +11,9 @@ architecture decision.
 Codex should begin with:
 
 1. [`AGENTS.md`](AGENTS.md)
-2. [`docs/STATUS.md`](docs/STATUS.md)
-3. [`docs/CURRENT_PBI.md`](docs/CURRENT_PBI.md)
+2. [`docs/CURRENT_PBI.md`](docs/CURRENT_PBI.md)
+3. [`docs/WORKFLOW.md`](docs/WORKFLOW.md)
+4. [`docs/STATUS.md`](docs/STATUS.md)
 
 Those files define the current scope. Codex should only open the broader
 project documents when the current PBI requires them.
@@ -31,6 +32,8 @@ project documents when the current PBI requires them.
 - [`docs/STATUS.md`](docs/STATUS.md): concise record of current progress.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): durable technical and product
   decisions.
+- [`docs/WORKFLOW.md`](docs/WORKFLOW.md): rules for task scope and maintaining
+  the project notes.
 
 ## Weekend workflow
 
@@ -49,7 +52,14 @@ project documents when the current PBI requires them.
 ## Build and test
 
 Install the .NET SDK version selected by [`global.json`](global.json) and a
-current Node.js LTS release. Restore the frontend dependencies first:
+current Node.js LTS release. Release builds use WebAssembly AOT and therefore
+also require the `wasm-tools` workload:
+
+```powershell
+dotnet workload install wasm-tools
+```
+
+Restore the frontend dependencies first:
 
 ```powershell
 cd src/RouteTrace.Web

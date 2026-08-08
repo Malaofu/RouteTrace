@@ -4,11 +4,12 @@
 
 At the start of an implementation task, read only:
 
-1. `docs/STATUS.md`
-2. `docs/CURRENT_PBI.md`
-3. The single matching PBI section in `docs/BACKLOG.md`
-4. `docs/FIXTURES.md`
-5. The portions of `docs/ARCHITECTURE.md` explicitly referenced by the resolved
+1. `docs/CURRENT_PBI.md`
+2. `docs/WORKFLOW.md`
+3. `docs/STATUS.md`
+4. The single matching PBI section in `docs/BACKLOG.md`
+5. The resolved PBI's entry in `docs/FIXTURES.md`
+6. The portions of `docs/ARCHITECTURE.md` explicitly required by the resolved
    PBI
 
 `CURRENT_PBI.md` contains exactly one PBI identifier such as `PBI-030`. Resolve
@@ -28,6 +29,8 @@ architectural review.
 - Do not add authentication, a database, a production server API, cloud
   persistence, collaboration, telemetry, or deployment infrastructure unless
   the current PBI explicitly requires it.
+- PBI-210 Aspire and PBIs 220–230 Azure deployment are independent later work;
+  do not introduce them as incidental plumbing.
 - When a missing decision materially affects the current PBI, stop and present
   the smallest set of concrete options.
 - Treat ideas discovered during implementation as backlog candidates, not as
@@ -50,6 +53,12 @@ architectural review.
 - Aspire AppHost and the Blazor Gateway are development-time orchestration and
   telemetry infrastructure. They must not become a production runtime
   dependency for the statically published Web project.
+- Release publishing uses WebAssembly AOT. Do not disable AOT to repair a build
+  environment; install the required `wasm-tools` workload instead.
+- A workspace may contain multiple canonical route documents. Keep active,
+  selected, and visible state distinct.
+- Colour, visibility, explorer state, and derived endpoint markers are
+  presentation data. Do not write them into GPX vendor extensions.
 
 ## Fixture gate
 
@@ -57,9 +66,9 @@ Before planning or implementation:
 
 1. Read the resolved PBI's fixture entry in `docs/FIXTURES.md`.
 2. Give the user a short, explicit fixture report:
-   - no fixtures are needed;
-   - all required fixtures are already present; or
-   - fixtures must be supplied.
+   - `No fixtures needed for PBI-NNN.`
+   - `All fixtures for PBI-NNN are present: ...`
+   - `Fixtures needed for PBI-NNN: ...`
 3. For each missing fixture, state its ID, purpose, required characteristics,
    accepted file types, whether a synthetic fixture is acceptable, and any
    sanitisation needed.
@@ -77,8 +86,25 @@ other secrets in a fixture.
 - Keep warnings enabled and nullable reference types enabled.
 - Add focused automated tests for non-visual logic introduced by the PBI.
 - Avoid adding packages until their immediate use is demonstrated.
-- Record a durable architectural choice in `docs/DECISIONS.md`.
-- Keep `docs/STATUS.md` short. It is a hand-off, not a work diary.
+- Add to `docs/DECISIONS.md` only when the PBI makes a durable cross-cutting
+  product or architecture choice.
+- Keep progress updates concise: report material findings, blockers, and
+  verification rather than narrating routine commands.
+
+## Documentation maintenance
+
+- Documentation describes current state; Git history records how it changed.
+- Rewrite `docs/STATUS.md` as a snapshot instead of appending a chronology.
+- Keep `docs/STATUS.md` at approximately 40 lines or fewer.
+- Report verification totals and failures, not raw command output or repeated
+  benchmark samples.
+- Update the active backlog entry with final status and material scope changes,
+  not an implementation diary.
+- Keep decisions to the decision, reason, and important consequences. Routine
+  code structure, tuning steps, and individual measurements are not decisions.
+- Do not repeat the same completion details across status, architecture,
+  decisions, and backlog.
+- Follow the detailed file responsibilities in `docs/WORKFLOW.md`.
 
 ## Completion
 
@@ -90,8 +116,10 @@ A PBI is complete only when:
 - The application builds.
 - Any manual verification steps are recorded.
 - `docs/STATUS.md` reflects the result and remaining blockers.
+- The active backlog entry is marked complete without expanding later PBIs.
 
-Do not automatically select or start the next PBI.
+Leave `docs/CURRENT_PBI.md` unchanged. Do not automatically select or start the
+next PBI.
 
 ## Command execution
 

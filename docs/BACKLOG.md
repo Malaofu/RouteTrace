@@ -76,7 +76,7 @@ GPX and editing features.
 
 ## PBI-030 — GPX import and validation
 
-**Status:** Complete
+**Status:** Done
 
 **Goal:** Import GPX 1.1 into the canonical model and report useful errors.
 
@@ -99,7 +99,7 @@ GPX and editing features.
 
 ## PBI-040 — GPX map visualisation
 
-**Status:** Complete
+**Status:** Done
 
 **Goal:** Display imported tracks, routes, segment breaks, and waypoints.
 
@@ -119,7 +119,7 @@ GPX and editing features.
 
 ## PBI-050 — GPX inspector and statistics
 
-**Status:** Complete
+**Status:** Done
 
 **Goal:** Explain what is inside an imported GPX file.
 
@@ -141,7 +141,7 @@ GPX and editing features.
 
 ## PBI-051 — Loading performance
 
-**Status:** Complete
+**Status:** Done
 
 **Goal:** Load large GPX files in a reasonable time
 
@@ -156,7 +156,7 @@ GPX and editing features.
 
 ## PBI-060 — GPX export and round trip
 
-**Status:** Complete
+**Status:** Done
 
 **Goal:** Export the canonical document as valid GPX 1.1.
 
@@ -175,25 +175,187 @@ GPX and editing features.
 - Output opens in at least one independent GPX viewer.
 - Unknown extensions are either retained or explicitly reported as omitted.
 
-## PBI-070 — Browser-local project persistence
+## PBI-061 — Restore Release AOT CI
 
 **Status:** Not started
 
-**Goal:** Save and reopen unfinished projects without login or cloud storage.
+**Goal:** Make the clean CI runner build and publish the existing AOT-compiled
+Blazor WebAssembly application.
 
 **Tasks:**
 
-- Define a versioned project-storage DTO.
-- Store project data in IndexedDB.
-- List, name, reopen, and delete local projects.
-- Handle incompatible/corrupt saved data without breaking the application.
+- Install the .NET `wasm-tools` workload after selecting the SDK and before the
+  Release build.
+- Preserve the repository's existing action-version pinning convention.
+- Run the existing format, build, test, publish, and browser-performance checks.
+- Document the corresponding local prerequisite without weakening AOT.
 
 **Acceptance criteria:**
 
-- A project survives browser refresh and application restart.
-- Project deletion requires deliberate user action.
+- A clean CI run completes the Release build and publish.
+- The published application remains WebAssembly AOT compiled.
+- Existing .NET and Playwright checks still pass.
+- No fixture is required and no product behaviour changes.
+
+## PBI-070 — Browser-local workspace persistence
+
+**Status:** Not started
+
+**Goal:** Save and reopen a multi-document workspace without login or cloud
+storage.
+
+**Tasks:**
+
+- Define a workspace containing stable document IDs, multiple canonical route
+  documents, and an active-document ID.
+- Define a versioned workspace-storage DTO and store it in IndexedDB.
+- List, name, reopen, and delete saved workspaces.
+- Handle incompatible/corrupt saved data without breaking the application.
+- Keep derived map features and component state out of the persisted format.
+
+**Acceptance criteria:**
+
+- A workspace containing more than one route document survives browser refresh
+  and application restart.
+- Workspace deletion requires deliberate user action.
 - Storage schema version is explicit.
 - Images are not yet persisted unless required by this PBI's implementation.
+
+## PBI-071 — Application menu and command surface
+
+**Status:** Not started
+
+**Goal:** Give file, edit, and view actions a central, extensible home without
+covering the map with permanent controls.
+
+**Tasks:**
+
+- Add a compact application menu suitable for desktop and narrow layouts.
+- Move existing import and export actions into the File menu.
+- Share command availability between menus, keyboard shortcuts, and any
+  contextual buttons.
+- Implement keyboard navigation, focus management, and dismissal behaviour.
+
+**Acceptance criteria:**
+
+- Existing GPX import and export remain available from one predictable place.
+- Disabled or unavailable commands cannot execute.
+- The menu is usable by keyboard and does not interfere with map interaction.
+- New commands can be added without adding permanent map controls.
+
+## PBI-072 — Multi-document workspace
+
+**Status:** Not started
+
+**Goal:** Open and compare several GPX documents on the same map.
+
+**Tasks:**
+
+- Import one or more GPX files into the current workspace without replacing
+  existing documents.
+- Track active, selected, and visible state independently.
+- Render every visible document with a distinguishable default style.
+- Activate, close, and export individual documents.
+- Preserve the last valid workspace when one import fails.
+
+**Acceptance criteria:**
+
+- At least three imported GPX documents can be displayed simultaneously.
+- Changing the active document does not hide the other visible documents.
+- Closing one document does not alter another document's canonical data.
+- Export targets the intended document.
+
+## PBI-073 — GPX document explorer
+
+**Status:** Not started
+
+**Goal:** Show the structure of every open GPX document in a coherent workspace
+panel.
+
+**Tasks:**
+
+- Add a collapsible right-side explorer, using a drawer on narrow layouts.
+- Show document, waypoint, route, track, and segment hierarchy with useful
+  names and counts.
+- Synchronise explorer selection with map highlighting and focus.
+- Keep individual track points out of the normal tree and avoid eager creation
+  of thousands of UI nodes.
+
+**Acceptance criteria:**
+
+- The complete GPX fixture can be understood from the explorer hierarchy.
+- Selecting a route, track, segment, or waypoint identifies it on the map.
+- The full-density fixture does not create a tree item per track point.
+- The explorer can be hidden without losing workspace state.
+
+## PBI-074 — Context actions and presentation settings
+
+**Status:** Not started
+
+**Goal:** Provide node-specific actions and project-local display settings from
+the document explorer.
+
+**Tasks:**
+
+- Expose the same actions through right-click and an accessible overflow menu.
+- Support activate, focus, show/hide, colour, export, and close where applicable.
+- Model document and child visibility and colour overrides with clear
+  inheritance.
+- Persist presentation settings in the workspace rather than vendor GPX
+  extensions.
+
+**Acceptance criteria:**
+
+- Available actions match the selected node type.
+- Colour and visibility changes affect display without changing exported GPX.
+- Context actions are usable without a mouse.
+- Future editing commands can use the same command surface.
+
+## PBI-075 — Route endpoints and POI symbols
+
+**Status:** Not started
+
+**Goal:** Make route direction and imported points of interest immediately
+recognisable on the map.
+
+**Tasks:**
+
+- Add derived start and finish markers for displayed tracks and routes.
+- Handle overlapping endpoints for loops without obscuring both meanings.
+- Map common GPX waypoint `sym` values through an application-owned icon
+  catalogue.
+- Use a generic fallback for missing or unknown symbols.
+- Keep start/finish markers as presentation data and preserve waypoint symbols
+  as GPX data.
+
+**Acceptance criteria:**
+
+- Direction endpoints are legible at ordinary map zoom levels.
+- Known, unknown, and missing waypoint symbols render safely.
+- Multi-segment tracks receive one track start and finish, not markers on every
+  segment boundary.
+- Export does not add device-specific icon extensions.
+
+## PBI-076 — Existing-elevation profile
+
+**Status:** Not started
+
+**Goal:** Visualise elevation already present in an imported GPX document
+without calling an elevation provider.
+
+**Tasks:**
+
+- Plot elevation against cumulative distance for the active selection.
+- Represent missing elevation as gaps rather than zero.
+- Synchronise chart hover/focus with a map position where practical.
+- Make the profile collapsible and responsive.
+
+**Acceptance criteria:**
+
+- Complete, partial, and absent-elevation fixtures are represented honestly.
+- Track segment boundaries do not create implied distance or elevation changes.
+- The feature performs no network request.
+- PBI-076 may be deferred without blocking manual route editing.
 
 ## PBI-080 — Manual route editing
 
@@ -204,15 +366,16 @@ GPX and editing features.
 **Tasks:**
 
 - Add, move, insert, and delete ordered editing points.
-- Choose or reverse direction.
-- Clear or undo recent edits.
+- Choose or reverse direction and select a starting point for a loop.
+- Establish reusable undo/redo history for the editing workflows that follow.
+- Clear recent edits without bypassing that history.
 - Convert the edited line into canonical track geometry.
 
 **Acceptance criteria:**
 
 - The complete edit workflow works without a routing provider.
 - Direction is visible.
-- Undo covers the operations introduced by this PBI.
+- Undo and redo cover the operations introduced by this PBI.
 - The result exports as GPX.
 
 ## PBI-090 — Bicycle routing between anchors
@@ -494,3 +657,47 @@ without changing the statically hosted production application.
 - No dashboard credentials or telemetry ingestion secrets are exposed to the
   browser.
 - No production server or production telemetry dependency is introduced.
+
+## PBI-220 — Azure Static Web Apps infrastructure
+
+**Status:** Not started
+
+**Goal:** Define the optional Azure hosting resources as repeatable
+infrastructure without changing the static application architecture.
+
+**Tasks:**
+
+- Define Azure Static Web Apps and required configuration using Bicep.
+- Parameterise resource names, location, and environment-specific values.
+- Configure client-side routing, static asset behaviour, and safe application
+  settings.
+- Document provisioning and removal.
+
+**Acceptance criteria:**
+
+- A clean Azure environment can be provisioned from source-controlled IaC.
+- The infrastructure introduces no production application server.
+- No secret is committed or embedded in the browser application.
+- Provisioning remains independent of optional Aspire development tooling.
+
+## PBI-230 — Automated static deployment
+
+**Status:** Not started
+
+**Goal:** Deploy a verified static release through CI after the core product is
+useful.
+
+**Tasks:**
+
+- Build, test, and publish the AOT WebAssembly application before deployment.
+- Deploy the published `wwwroot` output to the provisioned Static Web App.
+- Prefer short-lived or platform-managed CI credentials where supported.
+- Add a production smoke check and document recovery from a failed deployment.
+
+**Acceptance criteria:**
+
+- Deployment occurs only after all required checks pass.
+- The hosted application loads directly and through a client-side route.
+- GPX import and export pass a production smoke check without a backend.
+- Deployment configuration and operational secrets remain outside client
+  assets.

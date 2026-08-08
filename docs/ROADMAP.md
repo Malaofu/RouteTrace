@@ -1,7 +1,14 @@
 # Roadmap
 
 The roadmap is ordered by usable capability. PBI identifiers refer to
-`BACKLOG.md`.
+`BACKLOG.md`; an optional PBI does not block the following product phase.
+
+## Immediate maintenance
+
+- PBI-061: Restore Release AOT CI.
+
+Outcome: the existing product baseline builds, tests, and publishes on a clean
+runner before new feature work begins.
 
 ## Phase 0 — Foundation
 
@@ -17,13 +24,25 @@ Outcome: an empty but deployable mapping application.
 - PBI-040: Route, segment, and waypoint visualisation.
 - PBI-050: GPX inspection and derived statistics.
 - PBI-060: GPX export and round-trip fixtures.
-- PBI-070: Browser-local project persistence.
+- PBI-070: Browser-local multi-document workspace persistence.
 
-Outcome: a useful standalone GPX viewer and basic project workspace.
+Outcome: a useful standalone GPX viewer with durable local workspaces.
+
+## Phase 1.5 — Workspace and interaction shell
+
+- PBI-071: Central application menu and command surface.
+- PBI-072: Multiple open GPX documents.
+- PBI-073: Hierarchical GPX document explorer.
+- PBI-074: Context actions and presentation settings.
+- PBI-075: Route endpoint and POI symbols.
+- PBI-076: Existing-elevation profile (optional).
+
+Outcome: a scalable editor shell inspired by established GPX tools without yet
+introducing route-geometry editing.
 
 ## Phase 2 — Manual route creation
 
-- PBI-080: Manual freehand/point route editing.
+- PBI-080: Manual freehand/point route editing and shared undo/redo.
 - PBI-090: Bicycle routing between ordered anchors.
 
 Outcome: a simple cycling route planner independent of image recognition.
@@ -55,17 +74,26 @@ Outcome: semi-automatic image-to-route conversion with explicit user review.
 
 Outcome: richer files and tested interoperability with common cycling devices.
 
-## Later development infrastructure
+## Optional development infrastructure
 
-- PBI-210: Optional Aspire development orchestration and telemetry.
+- PBI-210: Aspire development orchestration and telemetry.
 
-This work is deliberately outside the product delivery path and can be
-scheduled when local observability becomes useful.
+This work can be scheduled whenever local observability becomes useful and does
+not block product delivery or static deployment.
+
+## Phase 6 — Static deployment
+
+- PBI-220: Azure Static Web Apps infrastructure as code.
+- PBI-230: Automated static deployment and production smoke checks.
+
+Outcome: a repeatable hosted release without introducing a production
+application server.
 
 ## Release markers
 
-- **Viewer:** PBI-070 complete.
+- **Workspace viewer:** PBI-075 complete; PBI-076 is optional.
 - **Manual planner:** PBI-090 complete.
 - **Image-assisted MVP:** PBI-120 complete.
 - **Automatic-tracing beta:** PBI-170 complete.
 - **Navigation export release:** PBI-200 complete.
+- **Hosted release:** PBI-230 complete.

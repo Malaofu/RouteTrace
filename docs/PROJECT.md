@@ -28,8 +28,10 @@ Human correction is an expected part of the workflow.
 - Display its tracks, routes, segments, waypoints, metadata, elevation, and
   timestamps where present.
 - Make simple corrections to route geometry.
-- Save unfinished work locally in the browser.
-- Reopen and continue a locally saved project.
+- Open and compare several GPX files on one map.
+- Inspect their track, route, segment, and waypoint structure in one explorer.
+- Save unfinished workspaces locally in the browser.
+- Reopen and continue a locally saved workspace.
 
 ## Product principles
 
@@ -52,7 +54,11 @@ Human correction is an expected part of the workflow.
 
 - Interactive world map with zoom and cycling-relevant detail.
 - GPX import, display, inspection, and export.
-- Browser-local project persistence.
+- Multiple simultaneously open GPX documents with browser-local workspace
+  persistence.
+- A central command menu and document explorer that can grow with editing
+  features.
+- Derived start/finish markers and portable waypoint-symbol visualisation.
 - Image import, placement, calibration, and opacity controls.
 - Manual route tracing over an image.
 - Automatic extraction of a visually distinct route line.

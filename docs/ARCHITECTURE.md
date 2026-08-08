@@ -28,6 +28,8 @@ RouteTrace.slnx
 │  └─ RouteTrace.Web/
 │     ├─ Features/
 │     │  ├─ Map/
+│     │  ├─ Workspace/
+│     │  ├─ DocumentExplorer/
 │     │  ├─ GpxImport/
 │     │  ├─ GpxExport/
 │     │  ├─ ProjectStorage/
@@ -120,19 +122,27 @@ GPX into a smaller canonical model and serialise from that model.
 Suggested concepts:
 
 ```text
-RouteProject
+RouteWorkspace
 ├─ Name
-├─ Source information
-├─ RouteDocument
-│  ├─ Tracks[]
-│  │  └─ Segments[]
-│  │     └─ RoutePoint[]
-│  ├─ Routes[]
-│  └─ Waypoints[]
-├─ ImageOverlay?
-├─ Editing anchors[]
+├─ Documents[]
+│  ├─ Id
+│  ├─ Source information
+│  ├─ RouteDocument
+│  │  ├─ Tracks[]
+│  │  │  └─ Segments[]
+│  │  │     └─ RoutePoint[]
+│  │  ├─ Routes[]
+│  │  └─ Waypoints[]
+│  ├─ Presentation settings
+│  ├─ ImageOverlay?
+│  └─ Editing anchors[]
+├─ ActiveDocumentId?
 └─ Provider settings
 ```
+
+`RouteDocument` and its geographic primitives belong in `RouteTrace.Core`.
+`RouteWorkspace` coordinates documents and browser-facing project state without
+moving presentation settings into the GPX domain model.
 
 `RoutePoint` starts with latitude, longitude, optional elevation, and optional
 time. Additional fields should be introduced only when a PBI consumes them.
@@ -146,6 +156,28 @@ Maintain the distinction between:
 
 Unknown GPX extensions should be preserved as opaque XML where feasible.
 Round-trip preservation and semantic understanding are separate concerns.
+
+## Workspace interaction
+
+The application workspace can contain several route documents. Keep these
+states distinct:
+
+- **Active:** receives file-level and editing commands.
+- **Selected:** highlighted in the explorer or map.
+- **Visible:** contributes geometry or markers to the map.
+
+Use stable application-owned document IDs for workspace state; do not derive
+identity from filenames or mutable GPX names. GPX content remains canonical
+domain data. Colour, visibility, explorer expansion, and derived start/finish
+markers are presentation state and are not written to vendor extensions.
+
+Application-menu, keyboard, and context-menu actions should share command
+availability and execution rather than duplicate behaviour in components.
+Introduce one reusable undo/redo history when geometry editing begins so later
+matching and correction workflows do not create incompatible histories.
+
+The document explorer shows semantic structure down to track segments and
+waypoints. It should not eagerly create UI nodes for every track point.
 
 ## Geographic coordinates
 
@@ -209,11 +241,13 @@ the browser application or domain logic.
 
 ## Local persistence
 
-Use IndexedDB for projects and imported images. `localStorage` is appropriate
+Use IndexedDB for workspaces and imported images. `localStorage` is appropriate
 only for small preferences such as the last selected map style.
 
-Persist a versioned application-owned project document, not raw component
-state. Schema migrations can then be applied when reopening an older project.
+Persist a versioned application-owned workspace containing its documents,
+stable IDs, active document, and durable presentation settings. Do not persist
+raw component state or derived map features. Schema migrations can then be
+applied when reopening an older workspace.
 
 An exported project bundle may be added later to provide backup and transfer
 without accounts.
@@ -226,27 +260,29 @@ without accounts.
 - Test provider adapters using recorded JSON fixtures rather than live services.
 - Add browser/component tests for user-visible workflows after the map shell is
   stable.
+- Exercise multi-document display and explorer behaviour with existing dense
+  and structurally complete GPX fixtures.
 - Maintain a small device-compatibility fixture set for Wahoo and Garmin.
 
 ## Deployment
 
 The Web project publishes static assets. If AppHost is added in PBI-210, it is
 used only by development and tests and is not included in the static
-deployment. The initial CI pipeline should:
+deployment. Until the deployment phase, CI should:
 
 1. Restore tools and packages.
 2. Build TypeScript assets if present.
 3. Build and test .NET.
 4. Publish the standalone WebAssembly application.
-5. Deploy the publish output.
+5. Retain or smoke-test the publish output without deploying it.
 
-Azure Static Web Apps is a suitable initial host, but the application should
-not depend on Azure-specific runtime features.
+PBI-220 defines Azure Static Web Apps through Bicep. PBI-230 adds deployment
+after all required checks pass. The application must remain an ordinary static
+site and must not depend on Azure-specific runtime features.
 
 ## Deferred decisions
 
 - Product and solution name.
-- OpenLayers versus MapLibre after a focused spike.
 - Tile/style provider and cycling-map presentation.
 - Routing and map-matching provider.
 - Whether a hosted gateway becomes necessary.
