@@ -10,22 +10,33 @@
 <PageTitle>Route Trace</PageTitle>
 
 <h1 class="visually-hidden">Route Trace map</h1>
-<MapViewport Documents="MapDocuments" Selection="selection" />
-<ApplicationMenu ActiveDocument="workspace.ActiveDocument"
-                 InspectorVisible="inspectorVisible"
-                 DocumentImported="HandleDocumentImported"
-                 InspectorVisibilityChanged="HandleInspectorVisibilityChanged" />
-<GpxImportPanel ActiveDocument="workspace.ActiveDocument" SelectionChanged="HandleSelectionChanged" />
-<WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
-@if (workspace.ActiveDocument is not null && inspectorVisible)
-{
-    <GpxInspector Document="workspace.ActiveDocument.Document" SelectionChanged="HandleSelectionChanged" />
-}
+<div class="home-workspace">
+    <section class="home-workspace__map" aria-label="Map workspace">
+        <MapViewport Documents="MapDocuments" Selection="selection" />
+        <ApplicationMenu ActiveDocument="workspace.ActiveDocument"
+                         InspectorVisible="inspectorVisible"
+                         ExplorerVisible="explorerVisible"
+                         DocumentImported="HandleDocumentImported"
+                         InspectorVisibilityChanged="HandleInspectorVisibilityChanged"
+                         ExplorerVisibilityChanged="HandleExplorerVisibilityChanged" />
+        <WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
+        @if (workspace.ActiveDocument is not null && inspectorVisible)
+        {
+            <GpxInspector Document="workspace.ActiveDocument.Document" SelectionChanged="HandleSelectionChanged" />
+        }
+    </section>
+    <DocumentExplorer Workspace="workspace"
+                      Selection="selection"
+                      Visible="explorerVisible"
+                      WorkspaceChanged="HandleWorkspaceChangedAsync"
+                      SelectionChanged="HandleSelectionChanged" />
+</div>
 
 @code {
     private RouteWorkspace workspace = new(Guid.NewGuid(), "Untitled workspace");
     private MapSelection selection = MapSelection.None;
     private bool inspectorVisible = true;
+    private bool explorerVisible = true;
     private IReadOnlyList<MapDocumentGeometry> MapDocuments { get; set; } = [];
     private readonly Dictionary<Guid, (RouteDocument Document, MapGeometry Geometry)> geometryCache = [];
 
@@ -67,6 +78,8 @@
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
 
     private void HandleInspectorVisibilityChanged(bool visible) => inspectorVisible = visible;
+
+    private void HandleExplorerVisibilityChanged(bool visible) => explorerVisible = visible;
 
     private void RefreshMapDocuments()
     {

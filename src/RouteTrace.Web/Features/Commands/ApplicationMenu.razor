@@ -43,6 +43,11 @@
     else if (activeMenu == "view")
     {
         <div id="view-menu" class="application-menu__popup" role="menu" aria-label="View">
+            <button @ref="explorerButton" type="button" role="menuitemcheckbox" aria-checked="@(ExplorerVisible ? "true" : "false")" @onclick="ToggleExplorerAsync">
+                <span class="application-menu__icon" aria-hidden="true">@(ExplorerVisible ? "✓" : "")</span>
+                <span>Explorer</span>
+                <kbd>Ctrl+E</kbd>
+            </button>
             <button @ref="inspectorButton" type="button" role="menuitemcheckbox" aria-checked="@(InspectorVisible ? "true" : "false")" @onclick="ToggleInspectorAsync">
                 <span class="application-menu__icon" aria-hidden="true">@(InspectorVisible ? "✓" : "")</span>
                 <span>Inspector</span>
@@ -81,15 +86,20 @@ else if (message is not null)
     [Parameter]
     public EventCallback<bool> InspectorVisibilityChanged { get; set; }
 
+    [Parameter] public bool ExplorerVisible { get; set; }
+    [Parameter] public EventCallback<bool> ExplorerVisibilityChanged { get; set; }
+
     private const long MaximumFileSize = 50 * 1024 * 1024;
     private readonly ApplicationCommand openCommand;
     private readonly ApplicationCommand exportCommand;
     private readonly ApplicationCommand inspectorCommand;
+    private readonly ApplicationCommand explorerCommand;
     private ElementReference menuButton;
     private ElementReference openButton;
     private ElementReference saveButton;
     private ElementReference viewMenuButton;
     private ElementReference inspectorButton;
+    private ElementReference explorerButton;
     private InputFile? fileInput;
     private string? activeMenu;
     private string? focusMenu;
@@ -107,6 +117,7 @@ else if (message is not null)
         openCommand = new(() => !isImporting, OpenFilePickerCoreAsync);
         exportCommand = new(() => ActiveDocument is not null && !isImporting, ExportCoreAsync);
         inspectorCommand = new(() => true, ToggleInspectorCoreAsync);
+        explorerCommand = new(() => true, ToggleExplorerCoreAsync);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -121,7 +132,7 @@ else if (message is not null)
         if (focusFirstItem)
         {
             focusFirstItem = false;
-            await (focusMenu == "view" ? inspectorButton : openButton).FocusAsync();
+            await (focusMenu == "view" ? explorerButton : openButton).FocusAsync();
         }
     }
 
@@ -167,6 +178,14 @@ else if (message is not null)
 
     private Task ToggleInspectorCoreAsync() => InspectorVisibilityChanged.InvokeAsync(!InspectorVisible);
 
+    private async Task ToggleExplorerAsync()
+    {
+        activeMenu = null;
+        await explorerCommand.TryExecuteAsync();
+    }
+
+    private Task ToggleExplorerCoreAsync() => ExplorerVisibilityChanged.InvokeAsync(!ExplorerVisible);
+
     private async Task HandleMenuKeyDown(KeyboardEventArgs eventArgs)
     {
         if (activeMenu is null) return;
@@ -183,7 +202,7 @@ else if (message is not null)
         }
         else if (eventArgs.Key == "ArrowUp")
         {
-            await (activeMenu == "view" ? inspectorButton : openButton).FocusAsync();
+            await (activeMenu == "view" ? explorerButton : openButton).FocusAsync();
         }
     }
 
@@ -193,6 +212,7 @@ else if (message is not null)
         if (command == "open") await openCommand.TryExecuteAsync();
         if (command == "export") await exportCommand.TryExecuteAsync();
         if (command == "inspector") await inspectorCommand.TryExecuteAsync();
+        if (command == "explorer") await explorerCommand.TryExecuteAsync();
     }
 
     [JSInvokable]

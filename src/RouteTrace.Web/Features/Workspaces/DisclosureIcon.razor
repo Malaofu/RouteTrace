@@ -1,0 +1,16 @@
+@if (Expanded)
+{
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+        <path d="M3.5 5.75 8 10.25l4.5-4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+}
+else
+{
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+        <path d="m5.75 3.5 4.5 4.5-4.5 4.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+}
+
+@code {
+    [Parameter] public bool Expanded { get; set; }
+}

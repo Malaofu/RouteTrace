@@ -1,0 +1,9 @@
+@if (!Visible)
+{
+    <span class="document-explorer__visibility document-explorer__visibility--hidden" role="img" aria-label="@Name is hidden"></span>
+}
+
+@code {
+    [Parameter, EditorRequired] public required string Name { get; set; }
+    [Parameter] public bool Visible { get; set; }
+}

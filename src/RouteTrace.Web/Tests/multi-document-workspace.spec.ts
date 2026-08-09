@@ -24,28 +24,20 @@ test("manages three visible documents independently", async ({ page }) => {
     await expect(page.getByRole("alert")).toBeVisible();
 
     const map = page.getByRole("application", { name: "Interactive route map" });
+    const explorer = page.getByLabel("Document explorer");
     await expect(map).toHaveAttribute("data-visible-documents", "3");
-    await expect(page.getByLabel("Active document").locator("option")).toHaveCount(3);
+    await expect(explorer.locator(".document-explorer__document")).toHaveCount(3);
 
-    await page.getByLabel("Active document").selectOption({ index: 0 });
+    const firstRow = explorer.locator('.document-explorer__document[data-document-name="Minimal elevated track"]');
+    await firstRow.getByRole("button", { name: "Minimal elevated track", exact: true }).click();
     await expect(map).toHaveAttribute("data-visible-documents", "3");
-
-    const firstRow = page.getByRole("listitem").filter({ hasText: "Minimal elevated track" });
-    await firstRow.getByRole("button", { name: "Select" }).click();
-    await expect(firstRow).toHaveClass(/workspace-panel__document--selected/);
-
-    await page.getByLabel("Show Multiple tracks and segments").uncheck();
-    await expect(map).toHaveAttribute("data-visible-documents", "2");
-    await page.getByLabel("Show Multiple tracks and segments").check();
+    await expect(firstRow.locator(".document-explorer__row").first()).toHaveClass(/document-explorer__row--active/);
 
     const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "File", exact: true }).click();
     await page.getByRole("menuitem", { name: /Download GPX/ }).click();
     expect((await downloadPromise).suggestedFilename()).toBe("Minimal elevated track.gpx");
 
-    await firstRow.getByRole("button", { name: "Close" }).click();
-    await expect(page.getByLabel("Active document").locator("option")).toHaveCount(2);
-    await expect(map).toHaveAttribute("data-visible-documents", "2");
 });
 
 test("selecting a small document does not reprocess unchanged large geometry", async ({ page }) => {
@@ -58,16 +50,54 @@ test("selecting a small document does not reprocess unchanged large geometry", a
     await fileInput.setInputFiles(path.join(fixtures, "FX-GPX-001-minimal-track.gpx"));
     await expect(page.getByText(/Imported FX-GPX-001/)).toBeVisible();
 
-    const largeRow = page.getByRole("listitem").filter({ hasText: "FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx" });
-    const smallRow = page.getByRole("listitem").filter({ hasText: "Minimal elevated track" });
-    await largeRow.getByRole("button", { name: "Select" }).click();
+    const explorer = page.getByLabel("Document explorer");
+    const largeRow = explorer.locator('.document-explorer__document[data-document-name="FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx"]');
+    const smallRow = explorer.locator('.document-explorer__document[data-document-name="Minimal elevated track"]');
+    await largeRow.getByRole("button", { name: "FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx", exact: true }).click();
 
     const started = Date.now();
-    await smallRow.getByRole("button", { name: "Select" }).click();
-    await expect(smallRow).toHaveClass(/workspace-panel__document--selected/);
+    await smallRow.getByRole("button", { name: "Minimal elevated track", exact: true }).click();
+    await expect(smallRow.locator(".document-explorer__row").first()).toHaveClass(/document-explorer__row--active/);
     const elapsed = Date.now() - started;
 
     expect(elapsed).toBeLessThan(process.env.ROUTETRACE_PUBLISHED_ROOT ? 500 : 2_000);
     await expect(page.getByRole("application", { name: "Interactive route map" }))
         .toHaveAttribute("data-visible-documents", "2");
+});
+
+test("explorer shows the semantic GPX hierarchy without individual track points", async ({ page }) => {
+    await page.route("https://tile.openstreetmap.org/**", route => route.abort());
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles(path.join(fixtures, "FX-GPX-005-full-schema-surface.gpx"));
+
+    const explorer = page.getByLabel("Document explorer");
+    await expect(explorer.getByText("Complete track", { exact: false })).toBeVisible();
+    await expect(explorer.getByText("Complete route", { exact: false })).toBeVisible();
+    await expect(explorer.getByText("Points of interest", { exact: false })).toBeVisible();
+    await expect(explorer.getByText("Complete track point", { exact: true })).toHaveCount(0);
+    await expect(explorer.locator(".document-explorer__colour-node")).toHaveCount(3);
+    await expect(explorer.getByRole("img", { name: /visible/ })).toHaveCount(0);
+    await expect(explorer.locator(".document-explorer__expander svg")).toHaveCount(3);
+
+    const completeDocument = explorer.locator('.document-explorer__document[data-document-name="Full GPX 1.1 surface"]');
+    await completeDocument.locator(".document-explorer__label").filter({ hasText: "Complete track" }).click();
+    await expect(completeDocument.locator(".document-explorer__colour-node").first().locator(".document-explorer__row--active")).toHaveCount(2);
+
+    await explorer.getByRole("button", { name: /Points of interest/ }).click();
+    await expect(page.getByRole("application", { name: "Interactive route map" })).toHaveAttribute("data-selected-waypoint-group", "true");
+    await expect(completeDocument.locator(".document-explorer__row--active")).toHaveCount(2);
+
+    await completeDocument.getByRole("button", { name: "Full GPX 1.1 surface", exact: true }).click();
+    await expect(page.getByRole("application", { name: "Interactive route map" })).toHaveAttribute("data-selected-document", "true");
+    await expect(completeDocument.locator(".document-explorer__row--active")).toHaveCount(6);
+
+    await explorer.getByRole("button", { name: /Complete route/ }).click();
+    await expect(page.getByRole("application", { name: "Interactive route map" })).toHaveAttribute("data-selected-route", "0");
+    await expect(explorer.getByRole("button", { name: /Complete route/ }).locator("..")).toHaveClass(/document-explorer__row--active/);
+
+    const trackExpander = explorer.getByRole("button", { name: "Collapse Complete track" });
+    await trackExpander.click();
+    await explorer.getByRole("button", { name: "Complete waypoint", exact: true }).click();
+    await expect(explorer.getByRole("button", { name: "Expand Complete track" })).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("application", { name: "Interactive route map" })).toHaveAttribute("data-selected-waypoint", "0");
 });

@@ -18,7 +18,7 @@ test("automatically restores a multi-document workspace after reload", async ({ 
 
     await page.reload();
     await expect(page.getByLabel("Name")).toHaveValue("Persistence test");
-    await expect(page.getByLabel("Active document").locator("option")).toHaveCount(2);
+    await expect(page.getByLabel("Document explorer").locator(".document-explorer__document")).toHaveCount(2);
     const savedWorkspace = page.getByRole("listitem").filter({ hasText: "Persistence test" });
     await expect(savedWorkspace).toBeVisible();
 

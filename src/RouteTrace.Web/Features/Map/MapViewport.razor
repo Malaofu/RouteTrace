@@ -6,7 +6,13 @@
      class="map-viewport"
      role="application"
      aria-label="Interactive route map"
-     data-visible-documents="@Documents.Count">
+     data-visible-documents="@Documents.Count"
+     data-selected-track="@Selection.TrackIndex"
+     data-selected-segment="@Selection.SegmentIndex"
+     data-selected-route="@Selection.RouteIndex"
+     data-selected-waypoint="@Selection.WaypointIndex"
+     data-selected-document="@(Selection.WholeDocument ? "true" : "false")"
+     data-selected-waypoint-group="@(Selection.WaypointGroup ? "true" : "false")">
 </div>
 @if (Documents.Count > 0 && Documents.All(document => document.Geometry.Tracks.Count == 0 && document.Geometry.Routes.Count == 0 && document.Geometry.Waypoints.Count == 0))
 {
@@ -59,6 +65,9 @@
 
         foreach (MapDocumentGeometry document in Documents)
         {
+            bool selectionTargetsDocument = Selection.DocumentId is null
+                ? document.IsActive
+                : document.Id == Selection.DocumentId;
             if (!renderedDocuments.TryGetValue(document.Id, out MapDocumentGeometry? previous)
                 || !ReferenceEquals(previous.Geometry, document.Geometry))
             {
@@ -79,8 +88,12 @@
                     document.Colour,
                     document.IsActive,
                     document.IsSelected,
-                    document.IsActive ? Selection.TrackIndex : null,
-                    document.IsActive ? Selection.SegmentIndex : null);
+                    selectionTargetsDocument ? Selection.TrackIndex : null,
+                    selectionTargetsDocument ? Selection.SegmentIndex : null,
+                    selectionTargetsDocument ? Selection.RouteIndex : null,
+                    selectionTargetsDocument ? Selection.WaypointIndex : null,
+                    selectionTargetsDocument && Selection.WholeDocument,
+                    selectionTargetsDocument && Selection.WaypointGroup);
             }
         }
 

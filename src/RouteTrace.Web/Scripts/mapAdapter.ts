@@ -114,7 +114,7 @@ export function upsertDocument(
             segmentIndex,
         }));
     }));
-    geometry.routes.forEach(route => {
+    geometry.routes.forEach((route, routeIndex) => {
         if (route.length === 0) return;
         source.addFeature(new Feature({
             ...properties,
@@ -122,12 +122,14 @@ export function upsertDocument(
                 ? new Point(fromLonLat(route[0]))
                 : new LineString(route.map(coordinate => fromLonLat(coordinate))),
             kind: "route",
+            routeIndex,
         }));
     });
-    geometry.waypoints.forEach(waypoint => source.addFeature(new Feature({
+    geometry.waypoints.forEach((waypoint, waypointIndex) => source.addFeature(new Feature({
         ...properties,
         geometry: new Point(fromLonLat(waypoint)),
         kind: "waypoint",
+        waypointIndex,
     })));
 }
 
@@ -139,6 +141,10 @@ export function setDocumentPresentation(
     selected: boolean,
     selectedTrack: number | null,
     selectedSegment: number | null,
+    selectedRoute: number | null,
+    selectedWaypoint: number | null,
+    selectedWholeDocument: boolean,
+    selectedWaypointGroup: boolean,
 ): void {
     const handle = getMap(elementId);
     handle.geometrySource.getFeatures()
@@ -149,6 +155,10 @@ export function setDocumentPresentation(
             selectedDocument: selected,
             selectedTrack,
             selectedSegment,
+            selectedRoute,
+            selectedWaypoint,
+            selectedWholeDocument,
+            selectedWaypointGroup,
         }, true));
     handle.geometryLayer.changed();
 }
@@ -204,22 +214,24 @@ export function renderDocuments(
             }));
         });
     });
-    geometry.routes.forEach((route) => {
+    geometry.routes.forEach((route, routeIndex) => {
         if (route.length === 0) return;
         handle.geometrySource.addFeature(new Feature({
             geometry: route.length === 1
                 ? new Point(fromLonLat(route[0]))
                 : new LineString(route.map(coordinate => fromLonLat(coordinate))),
             kind: "route",
+            routeIndex,
             documentColour: document.colour,
             activeDocument: document.isActive,
             selectedDocument: document.isSelected,
         }));
     });
-    geometry.waypoints.forEach((waypoint) => {
+    geometry.waypoints.forEach((waypoint, waypointIndex) => {
         handle.geometrySource.addFeature(new Feature({
             geometry: new Point(fromLonLat(waypoint)),
             kind: "waypoint",
+            waypointIndex,
             documentColour: document.colour,
             activeDocument: document.isActive,
             selectedDocument: document.isSelected,
@@ -288,11 +300,22 @@ function featureStyle(selectedTrack: number | null, selectedSegment: number | nu
         const colour = feature.get("documentColour") as string;
         const activeDocument = feature.get("activeDocument") as boolean;
         const selectedDocument = feature.get("selectedDocument") as boolean;
+        const routeIndex = feature.get("routeIndex") as number | undefined;
+        const waypointIndex = feature.get("waypointIndex") as number | undefined;
+        const selectedRoute = feature.get("selectedRoute") as number | null | undefined;
+        const selectedWaypoint = feature.get("selectedWaypoint") as number | null | undefined;
+        const selectedWholeDocument = feature.get("selectedWholeDocument") as boolean | undefined;
+        const selectedWaypointGroup = feature.get("selectedWaypointGroup") as boolean | undefined;
+        const semanticSelected =
+            selectedWholeDocument === true ||
+            (selectedRoute !== null && selectedRoute !== undefined && routeIndex === selectedRoute) ||
+            (selectedWaypoint !== null && selectedWaypoint !== undefined && waypointIndex === selectedWaypoint) ||
+            (selectedWaypointGroup === true && kind === "waypoint");
 
         if (kind === "waypoint") {
             return new Style({
                 image: new CircleStyle({
-                    radius: 7,
+                    radius: semanticSelected ? 9 : 7,
                     fill: new Fill({ color: colour }),
                     stroke: new Stroke({ color: "#ffffff", width: 2 }),
                 }),
@@ -300,17 +323,17 @@ function featureStyle(selectedTrack: number | null, selectedSegment: number | nu
         }
 
         if (kind === "route") {
-            return new Style({ stroke: new Stroke({ color: colour, width: activeDocument ? 5 : 3, lineDash: [8, 6] }) });
+            return new Style({ stroke: new Stroke({ color: colour, width: semanticSelected ? 7 : activeDocument ? 5 : 3, lineDash: [8, 6] }), zIndex: semanticSelected ? 20 : 1 });
         }
 
         return new Style({
             image: new CircleStyle({
-                radius: selected || incrementallySelected ? 7 : 5,
+                radius: selected || incrementallySelected || selectedWholeDocument ? 7 : 5,
                 fill: new Fill({ color: colour }),
                 stroke: new Stroke({ color: "#ffffff", width: 2 }),
             }),
-            stroke: new Stroke({ color: colour, width: selected || incrementallySelected ? 7 : activeDocument ? 5 : 3 }),
-            zIndex: selected || incrementallySelected ? 20 : selectedDocument ? 15 : activeDocument ? 10 : 1,
+            stroke: new Stroke({ color: colour, width: selected || incrementallySelected || selectedWholeDocument ? 7 : activeDocument ? 5 : 3 }),
+            zIndex: selected || incrementallySelected || selectedWholeDocument ? 20 : selectedDocument ? 15 : activeDocument ? 10 : 1,
         });
     };
 }

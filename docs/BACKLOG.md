@@ -269,7 +269,7 @@ covering the map with permanent controls.
 
 ## PBI-073 — GPX document explorer
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Show the structure of every open GPX document in a coherent workspace
 panel.
@@ -277,6 +277,8 @@ panel.
 **Tasks:**
 
 - Add a collapsible right-side explorer, using a drawer on narrow layouts.
+- Keep the desktop explorer beside the map so collapsing it returns its width
+  to the map; preserve expansion independently from active selection.
 - Show document, waypoint, route, track, and segment hierarchy with useful
   names and counts.
 - Synchronise explorer selection with map highlighting and focus.
@@ -289,6 +291,10 @@ panel.
 - Selecting a route, track, segment, or waypoint identifies it on the map.
 - The full-density fixture does not create a tree item per track point.
 - The explorer can be hidden without losing workspace state.
+- Clicking a semantic row makes it active without changing expanded nodes;
+  visibility is represented consistently at each semantic level.
+- Selecting a document, track, or waypoint group represents its complete
+  semantic subtree for highlighting and later context actions.
 
 ## PBI-074 — Context actions and presentation settings
 

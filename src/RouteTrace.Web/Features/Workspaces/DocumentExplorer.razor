@@ -1,0 +1,168 @@
+@using RouteTrace.Core.Routes
+@using RouteTrace.Web.Features.Map
+
+<aside class="document-explorer @(Visible ? null : "document-explorer--hidden")" aria-label="Document explorer" aria-hidden="@(!Visible)">
+    <header><h2>Documents</h2></header>
+    @if (Workspace.Documents.Count == 0)
+    {
+        <p>Open a GPX file to explore its contents.</p>
+    }
+    else
+    {
+        <ul class="document-explorer__tree">
+            @foreach (WorkspaceDocument workspaceDocument in Workspace.Documents)
+            {
+                RouteDocument document = workspaceDocument.Document;
+                string documentKey = $"document:{workspaceDocument.Id}";
+                bool documentExpanded = expandedNodes.Contains(documentKey);
+                bool documentActive = SelectsWholeDocument(workspaceDocument.Id);
+                <li @key="workspaceDocument.Id"
+                    class="document-explorer__document @(!workspaceDocument.IsVisible ? "document-explorer__node--hidden" : null)"
+                    data-document-name="@DocumentName(workspaceDocument)">
+                    <div class="document-explorer__row @(documentActive ? "document-explorer__row--active" : null)">
+                        <button type="button" class="document-explorer__expander" aria-label="@(documentExpanded ? "Collapse" : "Expand") @DocumentName(workspaceDocument)" aria-expanded="@(documentExpanded ? "true" : "false")" @onclick="() => Toggle(documentKey)"><DisclosureIcon Expanded="documentExpanded" /></button>
+                        <button type="button" class="document-explorer__label" @onclick="() => SelectDocumentAsync(workspaceDocument.Id)">@DocumentName(workspaceDocument)</button>
+                        <VisibilityStatus Name="@DocumentName(workspaceDocument)" Visible="workspaceDocument.IsVisible" />
+                    </div>
+                    @if (documentExpanded)
+                    {
+                        <ul>
+                            @for (int trackIndex = 0; trackIndex < document.Tracks.Count; trackIndex++)
+                            {
+                                int currentTrack = trackIndex;
+                                Track track = document.Tracks[currentTrack];
+                                string trackKey = $"track:{workspaceDocument.Id}:{currentTrack}";
+                                bool trackExpanded = expandedNodes.Contains(trackKey);
+                                bool trackActive = IsTrackSelected(workspaceDocument.Id, currentTrack);
+                                <li class="document-explorer__colour-node" style="--document-colour: @workspaceDocument.Colour">
+                                    <div class="document-explorer__row @(trackActive ? "document-explorer__row--active" : null)">
+                                        <button type="button" class="document-explorer__expander" aria-label="@(trackExpanded ? "Collapse" : "Expand") @(track.Name ?? $"Track {currentTrack + 1}")" aria-expanded="@(trackExpanded ? "true" : "false")" @onclick="() => Toggle(trackKey)"><DisclosureIcon Expanded="trackExpanded" /></button>
+                                        <button type="button" class="document-explorer__label" @onclick="() => SelectTrackAsync(workspaceDocument.Id, currentTrack)">@(track.Name ?? $"Track {currentTrack + 1}") <span class="document-explorer__count">@track.Segments.Count segment(s)</span></button>
+                                        <VisibilityStatus Name="@(track.Name ?? $"Track {currentTrack + 1}")" Visible="workspaceDocument.IsVisible" />
+                                    </div>
+                                    @if (trackExpanded)
+                                    {
+                                        <ul>
+                                            @for (int segmentIndex = 0; segmentIndex < track.Segments.Count; segmentIndex++)
+                                            {
+                                                int currentSegment = segmentIndex;
+                                                bool segmentActive = IsSegmentSelected(workspaceDocument.Id, currentTrack, currentSegment);
+                                                <li>
+                                                    <div class="document-explorer__row @(segmentActive ? "document-explorer__row--active" : null)">
+                                                        <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
+                                                        <button type="button" class="document-explorer__label" @onclick="() => SelectSegmentAsync(workspaceDocument.Id, currentTrack, currentSegment)">Segment @(currentSegment + 1) <span class="document-explorer__count">@track.Segments[currentSegment].Points.Count points</span></button>
+                                                        <VisibilityStatus Name="@($"Segment {currentSegment + 1}")" Visible="workspaceDocument.IsVisible" />
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </li>
+                            }
+                            @for (int routeIndex = 0; routeIndex < document.Routes.Count; routeIndex++)
+                            {
+                                int currentRoute = routeIndex;
+                                Route route = document.Routes[currentRoute];
+                                bool routeActive = IsRouteSelected(workspaceDocument.Id, currentRoute);
+                                <li class="document-explorer__colour-node" style="--document-colour: @workspaceDocument.Colour">
+                                    <div class="document-explorer__row @(routeActive ? "document-explorer__row--active" : null)">
+                                        <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
+                                        <button type="button" class="document-explorer__label" @onclick="() => SelectRouteAsync(workspaceDocument.Id, currentRoute)">@(route.Name ?? $"Route {currentRoute + 1}") <span class="document-explorer__count">@route.Points.Count points</span></button>
+                                        <VisibilityStatus Name="@(route.Name ?? $"Route {currentRoute + 1}")" Visible="workspaceDocument.IsVisible" />
+                                    </div>
+                                </li>
+                            }
+                            @if (document.Waypoints.Count > 0)
+                            {
+                                string poiKey = $"poi:{workspaceDocument.Id}";
+                                bool poiExpanded = expandedNodes.Contains(poiKey);
+                                <li class="document-explorer__colour-node" style="--document-colour: @workspaceDocument.Colour">
+                                    <div class="document-explorer__row @(IsWaypointGroupSelected(workspaceDocument.Id) ? "document-explorer__row--active" : null)">
+                                        <button type="button" class="document-explorer__expander" aria-label="@(poiExpanded ? "Collapse" : "Expand") points of interest" aria-expanded="@(poiExpanded ? "true" : "false")" @onclick="() => Toggle(poiKey)"><DisclosureIcon Expanded="poiExpanded" /></button>
+                                        <button type="button" class="document-explorer__label" @onclick="() => SelectWaypointGroupAsync(workspaceDocument.Id)">Points of interest <span class="document-explorer__count">@document.Waypoints.Count</span></button>
+                                        <VisibilityStatus Name="Points of interest" Visible="workspaceDocument.IsVisible" />
+                                    </div>
+                                    @if (poiExpanded)
+                                    {
+                                        <ul>
+                                            @for (int waypointIndex = 0; waypointIndex < document.Waypoints.Count; waypointIndex++)
+                                            {
+                                                int currentWaypoint = waypointIndex;
+                                                Waypoint waypoint = document.Waypoints[currentWaypoint];
+                                                bool waypointActive = IsWaypointSelected(workspaceDocument.Id, currentWaypoint);
+                                                <li>
+                                                    <div class="document-explorer__row @(waypointActive ? "document-explorer__row--active" : null)">
+                                                        <span class="document-explorer__leaf" aria-hidden="true">⌖</span>
+                                                        <button type="button" class="document-explorer__label" @onclick="() => SelectWaypointAsync(workspaceDocument.Id, currentWaypoint)">@(waypoint.Name ?? $"Waypoint {currentWaypoint + 1}")</button>
+                                                        <VisibilityStatus Name="@(waypoint.Name ?? $"Waypoint {currentWaypoint + 1}")" Visible="workspaceDocument.IsVisible" />
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</aside>
+
+@code {
+    [Parameter, EditorRequired] public required RouteWorkspace Workspace { get; set; }
+    [Parameter] public MapSelection Selection { get; set; }
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<RouteWorkspace> WorkspaceChanged { get; set; }
+    [Parameter] public EventCallback<MapSelection> SelectionChanged { get; set; }
+
+    private readonly HashSet<Guid> initialisedDocuments = [];
+    private readonly HashSet<string> expandedNodes = [];
+
+    protected override void OnParametersSet()
+    {
+        foreach (WorkspaceDocument workspaceDocument in Workspace.Documents.Where(document => initialisedDocuments.Add(document.Id)))
+        {
+            expandedNodes.Add($"document:{workspaceDocument.Id}");
+            for (int track = 0; track < workspaceDocument.Document.Tracks.Count; track++) expandedNodes.Add($"track:{workspaceDocument.Id}:{track}");
+            if (workspaceDocument.Document.Waypoints.Count > 0) expandedNodes.Add($"poi:{workspaceDocument.Id}");
+        }
+    }
+
+    private void Toggle(string key)
+    {
+        if (!expandedNodes.Remove(key)) expandedNodes.Add(key);
+    }
+
+    private bool SelectsWholeDocument(Guid id) => Selection.DocumentId == id && Selection.WholeDocument;
+    private bool IsTrackSelected(Guid id, int track) => SelectsWholeDocument(id) ||
+        (Selection.DocumentId == id && Selection.TrackIndex == track && Selection.SegmentIndex is null);
+    private bool IsSegmentSelected(Guid id, int track, int segment) => SelectsWholeDocument(id) ||
+        (Selection.DocumentId == id && Selection.TrackIndex == track && (Selection.SegmentIndex is null || Selection.SegmentIndex == segment));
+    private bool IsRouteSelected(Guid id, int route) => SelectsWholeDocument(id) ||
+        (Selection.DocumentId == id && Selection.RouteIndex == route);
+    private bool IsWaypointGroupSelected(Guid id) => SelectsWholeDocument(id) ||
+        (Selection.DocumentId == id && Selection.WaypointGroup);
+    private bool IsWaypointSelected(Guid id, int waypoint) => IsWaypointGroupSelected(id) ||
+        (Selection.DocumentId == id && Selection.WaypointIndex == waypoint);
+
+    private async Task SelectAsync(Guid id, MapSelection selection)
+    {
+        await WorkspaceChanged.InvokeAsync(Workspace.Activate(id).Select(id));
+        await SelectionChanged.InvokeAsync(selection with { DocumentId = id });
+    }
+
+    private async Task SelectDocumentAsync(Guid id)
+    {
+        await WorkspaceChanged.InvokeAsync(Workspace.Activate(id).Select(id));
+        await SelectionChanged.InvokeAsync(new MapSelection(null, null, DocumentId: id, WholeDocument: true));
+    }
+
+    private Task SelectTrackAsync(Guid id, int track) => SelectAsync(id, new(track, null));
+    private Task SelectSegmentAsync(Guid id, int track, int segment) => SelectAsync(id, new(track, segment));
+    private Task SelectRouteAsync(Guid id, int route) => SelectAsync(id, new(null, null, route));
+    private Task SelectWaypointGroupAsync(Guid id) => SelectAsync(id, new(null, null, WaypointGroup: true));
+    private Task SelectWaypointAsync(Guid id, int waypoint) => SelectAsync(id, new(null, null, null, waypoint));
+    private static string DocumentName(WorkspaceDocument document) => document.Document.Metadata?.Name ?? document.SourceFileName ?? "Unnamed document";
+}

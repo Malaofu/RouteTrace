@@ -11,7 +11,9 @@ function handleKeyDown(event: KeyboardEvent): void {
         ? "open"
         : event.key.toLowerCase() === "s"
             ? "export"
-            : event.key.toLowerCase() === "i" ? "inspector" : null;
+            : event.key.toLowerCase() === "i"
+                ? "inspector"
+                : event.key.toLowerCase() === "e" ? "explorer" : null;
     if (command === null) return;
 
     event.preventDefault();
