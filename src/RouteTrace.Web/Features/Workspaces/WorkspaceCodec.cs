@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using RouteTrace.Core.Gpx;
 using RouteTrace.Core.Routes;
 
@@ -7,7 +8,8 @@ namespace RouteTrace.Web.Features.Workspaces;
 
 public static class WorkspaceCodec
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
+    private static readonly ConditionalWeakTable<RouteDocument, CachedGpx> EncodedDocuments = new();
 
     public static async Task<string> EncodeAsync(RouteWorkspace workspace, CancellationToken cancellationToken = default)
     {
@@ -15,16 +17,16 @@ public static class WorkspaceCodec
         var documents = new List<WorkspaceDocumentStorageDto>(workspace.Documents.Count);
         foreach (WorkspaceDocument document in workspace.Documents)
         {
-            await using var stream = new MemoryStream();
-            await GpxExporter.ExportAsync(document.Document, stream, "Route Trace", cancellationToken);
             documents.Add(new WorkspaceDocumentStorageDto(
                 document.Id,
                 document.SourceFileName,
-                Encoding.UTF8.GetString(stream.ToArray())));
+                document.IsVisible,
+                document.Colour,
+                await EncodeDocumentAsync(document.Document, cancellationToken)));
         }
 
         return JsonSerializer.Serialize(new WorkspaceStorageDto(
-            CurrentSchemaVersion, workspace.Id, workspace.Name, workspace.ActiveDocumentId, documents));
+            CurrentSchemaVersion, workspace.Id, workspace.Name, workspace.ActiveDocumentId, workspace.SelectedDocumentId, documents));
     }
 
     public static async Task<WorkspaceDecodeResult> DecodeAsync(string payload, CancellationToken cancellationToken = default)
@@ -42,7 +44,7 @@ public static class WorkspaceCodec
         }
 
         if (dto is null) return WorkspaceDecodeResult.Failure("The saved workspace is corrupt.");
-        if (dto.SchemaVersion != CurrentSchemaVersion)
+        if (dto.SchemaVersion is not (1 or CurrentSchemaVersion))
             return WorkspaceDecodeResult.Failure($"Workspace schema version {dto.SchemaVersion} is not supported.");
         if (dto.Documents is null) return WorkspaceDecodeResult.Failure("The saved workspace has no document collection.");
 
@@ -58,16 +60,48 @@ public static class WorkspaceCodec
                 GpxImportResult imported = await GpxImporter.ImportAsync(stream, cancellationToken);
                 if (!imported.IsSuccess)
                     return WorkspaceDecodeResult.Failure($"A saved workspace document is invalid: {imported.Error}");
-                documents.Add(new WorkspaceDocument(storedDocument.Id, imported.Document!, storedDocument.SourceFileName));
+                documents.Add(new WorkspaceDocument(
+                    storedDocument.Id,
+                    imported.Document!,
+                    storedDocument.SourceFileName,
+                    storedDocument.IsVisible ?? true,
+                    storedDocument.Colour ?? DefaultColour(documents.Count)));
             }
 
-            return WorkspaceDecodeResult.Success(new RouteWorkspace(dto.Id, dto.Name, documents, dto.ActiveDocumentId));
+            return WorkspaceDecodeResult.Success(new RouteWorkspace(
+                dto.Id, dto.Name, documents, dto.ActiveDocumentId, dto.SelectedDocumentId));
         }
         catch (ArgumentException)
         {
             return WorkspaceDecodeResult.Failure("The saved workspace contains invalid identifiers or state.");
         }
     }
+
+    private static string DefaultColour(int index)
+    {
+        string[] colours = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0891b2"];
+        return colours[index % colours.Length];
+    }
+
+    private static async Task<string> EncodeDocumentAsync(RouteDocument document, CancellationToken cancellationToken)
+    {
+        if (EncodedDocuments.TryGetValue(document, out CachedGpx? cached)) return cached.Value;
+
+        await using var stream = new MemoryStream();
+        await GpxExporter.ExportAsync(document, stream, "Route Trace", cancellationToken);
+        string value = Encoding.UTF8.GetString(stream.ToArray());
+        try
+        {
+            EncodedDocuments.Add(document, new CachedGpx(value));
+        }
+        catch (ArgumentException)
+        {
+            return EncodedDocuments.GetValue(document, _ => new CachedGpx(value)).Value;
+        }
+        return value;
+    }
+
+    private sealed record CachedGpx(string Value);
 }
 
 public sealed record WorkspaceDecodeResult(RouteWorkspace? Workspace, string? Error)

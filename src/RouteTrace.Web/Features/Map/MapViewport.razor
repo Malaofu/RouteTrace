@@ -5,21 +5,23 @@
 <div id="@elementId"
      class="map-viewport"
      role="application"
-     aria-label="Interactive route map">
+     aria-label="Interactive route map"
+     data-visible-documents="@Documents.Count">
 </div>
-@if (Document is not null && Document.CalculateBounds() is null)
+@if (Documents.Count > 0 && Documents.All(document => document.Geometry.Tracks.Count == 0 && document.Geometry.Routes.Count == 0 && document.Geometry.Waypoints.Count == 0))
 {
     <div class="map-viewport__empty" role="status">This GPX document contains no mappable content.</div>
 }
 
 @code {
     [Parameter]
-    public RouteDocument? Document { get; set; }
+    public IReadOnlyList<MapDocumentGeometry> Documents { get; set; } = [];
 
     [Parameter]
     public MapSelection Selection { get; set; }
 
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
+    private readonly Dictionary<Guid, MapDocumentGeometry> renderedDocuments = [];
     private IJSObjectReference? module;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,13 +48,48 @@
 
     private async Task RenderDocumentAsync()
     {
-        MapGeometry? geometry = Document is null ? null : MapGeometry.FromDocument(Document);
-        await module!.InvokeVoidAsync(
-            "renderGeometry",
-            elementId,
-            geometry,
-            Selection.TrackIndex,
-            Selection.SegmentIndex);
+        IJSObjectReference currentModule = module!;
+        await currentModule.InvokeVoidAsync("beginDocumentUpdate", elementId);
+        var current = Documents.ToDictionary(document => document.Id);
+
+        foreach (Guid removedId in renderedDocuments.Keys.Except(current.Keys).ToArray())
+        {
+            await currentModule.InvokeVoidAsync("removeDocument", elementId, removedId);
+        }
+
+        foreach (MapDocumentGeometry document in Documents)
+        {
+            if (!renderedDocuments.TryGetValue(document.Id, out MapDocumentGeometry? previous)
+                || !ReferenceEquals(previous.Geometry, document.Geometry))
+            {
+                await currentModule.InvokeVoidAsync(
+                    "upsertDocument", elementId, document.Id, document.Geometry, document.Colour);
+            }
+
+            if (previous is null
+                || previous.IsActive != document.IsActive
+                || previous.IsSelected != document.IsSelected
+                || previous.Colour != document.Colour
+                || (document.IsActive && renderedDocuments.Count > 0))
+            {
+                await currentModule.InvokeVoidAsync(
+                    "setDocumentPresentation",
+                    elementId,
+                    document.Id,
+                    document.Colour,
+                    document.IsActive,
+                    document.IsSelected,
+                    document.IsActive ? Selection.TrackIndex : null,
+                    document.IsActive ? Selection.SegmentIndex : null);
+            }
+        }
+
+        bool geometryChanged = renderedDocuments.Keys.ToHashSet().SetEquals(current.Keys) is false
+            || Documents.Any(document => !renderedDocuments.TryGetValue(document.Id, out MapDocumentGeometry? previous)
+                || !ReferenceEquals(previous.Geometry, document.Geometry));
+        renderedDocuments.Clear();
+        foreach ((Guid id, MapDocumentGeometry document) in current) renderedDocuments[id] = document;
+        await currentModule.InvokeVoidAsync("endDocumentUpdate", elementId, geometryChanged);
     }
 
     public async ValueTask DisposeAsync()

@@ -247,7 +247,7 @@ covering the map with permanent controls.
 
 ## PBI-072 — Multi-document workspace
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Open and compare several GPX documents on the same map.
 

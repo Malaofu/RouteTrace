@@ -10,7 +10,7 @@
 <PageTitle>Route Trace</PageTitle>
 
 <h1 class="visually-hidden">Route Trace map</h1>
-<MapViewport Document="workspace.ActiveDocument?.Document" Selection="selection" />
+<MapViewport Documents="MapDocuments" Selection="selection" />
 <ApplicationMenu ActiveDocument="workspace.ActiveDocument"
                  InspectorVisible="inspectorVisible"
                  DocumentImported="HandleDocumentImported"
@@ -26,6 +26,8 @@
     private RouteWorkspace workspace = new(Guid.NewGuid(), "Untitled workspace");
     private MapSelection selection = MapSelection.None;
     private bool inspectorVisible = true;
+    private IReadOnlyList<MapDocumentGeometry> MapDocuments { get; set; } = [];
+    private readonly Dictionary<Guid, (RouteDocument Document, MapGeometry Geometry)> geometryCache = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -34,11 +36,13 @@
         {
             workspace = restored.Workspace!;
         }
+        RefreshMapDocuments();
     }
 
     private async Task HandleDocumentImported(ImportedGpxDocument importedDocument)
     {
         workspace = workspace.AddDocument(importedDocument.Document, importedDocument.SourceFileName);
+        RefreshMapDocuments();
         selection = MapSelection.None;
         await WorkspaceStore.SaveAsync(workspace);
     }
@@ -46,6 +50,7 @@
     private async Task HandleWorkspaceChangedAsync(RouteWorkspace updatedWorkspace)
     {
         workspace = updatedWorkspace;
+        RefreshMapDocuments();
         selection = MapSelection.None;
         await WorkspaceStore.SaveAsync(workspace);
     }
@@ -53,10 +58,40 @@
     private void HandleWorkspaceDeleted(Guid workspaceId)
     {
         if (workspace.Id == workspaceId)
+        {
             workspace = new RouteWorkspace(Guid.NewGuid(), "Untitled workspace");
+            RefreshMapDocuments();
+        }
     }
 
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
 
     private void HandleInspectorVisibilityChanged(bool visible) => inspectorVisible = visible;
+
+    private void RefreshMapDocuments()
+    {
+        foreach (Guid removedId in geometryCache.Keys.Except(workspace.Documents.Select(document => document.Id)).ToArray())
+            geometryCache.Remove(removedId);
+
+        MapDocuments = workspace.Documents
+            .Where(document => document.IsVisible)
+            .Select(document => new MapDocumentGeometry(
+                document.Id,
+                GetGeometry(document),
+                document.Colour,
+                document.Id == workspace.ActiveDocumentId,
+                document.Id == workspace.SelectedDocumentId))
+            .ToArray();
+    }
+
+    private MapGeometry GetGeometry(WorkspaceDocument document)
+    {
+        if (geometryCache.TryGetValue(document.Id, out var cached)
+            && ReferenceEquals(cached.Document, document.Document))
+            return cached.Geometry;
+
+        MapGeometry geometry = MapGeometry.FromDocument(document.Document);
+        geometryCache[document.Id] = (document.Document, geometry);
+        return geometry;
+    }
 }

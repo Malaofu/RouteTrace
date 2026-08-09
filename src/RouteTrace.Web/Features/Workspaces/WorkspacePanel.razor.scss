@@ -41,3 +41,21 @@
     align-items: center;
   }
 }
+
+.workspace-panel__documents {
+  li {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  span {
+    overflow: hidden;
+    border-left: .3rem solid var(--document-colour);
+    padding-left: .5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.workspace-panel__document--selected {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}

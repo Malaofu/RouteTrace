@@ -24,3 +24,10 @@ public sealed record MapGeometry(
 }
 
 public sealed record MapTrack(IReadOnlyList<IReadOnlyList<double[]>> Segments);
+
+public sealed record MapDocumentGeometry(
+    Guid Id,
+    MapGeometry Geometry,
+    string Colour,
+    bool IsActive,
+    bool IsSelected);

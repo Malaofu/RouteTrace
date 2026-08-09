@@ -21,6 +21,20 @@
                 }
             </select>
         </label>
+        <ul class="workspace-panel__documents" aria-label="Open documents">
+            @foreach (WorkspaceDocument document in Workspace.Documents)
+            {
+                <li class="@(document.Id == Workspace.SelectedDocumentId ? "workspace-panel__document--selected" : null)">
+                    <input type="checkbox"
+                           aria-label="Show @(DocumentName(document))"
+                           checked="@document.IsVisible"
+                           @onchange="eventArgs => SetVisibilityAsync(document.Id, eventArgs)" />
+                    <span style="--document-colour: @document.Colour">@DocumentName(document)</span>
+                    <button type="button" @onclick="() => SelectAsync(document.Id)">Select</button>
+                    <button type="button" @onclick="() => CloseAsync(document.Id)">Close</button>
+                </li>
+            }
+        </ul>
     }
 
     <h3>Saved workspaces</h3>
@@ -129,6 +143,16 @@
         if (Guid.TryParse(eventArgs.Value?.ToString(), out Guid documentId))
             await WorkspaceChanged.InvokeAsync(Workspace.Activate(documentId));
     }
+
+    private Task SelectAsync(Guid documentId) => WorkspaceChanged.InvokeAsync(Workspace.Select(documentId));
+
+    private Task CloseAsync(Guid documentId) => WorkspaceChanged.InvokeAsync(Workspace.Close(documentId));
+
+    private Task SetVisibilityAsync(Guid documentId, ChangeEventArgs eventArgs) =>
+        WorkspaceChanged.InvokeAsync(Workspace.SetVisibility(documentId, eventArgs.Value is true));
+
+    private static string DocumentName(WorkspaceDocument document) =>
+        document.Document.Metadata?.Name ?? document.SourceFileName ?? "Unnamed document";
 
     private async Task RefreshAsync() => savedWorkspaces = await Store.ListAsync();
 

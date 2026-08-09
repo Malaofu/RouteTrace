@@ -29,6 +29,14 @@ interface ImportedGeometry {
     waypoints: Wgs84Coordinate[];
 }
 
+interface WorkspaceGeometry {
+    id: string;
+    geometry: ImportedGeometry;
+    colour: string;
+    isActive: boolean;
+    isSelected: boolean;
+}
+
 const maps = new Map<string, MapHandle>();
 const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const attribution =
@@ -43,7 +51,7 @@ export function initialize(elementId: string): void {
     }
 
     const geometrySource = new VectorSource();
-    const geometryLayer = new VectorLayer({ source: geometrySource });
+    const geometryLayer = new VectorLayer({ source: geometrySource, style: featureStyle(null, null) });
     const map = new OlMap({
         target,
         layers: [
@@ -73,9 +81,98 @@ export function initialize(elementId: string): void {
     fitBounds(elementId, [7.5, 54.5, 15.5, 57.8], 32);
 }
 
-export function renderGeometry(
+export function beginDocumentUpdate(elementId: string): void {
+    getMap(elementId);
+    performance.mark("routeTrace.map.render.start");
+}
+
+export function removeDocument(elementId: string, documentId: string): void {
+    const source = getMap(elementId).geometrySource;
+    source.getFeatures()
+        .filter(feature => feature.get("documentId") === documentId)
+        .forEach(feature => source.removeFeature(feature));
+}
+
+export function upsertDocument(
     elementId: string,
-    geometry: ImportedGeometry | null,
+    documentId: string,
+    geometry: ImportedGeometry,
+    colour: string,
+): void {
+    removeDocument(elementId, documentId);
+    const source = getMap(elementId).geometrySource;
+    const properties = { documentId, documentColour: colour };
+    geometry.tracks.forEach((track, trackIndex) => track.segments.forEach((segment, segmentIndex) => {
+        if (segment.length === 0) return;
+        source.addFeature(new Feature({
+            ...properties,
+            geometry: segment.length === 1
+                ? new Point(fromLonLat(segment[0]))
+                : new LineString(segment.map(coordinate => fromLonLat(coordinate))),
+            kind: "track",
+            trackIndex,
+            segmentIndex,
+        }));
+    }));
+    geometry.routes.forEach(route => {
+        if (route.length === 0) return;
+        source.addFeature(new Feature({
+            ...properties,
+            geometry: route.length === 1
+                ? new Point(fromLonLat(route[0]))
+                : new LineString(route.map(coordinate => fromLonLat(coordinate))),
+            kind: "route",
+        }));
+    });
+    geometry.waypoints.forEach(waypoint => source.addFeature(new Feature({
+        ...properties,
+        geometry: new Point(fromLonLat(waypoint)),
+        kind: "waypoint",
+    })));
+}
+
+export function setDocumentPresentation(
+    elementId: string,
+    documentId: string,
+    colour: string,
+    active: boolean,
+    selected: boolean,
+    selectedTrack: number | null,
+    selectedSegment: number | null,
+): void {
+    const handle = getMap(elementId);
+    handle.geometrySource.getFeatures()
+        .filter(feature => feature.get("documentId") === documentId)
+        .forEach(feature => feature.setProperties({
+            documentColour: colour,
+            activeDocument: active,
+            selectedDocument: selected,
+            selectedTrack,
+            selectedSegment,
+        }, true));
+    handle.geometryLayer.changed();
+}
+
+export function endDocumentUpdate(elementId: string, fitGeometry: boolean): void {
+    const handle = getMap(elementId);
+    if (fitGeometry && !handle.geometrySource.isEmpty()) {
+        const extent = handle.geometrySource.getExtent();
+        if (extent === null) {
+            performance.mark("routeTrace.map.render.end");
+            return;
+        }
+        handle.map.getView().fit(extent, {
+            duration: 250,
+            maxZoom: 18,
+            padding: [64, 64, 64, 64],
+        });
+    }
+    performance.mark("routeTrace.map.render.end");
+}
+
+export function renderDocuments(
+    elementId: string,
+    documents: WorkspaceGeometry[],
     selectedTrack: number | null,
     selectedSegment: number | null,
 ): void {
@@ -84,11 +181,13 @@ export function renderGeometry(
     handle.geometrySource.clear();
     handle.geometryLayer.setStyle(featureStyle(selectedTrack, selectedSegment));
 
-    if (!geometry) {
+    if (documents.length === 0) {
         performance.mark("routeTrace.map.render.end");
         return;
     }
 
+    documents.forEach(document => {
+    const geometry = document.geometry;
     geometry.tracks.forEach((track, trackIndex) => {
         track.segments.forEach((segment, segmentIndex) => {
             if (segment.length === 0) return;
@@ -99,6 +198,9 @@ export function renderGeometry(
                 kind: "track",
                 trackIndex,
                 segmentIndex,
+                documentColour: document.colour,
+                activeDocument: document.isActive,
+                selectedDocument: document.isSelected,
             }));
         });
     });
@@ -109,13 +211,20 @@ export function renderGeometry(
                 ? new Point(fromLonLat(route[0]))
                 : new LineString(route.map(coordinate => fromLonLat(coordinate))),
             kind: "route",
+            documentColour: document.colour,
+            activeDocument: document.isActive,
+            selectedDocument: document.isSelected,
         }));
     });
     geometry.waypoints.forEach((waypoint) => {
         handle.geometrySource.addFeature(new Feature({
             geometry: new Point(fromLonLat(waypoint)),
             kind: "waypoint",
+            documentColour: document.colour,
+            activeDocument: document.isActive,
+            selectedDocument: document.isSelected,
         }));
+    });
     });
 
     if (!handle.geometrySource.isEmpty()) {
@@ -172,29 +281,36 @@ function featureStyle(selectedTrack: number | null, selectedSegment: number | nu
         const segmentIndex = feature.get("segmentIndex") as number | undefined;
         const selected = kind === "track" && trackIndex === selectedTrack &&
             (selectedSegment === null || segmentIndex === selectedSegment);
+        const featureSelectedTrack = feature.get("selectedTrack") as number | null | undefined;
+        const featureSelectedSegment = feature.get("selectedSegment") as number | null | undefined;
+        const incrementallySelected = kind === "track" && trackIndex === featureSelectedTrack &&
+            (featureSelectedSegment === null || segmentIndex === featureSelectedSegment);
+        const colour = feature.get("documentColour") as string;
+        const activeDocument = feature.get("activeDocument") as boolean;
+        const selectedDocument = feature.get("selectedDocument") as boolean;
 
         if (kind === "waypoint") {
             return new Style({
                 image: new CircleStyle({
                     radius: 7,
-                    fill: new Fill({ color: "#f59e0b" }),
+                    fill: new Fill({ color: colour }),
                     stroke: new Stroke({ color: "#ffffff", width: 2 }),
                 }),
             });
         }
 
         if (kind === "route") {
-            return new Style({ stroke: new Stroke({ color: "#7c3aed", width: 4, lineDash: [8, 6] }) });
+            return new Style({ stroke: new Stroke({ color: colour, width: activeDocument ? 5 : 3, lineDash: [8, 6] }) });
         }
 
         return new Style({
             image: new CircleStyle({
-                radius: selected ? 7 : 5,
-                fill: new Fill({ color: selected ? "#ef4444" : "#2563eb" }),
+                radius: selected || incrementallySelected ? 7 : 5,
+                fill: new Fill({ color: colour }),
                 stroke: new Stroke({ color: "#ffffff", width: 2 }),
             }),
-            stroke: new Stroke({ color: selected ? "#ef4444" : "#2563eb", width: selected ? 7 : 4 }),
-            zIndex: selected ? 10 : 1,
+            stroke: new Stroke({ color: colour, width: selected || incrementallySelected ? 7 : activeDocument ? 5 : 3 }),
+            zIndex: selected || incrementallySelected ? 20 : selectedDocument ? 15 : activeDocument ? 10 : 1,
         });
     };
 }

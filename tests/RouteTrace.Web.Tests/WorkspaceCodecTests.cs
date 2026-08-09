@@ -17,7 +17,7 @@ public sealed class WorkspaceCodecTests
             Guid.NewGuid(),
             new RouteDocument(metadata: new RouteMetadata(name: "Second")),
             "second.gpx");
-        var workspace = new RouteWorkspace(Guid.NewGuid(), "Saved routes", [first, second], second.Id);
+        var workspace = new RouteWorkspace(Guid.NewGuid(), "Saved routes", [first, second], second.Id, first.Id);
 
         string payload = await WorkspaceCodec.EncodeAsync(workspace, TestContext.Current.CancellationToken);
         WorkspaceDecodeResult decoded = await WorkspaceCodec.DecodeAsync(payload, TestContext.Current.CancellationToken);
@@ -28,6 +28,7 @@ public sealed class WorkspaceCodecTests
         decoded.Workspace.Documents.Select(document => document.Id).ShouldBe([first.Id, second.Id]);
         decoded.Workspace.Documents.Select(document => document.Document.Metadata?.Name).ShouldBe(["First", "Second"]);
         decoded.Workspace.ActiveDocumentId.ShouldBe(second.Id);
+        decoded.Workspace.SelectedDocumentId.ShouldBe(first.Id);
         decoded.Workspace.ActiveDocument!.SourceFileName.ShouldBe("second.gpx");
     }
 
@@ -35,7 +36,7 @@ public sealed class WorkspaceCodecTests
     public async Task RejectsAnUnsupportedSchemaVersion()
     {
         string payload = JsonSerializer.Serialize(new WorkspaceStorageDto(
-            99, Guid.NewGuid(), "Future", null, []));
+            99, Guid.NewGuid(), "Future", null, null, []));
 
         WorkspaceDecodeResult result = await WorkspaceCodec.DecodeAsync(payload, TestContext.Current.CancellationToken);
 
