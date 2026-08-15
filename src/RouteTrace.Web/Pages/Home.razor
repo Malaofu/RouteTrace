@@ -62,10 +62,10 @@
 
     private async Task HandleWorkspaceChangedAsync(RouteWorkspace updatedWorkspace)
     {
+        await WorkspaceStore.SaveAsync(updatedWorkspace);
         workspace = updatedWorkspace;
         RefreshMapDocuments();
         selection = MapSelection.None;
-        await WorkspaceStore.SaveAsync(workspace);
     }
 
     private void HandleWorkspaceDeleted(Guid workspaceId)

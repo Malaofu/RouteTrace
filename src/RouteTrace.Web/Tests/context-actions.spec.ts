@@ -3,6 +3,25 @@ import path from "node:path";
 
 const fixturePath = path.resolve("../../tests/RouteTrace.TestData/FX-GPX-004-gpx-studio-supplemented.gpx");
 
+async function storedWorkspacePayload(page: import("@playwright/test").Page): Promise<string> {
+    return page.evaluate(async () => {
+        const database = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open("route-trace", 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        try {
+            return await new Promise<string>((resolve, reject) => {
+                const request = database.transaction("workspaces", "readonly").objectStore("workspaces").getAll();
+                request.onsuccess = () => resolve(request.result[0]?.payload ?? "");
+                request.onerror = () => reject(request.error);
+            });
+        } finally {
+            database.close();
+        }
+    });
+}
+
 test("context actions follow selection, pointer position, and outside dismissal", async ({ page }) => {
     await page.goto("/");
     await page.locator('input[type="file"]').setInputFiles(fixturePath);
@@ -26,6 +45,7 @@ test("context actions follow selection, pointer position, and outside dismissal"
     await expect(menu.getByRole("menuitem", { name: /Cut/ })).toBeDisabled();
     await expect(menu.getByRole("menuitem", { name: /Paste/ })).toBeDisabled();
     await expect(menu.getByRole("menuitem", { name: /Center/ })).toBeVisible();
+    await expect(menu.getByRole("menuitem", { name: /Select all/ })).toHaveCount(0);
     const menuBox = await menu.boundingBox();
     const targetBox = await firstChild.boundingBox();
     expect(menuBox!.x).toBeGreaterThanOrEqual(targetBox!.x);
@@ -43,6 +63,32 @@ test("context actions follow selection, pointer position, and outside dismissal"
     await dialog.getByLabel("Description").fill("Updated locally");
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(explorer.getByRole("button", { name: "Renamed GPX", exact: true })).toBeVisible();
+    await expect(dialog).toBeHidden();
+    expect(await storedWorkspacePayload(page)).toContain("Renamed GPX");
+    await page.reload();
+    await expect(page.getByRole("complementary", { name: "Document explorer" }).getByRole("button", { name: "Renamed GPX", exact: true })).toBeVisible();
+});
+
+test("effective colour strips update and child colours can reset to their parent", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles(fixturePath);
+    const explorer = page.getByRole("complementary", { name: "Document explorer" });
+    const labels = explorer.locator(".document-explorer__label");
+    const trackRow = labels.nth(1).locator("..");
+    const segmentLabel = labels.nth(2);
+    const segmentRow = segmentLabel.locator("..");
+    const inheritedColour = await trackRow.evaluate(element => (element as HTMLElement).style.getPropertyValue("--document-colour"));
+
+    await segmentLabel.click({ button: "right" });
+    await page.getByRole("menuitem", { name: /Appearance/ }).click();
+    await page.getByRole("dialog", { name: "Appearance" }).getByLabel("Colour").fill("#ff0000");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(segmentRow).toHaveAttribute("style", /#ff0000/);
+
+    await segmentLabel.click({ button: "right" });
+    await page.getByRole("menuitem", { name: /Appearance/ }).click();
+    await page.getByRole("button", { name: "Reset to parent" }).click();
+    await expect(segmentRow).toHaveAttribute("style", new RegExp(inheritedColour));
 });
 
 test("context menu remains keyboard accessible without an overflow button", async ({ page }) => {

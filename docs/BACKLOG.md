@@ -310,6 +310,9 @@ the document explorer.
 - Support activate, focus, show/hide, colour, export, and close where applicable.
 - Model document and child visibility and colour overrides with clear
   inheritance.
+- Show effective inherited colours in the explorer and allow child overrides
+  to reset to their parent.
+- Edit supported GPX text through Info dialogs and persist edits across reloads.
 - Persist presentation settings in the workspace rather than vendor GPX
   extensions.
 

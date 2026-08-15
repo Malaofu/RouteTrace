@@ -20,7 +20,8 @@
 .document-explorer__row--active { background: #3b3b3f; }
 .document-explorer__row--active:hover { background: #444449; }
 .document-explorer__node--hidden { color: #888; }
-.document-explorer__colour-node { border-right: .2rem solid var(--document-colour); }
+.document-explorer__colour-node { border-right: 0; }
+.document-explorer__row--colour { border-right: .2rem solid var(--document-colour); }
 .document-explorer button { border: 0; color: inherit; background: transparent; cursor: pointer; }
 .document-explorer button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .document-explorer__expander { display: grid; width: 1.25rem; height: 1.75rem; padding: 0; place-items: center; }
@@ -37,7 +38,6 @@
 .document-explorer__actions kbd { padding: .08rem .24rem; border-radius: .2rem; color: #aaa; background: #303030; font: inherit; font-size: .68rem; white-space: nowrap; }
 .document-explorer__actions button:disabled kbd { color: #666; background: #292929; }
 .document-explorer__submenu-cue { color: #aaa; font-size: 1rem; }
-.document-explorer__action input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .document-explorer__action-separator { height: 1px; margin: .25rem -.28rem; background: #333; }
 .document-explorer__dialog-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / 45%); }
 .document-explorer__info { display: grid; gap: .75rem; width: min(22rem, calc(100vw - 2rem)); padding: 1rem; border: 1px solid #555; border-radius: .6rem; color: #f5f5f5; background: #181818; box-shadow: 0 .75rem 2rem rgb(0 0 0 / 45%); }
@@ -47,6 +47,13 @@
 .document-explorer__info textarea { min-height: 6rem; resize: vertical; }
 .document-explorer__info div { display: flex; gap: .5rem; justify-content: flex-end; }
 .document-explorer__info button { padding: .5rem .9rem; border: 1px solid #555; border-radius: .35rem; color: inherit; background: #292929; }
+.document-explorer__appearance { display: grid; gap: .75rem; width: min(20rem, calc(100vw - 2rem)); padding: 1rem; border: 1px solid #555; border-radius: .6rem; color: #f5f5f5; background: #181818; box-shadow: 0 .75rem 2rem rgb(0 0 0 / 45%); }
+.document-explorer__appearance h2 { margin: 0; }
+.document-explorer__appearance label { display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+.document-explorer__appearance input { width: 4rem; height: 2.2rem; padding: .1rem; border: 1px solid #555; border-radius: .35rem; background: #242424; }
+.document-explorer__appearance div { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+.document-explorer__appearance button { padding: .5rem .8rem; border: 1px solid #555; border-radius: .35rem; color: inherit; background: #292929; }
+.document-explorer__appearance button:disabled { color: #777; cursor: default; }
 .document-explorer__visibility { position: relative; display: inline-block; width: 1rem; height: .7rem; margin: auto; padding: 0; border: 1.5px solid currentColor; border-radius: 50%; color: #bbb; }
 .document-explorer__visibility::after { position: absolute; inset: 50% auto auto 50%; width: .25rem; height: .25rem; border-radius: 50%; background: currentColor; translate: -50% -50%; content: ""; }
 .document-explorer__visibility--hidden::before { position: absolute; z-index: 1; top: 50%; left: -2px; width: calc(100% + 4px); height: 1.5px; background: currentColor; rotate: 45deg; content: ""; }

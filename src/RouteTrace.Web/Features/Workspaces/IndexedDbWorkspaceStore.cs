@@ -6,6 +6,8 @@ namespace RouteTrace.Web.Features.Workspaces;
 public sealed class IndexedDbWorkspaceStore(IJSRuntime javaScript) : IWorkspaceStore, IAsyncDisposable
 {
     private IJSObjectReference? module;
+    private readonly SemaphoreSlim saveLock = new(1, 1);
+    private long requestedSaveRevision;
 
     public async Task<IReadOnlyList<SavedWorkspaceSummary>> ListAsync(CancellationToken cancellationToken = default)
     {
@@ -15,9 +17,20 @@ public sealed class IndexedDbWorkspaceStore(IJSRuntime javaScript) : IWorkspaceS
 
     public async Task SaveAsync(RouteWorkspace workspace, CancellationToken cancellationToken = default)
     {
-        string payload = await WorkspaceCodec.EncodeAsync(workspace, cancellationToken);
-        IJSObjectReference storage = await GetModuleAsync(cancellationToken);
-        await storage.InvokeVoidAsync("saveWorkspace", cancellationToken, new StoredWorkspaceRecord(workspace.Id, workspace.Name, payload));
+        long revision = Interlocked.Increment(ref requestedSaveRevision);
+        await saveLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (revision < Volatile.Read(ref requestedSaveRevision)) return;
+            string payload = await WorkspaceCodec.EncodeAsync(workspace, cancellationToken);
+            if (revision < Volatile.Read(ref requestedSaveRevision)) return;
+            IJSObjectReference storage = await GetModuleAsync(cancellationToken);
+            await storage.InvokeVoidAsync("saveWorkspace", cancellationToken, new StoredWorkspaceRecord(workspace.Id, workspace.Name, payload));
+        }
+        finally
+        {
+            saveLock.Release();
+        }
     }
 
     public async Task<WorkspaceDecodeResult> OpenAsync(Guid id, CancellationToken cancellationToken = default)
@@ -48,5 +61,6 @@ public sealed class IndexedDbWorkspaceStore(IJSRuntime javaScript) : IWorkspaceS
     public async ValueTask DisposeAsync()
     {
         if (module is not null) await module.DisposeAsync();
+        saveLock.Dispose();
     }
 }

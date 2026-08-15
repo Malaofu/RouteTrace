@@ -62,6 +62,27 @@ public sealed class WorkspaceCodecTests
         payload.ShouldNotContain("<extensions>");
     }
 
+    [Fact]
+    public async Task RoundTripsEditedDocumentAndChildInfo()
+    {
+        var original = new RouteDocument(
+            tracks: [new Track("Before", [new TrackSegment([])])],
+            metadata: new RouteMetadata("Original", "Original description"));
+        var document = new WorkspaceDocument(Guid.NewGuid(), original, "route.gpx");
+        RouteWorkspace workspace = new RouteWorkspace(Guid.NewGuid(), "Info", [document], document.Id);
+        await WorkspaceCodec.EncodeAsync(workspace, TestContext.Current.CancellationToken);
+        workspace = workspace
+            .UpdateNodeInfo(document.Id, null, "Renamed", "Updated description")
+            .UpdateNodeInfo(document.Id, new WorkspaceNode(WorkspaceNodeKind.Track, 0), "Renamed track", null);
+
+        string payload = await WorkspaceCodec.EncodeAsync(workspace, TestContext.Current.CancellationToken);
+        WorkspaceDecodeResult decoded = await WorkspaceCodec.DecodeAsync(payload, TestContext.Current.CancellationToken);
+
+        decoded.Workspace!.Documents[0].Document.Metadata!.Name.ShouldBe("Renamed");
+        decoded.Workspace.Documents[0].Document.Metadata!.Description.ShouldBe("Updated description");
+        decoded.Workspace.Documents[0].Document.Tracks[0].Name.ShouldBe("Renamed track");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("not json")]

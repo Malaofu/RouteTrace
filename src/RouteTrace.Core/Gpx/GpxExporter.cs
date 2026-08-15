@@ -76,7 +76,8 @@ public static class GpxExporter
             }
             else
             {
-                await WriteStandardChildrenAsync(writer, routeStandardChildren, cancellationToken);
+                await WriteStandardChildrenWithTextReplacementsAsync(
+                    writer, routeStandardChildren, cancellationToken, new Dictionary<string, string?> { ["name"] = route.Name });
             }
             if (scopedExtensions is null)
             {
@@ -112,7 +113,9 @@ public static class GpxExporter
             }
             else
             {
-                await WriteStandardChildrenAsync(writer, trackStandardChildren, cancellationToken);
+                await WriteStandardChildrenWithTextReplacementsAsync(
+                    writer, trackStandardChildren, cancellationToken,
+                    new Dictionary<string, string?> { ["name"] = track.Name, ["type"] = track.Type });
             }
             await WritePreservedExtensionsAsync(
                 writer, scopedExtensions?.At(GpxExtensionScope.Track, trackIndex) ?? [], cancellationToken);
@@ -171,10 +174,11 @@ public static class GpxExporter
         await writer.WriteStartElementAsync(null, "metadata", GpxNamespace);
         if (scopedExtensions is not null)
         {
-            await WriteStandardChildrenAsync(
+            await WriteStandardChildrenWithTextReplacementsAsync(
                 writer,
                 scopedExtensions.StandardChildrenAt(GpxExtensionScope.Metadata),
-                cancellationToken);
+                cancellationToken,
+                new Dictionary<string, string?> { ["name"] = metadata.Name, ["desc"] = metadata.Description });
             await WritePreservedExtensionsAsync(
                 writer, scopedExtensions.At(GpxExtensionScope.Metadata), cancellationToken);
             await writer.WriteEndElementAsync();
@@ -228,7 +232,16 @@ public static class GpxExporter
                 await writer.WriteElementStringAsync(
                     null, "ele", GpxNamespace, FormatElevation(point.ElevationMetres.Value));
             }
-            await WriteStandardChildrenAsync(writer, standardChildren, cancellationToken, "ele");
+            if (elementName == "wpt")
+            {
+                await WriteStandardChildrenWithTextReplacementsAsync(
+                    writer, standardChildren, cancellationToken,
+                    new Dictionary<string, string?> { ["name"] = name, ["desc"] = description }, "ele");
+            }
+            else
+            {
+                await WriteStandardChildrenAsync(writer, standardChildren, cancellationToken, "ele");
+            }
             await WritePreservedExtensionsAsync(writer, extensions ?? [], cancellationToken);
             await writer.WriteEndElementAsync();
             return;
@@ -401,6 +414,33 @@ public static class GpxExporter
             WriteElement(writer, child, cancellationToken);
         }
         return Task.CompletedTask;
+    }
+
+    private static async Task WriteStandardChildrenWithTextReplacementsAsync(
+        XmlWriter writer,
+        IReadOnlyList<XElement> children,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string?> replacements,
+        params string[] excludedLocalNames)
+    {
+        var written = new HashSet<string>(StringComparer.Ordinal);
+        foreach (XElement child in children)
+        {
+            string localName = child.Name.LocalName;
+            if (excludedLocalNames.Contains(localName, StringComparer.Ordinal)) continue;
+            if (!replacements.TryGetValue(localName, out string? replacement))
+            {
+                WriteElement(writer, child, cancellationToken);
+                continue;
+            }
+
+            if (written.Add(localName)) await WriteOptionalElementAsync(writer, localName, replacement);
+        }
+
+        foreach ((string localName, string? replacement) in replacements)
+        {
+            if (written.Add(localName)) await WriteOptionalElementAsync(writer, localName, replacement);
+        }
     }
 
     private static string FormatElevation(double elevation)
