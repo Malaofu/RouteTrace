@@ -44,6 +44,24 @@ public sealed class WorkspaceCodecTests
         result.Error.ShouldBe("Workspace schema version 99 is not supported.");
     }
 
+    [Fact]
+    public async Task RoundTripsPresentationOverridesOutsideGpx()
+    {
+        var document = new WorkspaceDocument(Guid.NewGuid(), new RouteDocument(), "route.gpx")
+            .WithNodeVisibility(new WorkspaceNode(WorkspaceNodeKind.Route, 0), false)
+            .WithNodeColour(new WorkspaceNode(WorkspaceNodeKind.Route, 0), "#123456");
+        var workspace = new RouteWorkspace(Guid.NewGuid(), "Presentation", [document], document.Id);
+
+        string payload = await WorkspaceCodec.EncodeAsync(workspace, TestContext.Current.CancellationToken);
+        WorkspaceDecodeResult decoded = await WorkspaceCodec.DecodeAsync(payload, TestContext.Current.CancellationToken);
+
+        WorkspaceDocument restored = decoded.Workspace!.Documents.Single();
+        restored.IsNodeVisible(new WorkspaceNode(WorkspaceNodeKind.Route, 0)).ShouldBeFalse();
+        restored.NodeColour(new WorkspaceNode(WorkspaceNodeKind.Route, 0)).ShouldBe("#123456");
+        payload.ShouldContain("presentationOverrides");
+        payload.ShouldNotContain("<extensions>");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("not json")]

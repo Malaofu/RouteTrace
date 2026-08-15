@@ -139,6 +139,7 @@ export function setDocumentPresentation(
     colour: string,
     active: boolean,
     selected: boolean,
+    presentation: Array<{ kind: string; primaryIndex: number; secondaryIndex: number; visible: boolean; colour: string }>,
     selectedTrack: number | null,
     selectedSegment: number | null,
     selectedRoute: number | null,
@@ -149,8 +150,14 @@ export function setDocumentPresentation(
     const handle = getMap(elementId);
     handle.geometrySource.getFeatures()
         .filter(feature => feature.get("documentId") === documentId)
-        .forEach(feature => feature.setProperties({
-            documentColour: colour,
+        .forEach(feature => {
+            const kind = feature.get("kind") as string;
+            const primaryIndex = kind === "track" ? feature.get("trackIndex") : kind === "route" ? feature.get("routeIndex") : feature.get("waypointIndex");
+            const secondaryIndex = kind === "track" ? feature.get("segmentIndex") : -1;
+            const override = presentation.find(item => item.kind === kind && item.primaryIndex === primaryIndex && item.secondaryIndex === secondaryIndex);
+            feature.setProperties({
+            documentColour: override?.colour ?? colour,
+            presentationVisible: override?.visible ?? true,
             activeDocument: active,
             selectedDocument: selected,
             selectedTrack,
@@ -159,7 +166,8 @@ export function setDocumentPresentation(
             selectedWaypoint,
             selectedWholeDocument,
             selectedWaypointGroup,
-        }, true));
+        }, true);
+        });
     handle.geometryLayer.changed();
 }
 
@@ -178,6 +186,27 @@ export function endDocumentUpdate(elementId: string, fitGeometry: boolean): void
         });
     }
     performance.mark("routeTrace.map.render.end");
+}
+
+export function focusSelection(elementId: string, documentId: string, trackIndex: number | null, segmentIndex: number | null, routeIndex: number | null, waypointIndex: number | null, wholeDocument: boolean, waypointGroup: boolean): void {
+    const handle = getMap(elementId);
+    const features = handle.geometrySource.getFeatures().filter(feature => {
+        if (feature.get("documentId") !== documentId || feature.get("presentationVisible") === false) return false;
+        if (wholeDocument) return true;
+        const kind = feature.get("kind") as string;
+        if (trackIndex !== null) return kind === "track" && feature.get("trackIndex") === trackIndex && (segmentIndex === null || feature.get("segmentIndex") === segmentIndex);
+        if (routeIndex !== null) return kind === "route" && feature.get("routeIndex") === routeIndex;
+        if (waypointIndex !== null) return kind === "waypoint" && feature.get("waypointIndex") === waypointIndex;
+        return waypointGroup && kind === "waypoint";
+    });
+    if (features.length === 0) return;
+    const extent = features[0].getGeometry()!.getExtent().slice() as [number, number, number, number];
+    features.slice(1).forEach(feature => {
+        const next = feature.getGeometry()!.getExtent();
+        extent[0] = Math.min(extent[0], next[0]); extent[1] = Math.min(extent[1], next[1]);
+        extent[2] = Math.max(extent[2], next[2]); extent[3] = Math.max(extent[3], next[3]);
+    });
+    handle.map.getView().fit(extent, { duration: 250, maxZoom: 18, padding: [64, 64, 64, 64] });
 }
 
 export function renderDocuments(
@@ -287,7 +316,8 @@ function getMap(elementId: string): MapHandle {
 }
 
 function featureStyle(selectedTrack: number | null, selectedSegment: number | null): StyleFunction {
-    return (feature): Style => {
+    return (feature): Style | undefined => {
+        if (feature.get("presentationVisible") === false) return undefined;
         const kind = feature.get("kind") as string;
         const trackIndex = feature.get("trackIndex") as number | undefined;
         const segmentIndex = feature.get("segmentIndex") as number | undefined;

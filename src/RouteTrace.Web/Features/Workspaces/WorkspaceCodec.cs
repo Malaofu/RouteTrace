@@ -8,7 +8,7 @@ namespace RouteTrace.Web.Features.Workspaces;
 
 public static class WorkspaceCodec
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
     private static readonly ConditionalWeakTable<RouteDocument, CachedGpx> EncodedDocuments = new();
 
     public static async Task<string> EncodeAsync(RouteWorkspace workspace, CancellationToken cancellationToken = default)
@@ -22,6 +22,7 @@ public static class WorkspaceCodec
                 document.SourceFileName,
                 document.IsVisible,
                 document.Colour,
+                document.PresentationOverrides.Values.Select(item => new NodePresentationStorageDto(item.Node.Kind, item.Node.PrimaryIndex, item.Node.SecondaryIndex, item.IsVisible, item.Colour)).ToArray(),
                 await EncodeDocumentAsync(document.Document, cancellationToken)));
         }
 
@@ -44,7 +45,7 @@ public static class WorkspaceCodec
         }
 
         if (dto is null) return WorkspaceDecodeResult.Failure("The saved workspace is corrupt.");
-        if (dto.SchemaVersion is not (1 or CurrentSchemaVersion))
+        if (dto.SchemaVersion is not (1 or 2 or CurrentSchemaVersion))
             return WorkspaceDecodeResult.Failure($"Workspace schema version {dto.SchemaVersion} is not supported.");
         if (dto.Documents is null) return WorkspaceDecodeResult.Failure("The saved workspace has no document collection.");
 
@@ -65,7 +66,8 @@ public static class WorkspaceCodec
                     imported.Document!,
                     storedDocument.SourceFileName,
                     storedDocument.IsVisible ?? true,
-                    storedDocument.Colour ?? DefaultColour(documents.Count)));
+                    storedDocument.Colour ?? DefaultColour(documents.Count),
+                    storedDocument.PresentationOverrides?.Select(item => new NodePresentationOverride(new WorkspaceNode(item.Kind, item.PrimaryIndex, item.SecondaryIndex), item.IsVisible, item.Colour))));
             }
 
             return WorkspaceDecodeResult.Success(new RouteWorkspace(

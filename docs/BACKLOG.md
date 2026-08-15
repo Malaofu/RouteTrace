@@ -298,14 +298,15 @@ panel.
 
 ## PBI-074 — Context actions and presentation settings
 
-**Status:** Not started
+**Status:** Done
 
 **Goal:** Provide node-specific actions and project-local display settings from
 the document explorer.
 
 **Tasks:**
 
-- Expose the same actions through right-click and an accessible overflow menu.
+- Expose the same actions through a pointer-positioned right-click menu and
+  keyboard context-menu invocation.
 - Support activate, focus, show/hide, colour, export, and close where applicable.
 - Model document and child visibility and colour overrides with clear
   inheritance.

@@ -30,4 +30,7 @@ public sealed record MapDocumentGeometry(
     MapGeometry Geometry,
     string Colour,
     bool IsActive,
-    bool IsSelected);
+    bool IsSelected,
+    IReadOnlyList<MapFeaturePresentation> Presentation);
+
+public sealed record MapFeaturePresentation(string Kind, int PrimaryIndex, int SecondaryIndex, bool Visible, string Colour);

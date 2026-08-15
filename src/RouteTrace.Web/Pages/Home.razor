@@ -12,7 +12,7 @@
 <h1 class="visually-hidden">Route Trace map</h1>
 <div class="home-workspace">
     <section class="home-workspace__map" aria-label="Map workspace">
-        <MapViewport Documents="MapDocuments" Selection="selection" />
+        <MapViewport Documents="MapDocuments" Selection="selection" FocusVersion="focusVersion" />
         <ApplicationMenu ActiveDocument="workspace.ActiveDocument"
                          InspectorVisible="inspectorVisible"
                          ExplorerVisible="explorerVisible"
@@ -29,7 +29,8 @@
                       Selection="selection"
                       Visible="explorerVisible"
                       WorkspaceChanged="HandleWorkspaceChangedAsync"
-                      SelectionChanged="HandleSelectionChanged" />
+                      SelectionChanged="HandleSelectionChanged"
+                      FocusRequested="HandleFocusRequested" />
 </div>
 
 @code {
@@ -37,6 +38,7 @@
     private MapSelection selection = MapSelection.None;
     private bool inspectorVisible = true;
     private bool explorerVisible = true;
+    private int focusVersion;
     private IReadOnlyList<MapDocumentGeometry> MapDocuments { get; set; } = [];
     private readonly Dictionary<Guid, (RouteDocument Document, MapGeometry Geometry)> geometryCache = [];
 
@@ -76,6 +78,7 @@
     }
 
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
+    private void HandleFocusRequested(MapSelection _) => focusVersion++;
 
     private void HandleInspectorVisibilityChanged(bool visible) => inspectorVisible = visible;
 
@@ -93,7 +96,8 @@
                 GetGeometry(document),
                 document.Colour,
                 document.Id == workspace.ActiveDocumentId,
-                document.Id == workspace.SelectedDocumentId))
+                document.Id == workspace.SelectedDocumentId,
+                BuildPresentation(document)))
             .ToArray();
     }
 
@@ -106,5 +110,27 @@
         MapGeometry geometry = MapGeometry.FromDocument(document.Document);
         geometryCache[document.Id] = (document.Document, geometry);
         return geometry;
+    }
+
+    private static IReadOnlyList<MapFeaturePresentation> BuildPresentation(WorkspaceDocument document)
+    {
+        var result = new List<MapFeaturePresentation>();
+        for (int track = 0; track < document.Document.Tracks.Count; track++)
+            for (int segment = 0; segment < document.Document.Tracks[track].Segments.Count; segment++)
+            {
+                var node = new WorkspaceNode(WorkspaceNodeKind.Segment, track, segment);
+                result.Add(new("track", track, segment, document.IsNodeVisible(node), document.NodeColour(node)));
+            }
+        for (int route = 0; route < document.Document.Routes.Count; route++)
+        {
+            var node = new WorkspaceNode(WorkspaceNodeKind.Route, route);
+            result.Add(new("route", route, -1, document.IsNodeVisible(node), document.NodeColour(node)));
+        }
+        for (int waypoint = 0; waypoint < document.Document.Waypoints.Count; waypoint++)
+        {
+            var node = new WorkspaceNode(WorkspaceNodeKind.Waypoint, waypoint);
+            result.Add(new("waypoint", waypoint, -1, document.IsNodeVisible(node), document.NodeColour(node)));
+        }
+        return result;
     }
 }

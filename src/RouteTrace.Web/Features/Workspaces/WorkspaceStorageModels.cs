@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using RouteTrace.Core.Routes;
 
 namespace RouteTrace.Web.Features.Workspaces;
 
@@ -15,7 +16,15 @@ public sealed record WorkspaceDocumentStorageDto(
     [property: JsonPropertyName("sourceFileName")] string? SourceFileName,
     [property: JsonPropertyName("isVisible")] bool? IsVisible,
     [property: JsonPropertyName("colour")] string? Colour,
+    [property: JsonPropertyName("presentationOverrides")] IReadOnlyList<NodePresentationStorageDto>? PresentationOverrides,
     [property: JsonPropertyName("gpx")] string Gpx);
+
+public sealed record NodePresentationStorageDto(
+    [property: JsonPropertyName("kind")] WorkspaceNodeKind Kind,
+    [property: JsonPropertyName("primaryIndex")] int PrimaryIndex,
+    [property: JsonPropertyName("secondaryIndex")] int SecondaryIndex,
+    [property: JsonPropertyName("isVisible")] bool? IsVisible,
+    [property: JsonPropertyName("colour")] string? Colour);
 
 public sealed record SavedWorkspaceSummary(Guid Id, string Name);
 

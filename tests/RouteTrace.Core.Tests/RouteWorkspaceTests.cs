@@ -57,4 +57,57 @@ public sealed class RouteWorkspaceTests
         closed.Documents[0].Document.ShouldBeSameAs(firstDocument);
         closed.ActiveDocumentId.ShouldBe(closed.Documents[0].Id);
     }
+
+    [Fact]
+    public void ChildPresentationOverridesInheritWithoutChangingCanonicalDocument()
+    {
+        var routeDocument = new RouteDocument(tracks: [new Track(segments: [new TrackSegment([])])]);
+        RouteWorkspace workspace = new RouteWorkspace(Guid.NewGuid(), "Routes").AddDocument(routeDocument);
+        Guid id = workspace.Documents[0].Id;
+
+        RouteWorkspace changed = workspace
+            .SetNodeVisibility(id, new WorkspaceNode(WorkspaceNodeKind.Track, 0), false)
+            .SetNodeColour(id, new WorkspaceNode(WorkspaceNodeKind.Segment, 0, 0), "#abcdef");
+
+        changed.Documents[0].IsNodeVisible(new WorkspaceNode(WorkspaceNodeKind.Segment, 0, 0)).ShouldBeFalse();
+        changed.Documents[0].NodeColour(new WorkspaceNode(WorkspaceNodeKind.Segment, 0, 0)).ShouldBe("#abcdef");
+        changed.Documents[0].Document.ShouldBeSameAs(routeDocument);
+    }
+
+    [Fact]
+    public void ShowingAParentClearsHiddenDescendantOverrides()
+    {
+        var routeDocument = new RouteDocument(tracks: [new Track(segments: [new TrackSegment([])])]);
+        RouteWorkspace workspace = new RouteWorkspace(Guid.NewGuid(), "Routes").AddDocument(routeDocument);
+        Guid id = workspace.Documents[0].Id;
+        var track = new WorkspaceNode(WorkspaceNodeKind.Track, 0);
+        var segment = new WorkspaceNode(WorkspaceNodeKind.Segment, 0, 0);
+
+        RouteWorkspace shown = workspace.SetNodeVisibility(id, segment, false)
+            .SetNodeVisibility(id, track, false)
+            .SetNodeVisibility(id, track, true);
+
+        shown.Documents[0].IsNodeVisible(segment).ShouldBeTrue();
+        shown.Documents[0].PresentationOverrides.ContainsKey(segment).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void UpdatesEditableInfoWithoutLosingDocumentContent()
+    {
+        var document = new RouteDocument(
+            tracks: [new Track("Old", [new TrackSegment([])], "cycling")],
+            metadata: new RouteMetadata("Document", "Old description"),
+            unsupportedExtensionXml: ["<x:test xmlns:x='urn:test' />"]);
+        RouteWorkspace workspace = new RouteWorkspace(Guid.NewGuid(), "Routes").AddDocument(document);
+        Guid id = workspace.Documents[0].Id;
+
+        RouteWorkspace changed = workspace.UpdateNodeInfo(id, null, "Renamed", "New description")
+            .UpdateNodeInfo(id, new WorkspaceNode(WorkspaceNodeKind.Track, 0), "New track", null);
+
+        changed.Documents[0].Document.Metadata!.Name.ShouldBe("Renamed");
+        changed.Documents[0].Document.Metadata!.Description.ShouldBe("New description");
+        changed.Documents[0].Document.Tracks[0].Name.ShouldBe("New track");
+        changed.Documents[0].Document.Tracks[0].Type.ShouldBe("cycling");
+        changed.Documents[0].Document.UnsupportedExtensionXml.ShouldBe(document.UnsupportedExtensionXml);
+    }
 }

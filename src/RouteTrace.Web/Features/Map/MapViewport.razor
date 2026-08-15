@@ -25,10 +25,12 @@
 
     [Parameter]
     public MapSelection Selection { get; set; }
+    [Parameter] public int FocusVersion { get; set; }
 
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
     private readonly Dictionary<Guid, MapDocumentGeometry> renderedDocuments = [];
     private IJSObjectReference? module;
+    private int renderedFocusVersion;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -49,6 +51,11 @@
         if (module is not null)
         {
             await RenderDocumentAsync();
+            if (FocusVersion != renderedFocusVersion)
+            {
+                renderedFocusVersion = FocusVersion;
+                await module.InvokeVoidAsync("focusSelection", elementId, Selection.DocumentId, Selection.TrackIndex, Selection.SegmentIndex, Selection.RouteIndex, Selection.WaypointIndex, Selection.WholeDocument, Selection.WaypointGroup);
+            }
         }
     }
 
@@ -79,6 +86,7 @@
                 || previous.IsActive != document.IsActive
                 || previous.IsSelected != document.IsSelected
                 || previous.Colour != document.Colour
+                || !previous.Presentation.SequenceEqual(document.Presentation)
                 || (document.IsActive && renderedDocuments.Count > 0))
             {
                 await currentModule.InvokeVoidAsync(
@@ -88,6 +96,7 @@
                     document.Colour,
                     document.IsActive,
                     document.IsSelected,
+                    document.Presentation,
                     selectionTargetsDocument ? Selection.TrackIndex : null,
                     selectionTargetsDocument ? Selection.SegmentIndex : null,
                     selectionTargetsDocument ? Selection.RouteIndex : null,
