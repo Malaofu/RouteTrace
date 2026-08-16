@@ -377,7 +377,7 @@ changing their canonical model, streaming, preservation, or output semantics.
 
 ## PBI-066 — Decompose the OpenLayers adapter
 
-**Status:** Proposed
+**Status:** Complete
 
 **Goal:** Separate map lifecycle, feature synchronisation, and feature styling
 without leaking OpenLayers details outside the TypeScript adapter boundary.
