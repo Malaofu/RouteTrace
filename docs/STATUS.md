@@ -1,39 +1,37 @@
 # Project status
 
-**Phase:** Razor component structure review complete
+**Phase:** Document explorer decomposition complete
 
-**Current PBI:** PBI-064 — Extract substantial Razor component logic
+**Current PBI:** PBI-063 — Decompose document explorer responsibilities
 
 **Last updated:** 2026-08-16
 
 ## Current state
 
-- PBI-064 is complete; the other engineering-review follow-ups remain
-  independently selectable work.
+- PBI-063 and PBI-064 are complete; the other engineering-review follow-ups
+  remain independently selectable work.
 - Accepted architecture decisions are compliant or not yet applicable; none
   are superseded and no unresolved decision drift remains.
-- `Home`, `ApplicationMenu`, `DocumentExplorer`, `MapViewport`, and
-  `WorkspacePanel` keep their markup and directives in `.razor` files while
-  their substantial behaviour resides in matching feature-scoped partial
-  classes.
-- Small presentation-only components remain inline, and no generic component
-  base abstraction was introduced.
-- Dependency injection, component parameters, and async disposal contracts are
-  unchanged. FakeItEasy remains the agreed test-double framework.
+- `DocumentExplorer` now coordinates selection only. `DocumentTree` owns
+  semantic rendering and expansion, while `DocumentExplorerActions` owns
+  context-menu positioning, dialogs, and workspace action orchestration.
+- Tree and action styles follow their rendering components, preserving pointer
+  positioning, keyboard accessibility, visibility, and appearance behavior.
+- Expansion state and semantic target construction have focused unit coverage;
+  the tree still stops at segments and waypoints rather than track points.
+- Existing workspace command paths and FakeItEasy remain unchanged.
 
 ## Verification
 
 - Release build and WebAssembly AOT publish: passed with zero warnings.
-- .NET tests: 69 passed, zero failed.
+- .NET tests: 72 passed, zero failed.
 - Published Playwright suite: 15 passed, zero failed.
-- Full-density import medians: 473.5 ms total and 2.8 ms busy feedback, within
-  the 500 ms and 100 ms release budgets; export completed in 71.8 ms.
+- Full-density import medians: 475.4 ms total and 0.5 ms busy feedback, within
+  the 500 ms and 100 ms release budgets; export completed in 69.8 ms.
 - Formatting and TypeScript checks: passed.
-- Structural review confirmed the five listed Razor files contain no `@code`
-  blocks and retain their existing rendered markup.
 
 **Blockers:** None.
 
 ## Next action
 
-- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-064.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-063.

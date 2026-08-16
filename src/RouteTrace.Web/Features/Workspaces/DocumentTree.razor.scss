@@ -1,0 +1,16 @@
+ul { margin: 0; padding-left: 1rem; list-style: none; }
+ul.document-explorer__tree { padding-left: 0; }
+.document-explorer__row { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) 1.5rem; align-items: center; min-height: 2rem; border-radius: .35rem; }
+.document-explorer__row:hover { background: rgb(255 255 255 / 7%); }
+.document-explorer__row--active { background: #3b3b3f; }
+.document-explorer__row--active:hover { background: #444449; }
+.document-explorer__node--hidden { color: #888; }
+.document-explorer__colour-node { border-right: 0; }
+.document-explorer__row--colour { border-right: .2rem solid var(--document-colour); }
+button { border: 0; color: inherit; background: transparent; cursor: pointer; }
+button:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.document-explorer__expander { display: grid; width: 1.25rem; height: 1.75rem; padding: 0; place-items: center; }
+.document-explorer__label { min-width: 0; padding: .35rem .2rem; overflow: hidden; font-weight: 600; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.document-explorer__label--text { display: block; }
+.document-explorer__leaf { display: grid; place-items: center; color: #bbb; }
+.document-explorer__count { color: #aaa; font-size: .75rem; font-weight: 400; }

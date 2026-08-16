@@ -1,0 +1,208 @@
+@using RouteTrace.Core.Routes
+
+@if (Workspace.Documents.Count == 0)
+{
+    <p>Open a GPX file to explore its contents.</p>
+}
+else
+{
+    <ul class="document-explorer__tree">
+        @foreach (WorkspaceDocument workspaceDocument in Workspace.Documents)
+        {
+            RouteDocument document = workspaceDocument.Document;
+            string documentKey = $"document:{workspaceDocument.Id}";
+            bool documentExpanded = expansion.IsExpanded(documentKey);
+            bool documentActive = SelectsWholeDocument(workspaceDocument.Id);
+            DocumentTreeTarget documentTarget = TargetFrom(workspaceDocument, null);
+
+            <li @key="workspaceDocument.Id"
+                class="document-explorer__document @(!workspaceDocument.IsVisible ? "document-explorer__node--hidden" : null)"
+                data-document-name="@DocumentName(workspaceDocument)">
+                <div class="@RowClass(documentActive)"
+                     style="--document-colour: @workspaceDocument.Colour"
+                     @oncontextmenu="args => OpenActionsAsync(documentTarget, args)"
+                     @oncontextmenu:preventDefault>
+                    <button type="button"
+                            class="document-explorer__expander"
+                            aria-label="@(documentExpanded ? "Collapse" : "Expand") @DocumentName(workspaceDocument)"
+                            aria-expanded="@(documentExpanded ? "true" : "false")"
+                            @onclick="() => expansion.Toggle(documentKey)">
+                        <DisclosureIcon Expanded="documentExpanded" />
+                    </button>
+                    <button type="button"
+                            class="document-explorer__label"
+                            @onclick="args => SelectTargetAsync(documentTarget, args)"
+                            @onkeydown="args => HandleContextKeyAsync(documentTarget, args)">
+                        @DocumentName(workspaceDocument)
+                    </button>
+                    <VisibilityStatus Name="@DocumentName(workspaceDocument)" Visible="workspaceDocument.IsVisible" />
+                </div>
+                @if (documentExpanded)
+                {
+                    <ul>
+                        @for (int trackIndex = 0; trackIndex < document.Tracks.Count; trackIndex++)
+                        {
+                            int currentTrack = trackIndex;
+                            Track track = document.Tracks[currentTrack];
+                            string trackName = track.Name ?? $"Track {currentTrack + 1}";
+                            string trackKey = $"track:{workspaceDocument.Id}:{currentTrack}";
+                            bool trackExpanded = expansion.IsExpanded(trackKey);
+                            bool trackActive = IsTrackSelected(workspaceDocument.Id, currentTrack);
+                            var trackNode = new WorkspaceNode(WorkspaceNodeKind.Track, currentTrack);
+                            DocumentTreeTarget trackTarget = TargetFrom(workspaceDocument, trackNode);
+                            bool trackVisible = workspaceDocument.IsNodeVisible(trackNode);
+
+                            <li class="document-explorer__colour-node">
+                                <div class="@RowClass(trackActive)"
+                                     style="--document-colour: @workspaceDocument.NodeColour(trackNode)"
+                                     @oncontextmenu="args => OpenActionsAsync(trackTarget, args)"
+                                     @oncontextmenu:preventDefault>
+                                    <button type="button"
+                                            class="document-explorer__expander"
+                                            aria-label="@(trackExpanded ? "Collapse" : "Expand") @trackName"
+                                            aria-expanded="@(trackExpanded ? "true" : "false")"
+                                            @onclick="() => expansion.Toggle(trackKey)">
+                                        <DisclosureIcon Expanded="trackExpanded" />
+                                    </button>
+                                    <button type="button"
+                                            class="document-explorer__label"
+                                            @onclick="args => SelectTargetAsync(trackTarget, args)"
+                                            @onkeydown="args => HandleContextKeyAsync(trackTarget, args)">
+                                        @trackName
+                                        <span class="document-explorer__count">@track.Segments.Count segment(s)</span>
+                                    </button>
+                                    <VisibilityStatus Name="@trackName" Visible="trackVisible" />
+                                </div>
+                                @if (trackExpanded)
+                                {
+                                    <ul>
+                                        @for (int segmentIndex = 0; segmentIndex < track.Segments.Count; segmentIndex++)
+                                        {
+                                            int currentSegment = segmentIndex;
+                                            string segmentName = $"Segment {currentSegment + 1}";
+                                            bool segmentActive = IsSegmentSelected(workspaceDocument.Id, currentTrack, currentSegment);
+                                            var segmentNode = new WorkspaceNode(
+                                                WorkspaceNodeKind.Segment,
+                                                currentTrack,
+                                                currentSegment);
+                                            DocumentTreeTarget segmentTarget = TargetFrom(workspaceDocument, segmentNode);
+                                            bool segmentVisible = workspaceDocument.IsNodeVisible(segmentNode);
+                                            int segmentPointCount = track.Segments[currentSegment].Points.Count;
+
+                                            <li>
+                                                <div class="@RowClass(segmentActive)"
+                                                     style="--document-colour: @workspaceDocument.NodeColour(segmentNode)"
+                                                     @oncontextmenu="args => OpenActionsAsync(segmentTarget, args)"
+                                                     @oncontextmenu:preventDefault>
+                                                    <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
+                                                    <button type="button"
+                                                            class="document-explorer__label"
+                                                            @onclick="args => SelectTargetAsync(segmentTarget, args)"
+                                                            @onkeydown="args => HandleContextKeyAsync(segmentTarget, args)">
+                                                        @segmentName
+                                                        <span class="document-explorer__count">@segmentPointCount points</span>
+                                                    </button>
+                                                    <VisibilityStatus Name="@segmentName" Visible="segmentVisible" />
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                        @for (int routeIndex = 0; routeIndex < document.Routes.Count; routeIndex++)
+                        {
+                            int currentRoute = routeIndex;
+                            Route route = document.Routes[currentRoute];
+                            string routeName = route.Name ?? $"Route {currentRoute + 1}";
+                            bool routeActive = IsRouteSelected(workspaceDocument.Id, currentRoute);
+                            var routeNode = new WorkspaceNode(WorkspaceNodeKind.Route, currentRoute);
+                            DocumentTreeTarget routeTarget = TargetFrom(workspaceDocument, routeNode);
+                            bool routeVisible = workspaceDocument.IsNodeVisible(routeNode);
+
+                            <li class="document-explorer__colour-node">
+                                <div class="@RowClass(routeActive)"
+                                     style="--document-colour: @workspaceDocument.NodeColour(routeNode)"
+                                     @oncontextmenu="args => OpenActionsAsync(routeTarget, args)"
+                                     @oncontextmenu:preventDefault>
+                                    <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
+                                    <button type="button"
+                                            class="document-explorer__label"
+                                            @onclick="args => SelectTargetAsync(routeTarget, args)"
+                                            @onkeydown="args => HandleContextKeyAsync(routeTarget, args)">
+                                        @routeName
+                                        <span class="document-explorer__count">@route.Points.Count points</span>
+                                    </button>
+                                    <VisibilityStatus Name="@routeName" Visible="routeVisible" />
+                                </div>
+                            </li>
+                        }
+                        @if (document.Waypoints.Count > 0)
+                        {
+                            string poiKey = $"poi:{workspaceDocument.Id}";
+                            bool poiExpanded = expansion.IsExpanded(poiKey);
+                            var poiNode = new WorkspaceNode(WorkspaceNodeKind.WaypointGroup);
+                            DocumentTreeTarget poiTarget = TargetFrom(workspaceDocument, poiNode);
+                            bool poiActive = IsWaypointGroupSelected(workspaceDocument.Id);
+                            bool poiVisible = workspaceDocument.IsNodeVisible(poiNode);
+
+                            <li class="document-explorer__colour-node">
+                                <div class="@RowClass(poiActive)"
+                                     style="--document-colour: @workspaceDocument.NodeColour(poiNode)"
+                                     @oncontextmenu="args => OpenActionsAsync(poiTarget, args)"
+                                     @oncontextmenu:preventDefault>
+                                    <button type="button"
+                                            class="document-explorer__expander"
+                                            aria-label="@(poiExpanded ? "Collapse" : "Expand") points of interest"
+                                            aria-expanded="@(poiExpanded ? "true" : "false")"
+                                            @onclick="() => expansion.Toggle(poiKey)">
+                                        <DisclosureIcon Expanded="poiExpanded" />
+                                    </button>
+                                    <button type="button"
+                                            class="document-explorer__label"
+                                            @onclick="args => SelectTargetAsync(poiTarget, args)"
+                                            @onkeydown="args => HandleContextKeyAsync(poiTarget, args)">
+                                        Points of interest
+                                        <span class="document-explorer__count">@document.Waypoints.Count</span>
+                                    </button>
+                                    <VisibilityStatus Name="Points of interest" Visible="poiVisible" />
+                                </div>
+                                @if (poiExpanded)
+                                {
+                                    <ul>
+                                        @for (int waypointIndex = 0; waypointIndex < document.Waypoints.Count; waypointIndex++)
+                                        {
+                                            int currentWaypoint = waypointIndex;
+                                            Waypoint waypoint = document.Waypoints[currentWaypoint];
+                                            string waypointName = waypoint.Name ?? $"Waypoint {currentWaypoint + 1}";
+                                            bool waypointActive = IsWaypointSelected(workspaceDocument.Id, currentWaypoint);
+                                            var waypointNode = new WorkspaceNode(WorkspaceNodeKind.Waypoint, currentWaypoint);
+                                            DocumentTreeTarget waypointTarget = TargetFrom(workspaceDocument, waypointNode);
+                                            bool waypointVisible = workspaceDocument.IsNodeVisible(waypointNode);
+
+                                            <li>
+                                                <div class="@RowClass(waypointActive)"
+                                                     style="--document-colour: @workspaceDocument.NodeColour(waypointNode)"
+                                                     @oncontextmenu="args => OpenActionsAsync(waypointTarget, args)"
+                                                     @oncontextmenu:preventDefault>
+                                                    <span class="document-explorer__leaf" aria-hidden="true">⌖</span>
+                                                    <button type="button"
+                                                            class="document-explorer__label"
+                                                            @onclick="args => SelectTargetAsync(waypointTarget, args)"
+                                                            @onkeydown="args => HandleContextKeyAsync(waypointTarget, args)">
+                                                        @waypointName
+                                                    </button>
+                                                    <VisibilityStatus Name="@waypointName" Visible="waypointVisible" />
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </li>
+        }
+    </ul>
+}

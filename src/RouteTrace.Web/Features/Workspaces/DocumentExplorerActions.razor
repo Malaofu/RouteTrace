@@ -1,0 +1,127 @@
+@if (actionTarget is not null)
+{
+    <div class="document-explorer__menu-dismiss"
+         @onclick="CloseActions"
+         @oncontextmenu="CloseActions"
+         @oncontextmenu:preventDefault></div>
+    <div class="document-explorer__actions"
+         style="left:min(@(menuX)px, calc(100vw - 11rem)); top:min(@(menuY)px, calc(100vh - 22rem))"
+         role="menu"
+         aria-label="Actions for @actionTarget.Name">
+        <button role="menuitem" disabled="@(!CanEditInfo)" @onclick="OpenInfo">
+            <span class="document-explorer__action-icon">ⓘ</span>
+            <span>Info…</span>
+            <kbd>Ctrl I</kbd>
+        </button>
+        <button role="menuitem" @onclick="OpenAppearance">
+            <span class="document-explorer__action-icon">◉</span>
+            <span>Appearance…</span>
+            <span class="document-explorer__submenu-cue">›</span>
+        </button>
+        <button role="menuitemcheckbox"
+                aria-checked="@AllTargetsVisible"
+                @onclick="ToggleTargetVisibilityAsync">
+            <span class="document-explorer__action-icon">@(AllTargetsVisible ? "◉̸" : "◉")</span>
+            <span>@(AllTargetsVisible ? "Hide" : "Show")</span>
+            <kbd>Ctrl H</kbd>
+        </button>
+        <div class="document-explorer__action-separator" role="separator"></div>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">＋</span>
+            <span>New segment</span>
+            <span></span>
+        </button>
+        <div class="document-explorer__action-separator" role="separator"></div>
+        <button role="menuitem" @onclick="FocusTargetAsync">
+            <span class="document-explorer__action-icon">⌗</span>
+            <span>Center</span>
+            <kbd>Ctrl ↵</kbd>
+        </button>
+        <div class="document-explorer__action-separator" role="separator"></div>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▱</span>
+            <span>Duplicate</span>
+            <kbd>Ctrl D</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▣</span>
+            <span>Copy</span>
+            <kbd>Ctrl C</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">✂</span>
+            <span>Cut</span>
+            <kbd>Ctrl X</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▧</span>
+            <span>Paste</span>
+            <kbd>Ctrl V</kbd>
+        </button>
+        @if (selectedTargets.Count == 1 && actionTarget.Node is null)
+        {
+            <div class="document-explorer__action-separator" role="separator"></div>
+            <button role="menuitem" @onclick="ExportTargetAsync">
+                <span class="document-explorer__action-icon">↓</span>
+                <span>Download GPX</span>
+                <kbd>Ctrl S</kbd>
+            </button>
+            <button role="menuitem" @onclick="ActivateTargetAsync">
+                <span class="document-explorer__action-icon">◆</span>
+                <span>Activate</span>
+                <span></span>
+            </button>
+        }
+        <div class="document-explorer__action-separator" role="separator"></div>
+        <button role="menuitem"
+                disabled="@(selectedTargets.Count != 1 || actionTarget.Node is not null)"
+                @onclick="CloseTargetAsync">
+            <span class="document-explorer__action-icon">♜</span>
+            <span>Delete</span>
+            <kbd>Ctrl ⌫</kbd>
+        </button>
+    </div>
+}
+
+@if (appearanceTarget is not null)
+{
+    <div class="document-explorer__dialog-backdrop" @onclick="CloseAppearance">
+        <section class="document-explorer__appearance"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="appearance-title"
+                 @onclick:stopPropagation>
+            <h2 id="appearance-title">Appearance</h2>
+            <label>Colour <input type="color" @bind="appearanceColour" /></label>
+            <div>
+                <button type="button" @onclick="SaveAppearanceAsync">Apply</button>
+                <button type="button" disabled="@(!CanResetAppearance)" @onclick="ResetAppearanceAsync">
+                    Reset to parent
+                </button>
+                <button type="button" @onclick="CloseAppearance">Cancel</button>
+            </div>
+        </section>
+    </div>
+}
+
+@if (infoTarget is not null)
+{
+    <div class="document-explorer__dialog-backdrop" @onclick="CloseInfo">
+        <section class="document-explorer__info"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="node-info-title"
+                 @onclick:stopPropagation>
+            <h2 id="node-info-title">Info</h2>
+            <label>Name <input @bind="infoName" /></label>
+            @if (InfoHasDescription)
+            {
+                <label>Description <textarea @bind="infoDescription"></textarea></label>
+            }
+            <div>
+                <button type="button" @onclick="SaveInfoAsync">Save</button>
+                <button type="button" @onclick="CloseInfo">Cancel</button>
+            </div>
+        </section>
+    </div>
+}

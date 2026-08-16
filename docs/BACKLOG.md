@@ -307,7 +307,7 @@ This PBI must not become an unrestricted rewrite of the application.
 
 ## PBI-063 — Decompose document explorer responsibilities
 
-**Status:** Proposed
+**Status:** Complete
 
 **Goal:** Reduce the responsibility of the document explorer without changing
 its user-visible behaviour or workspace model.
