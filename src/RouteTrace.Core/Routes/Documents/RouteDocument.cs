@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
+using RouteTrace.Core.Routes.Geometry;
 
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Documents;
 
 public sealed class RouteDocument
 {

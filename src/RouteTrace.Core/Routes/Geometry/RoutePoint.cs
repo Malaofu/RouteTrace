@@ -1,4 +1,4 @@
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Geometry;
 
 public sealed record RoutePoint(
     GeoCoordinate Coordinate,

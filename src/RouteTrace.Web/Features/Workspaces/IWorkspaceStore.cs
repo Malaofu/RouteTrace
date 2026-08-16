@@ -1,4 +1,4 @@
-using RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Workspaces;
 
 namespace RouteTrace.Web.Features.Workspaces;
 

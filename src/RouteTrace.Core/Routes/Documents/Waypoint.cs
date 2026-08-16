@@ -1,4 +1,6 @@
-namespace RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Geometry;
+
+namespace RouteTrace.Core.Routes.Documents;
 
 public sealed record Waypoint(
     RoutePoint Point,

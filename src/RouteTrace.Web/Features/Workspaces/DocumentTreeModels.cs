@@ -1,4 +1,5 @@
-using RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Documents;
+using RouteTrace.Core.Routes.Workspaces;
 using RouteTrace.Web.Features.Map;
 
 namespace RouteTrace.Web.Features.Workspaces;

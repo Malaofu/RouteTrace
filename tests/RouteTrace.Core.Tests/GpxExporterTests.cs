@@ -2,7 +2,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Linq;
 using RouteTrace.Core.Gpx;
-using RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Documents;
 
 namespace RouteTrace.Core.Tests;
 

@@ -1,4 +1,6 @@
-namespace RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Documents;
+
+namespace RouteTrace.Core.Routes.Workspaces;
 
 public sealed class WorkspaceDocument
 {

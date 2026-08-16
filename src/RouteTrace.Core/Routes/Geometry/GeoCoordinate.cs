@@ -1,4 +1,4 @@
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Geometry;
 
 /// <summary>A WGS 84 geographic coordinate.</summary>
 public readonly record struct GeoCoordinate

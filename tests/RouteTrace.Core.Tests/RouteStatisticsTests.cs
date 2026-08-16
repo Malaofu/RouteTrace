@@ -1,5 +1,7 @@
 using RouteTrace.Core.Gpx;
-using RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Analysis;
+using RouteTrace.Core.Routes.Documents;
+using RouteTrace.Core.Routes.Geometry;
 
 namespace RouteTrace.Core.Tests;
 

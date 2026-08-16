@@ -1,4 +1,4 @@
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Geometry;
 
 /// <summary>An axis-aligned WGS 84 bounding box.</summary>
 public readonly record struct GeoBounds

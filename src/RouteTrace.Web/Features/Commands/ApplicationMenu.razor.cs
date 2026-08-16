@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using RouteTrace.Core.Gpx;
-using RouteTrace.Core.Routes;
+using RouteTrace.Core.Routes.Documents;
+using RouteTrace.Core.Routes.Workspaces;
 using RouteTrace.Web.Features.Import;
 
 namespace RouteTrace.Web.Features.Commands;

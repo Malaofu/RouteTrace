@@ -1,4 +1,4 @@
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Workspaces;
 
 public enum WorkspaceNodeKind
 {

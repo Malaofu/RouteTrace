@@ -355,7 +355,7 @@ Razor files remain readable descriptions of rendered structure.
 
 ## PBI-065 — Decompose GPX codec internals
 
-**Status:** Proposed
+**Status:** Complete
 
 **Goal:** Make the GPX importer and exporter easier to reason about without
 changing their canonical model, streaming, preservation, or output semantics.

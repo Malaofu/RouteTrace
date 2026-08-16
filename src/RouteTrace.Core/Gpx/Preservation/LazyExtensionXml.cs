@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Xml.Linq;
 
-namespace RouteTrace.Core.Gpx;
+namespace RouteTrace.Core.Gpx.Preservation;
 
 internal enum GpxExtensionScope
 {

@@ -1,4 +1,4 @@
-namespace RouteTrace.Core.Routes;
+namespace RouteTrace.Core.Routes.Documents;
 
 public sealed class RouteMetadata
 {
