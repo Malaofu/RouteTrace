@@ -57,7 +57,7 @@ public static class RouteStatisticsCalculator
     {
         IReadOnlyList<RoutePoint> points = segments.SelectMany(segment => segment.Points).ToArray();
         double[] values = points.Where(point => point.ElevationMetres.HasValue)
-            .Select(point => point.ElevationMetres!.Value).ToArray();
+            .Select(point => point.ElevationMetres.GetValueOrDefault()).ToArray();
         if (values.Length == 0)
         {
             return null;
@@ -74,8 +74,8 @@ public static class RouteStatisticsCalculator
             {
                 for (int index = 1; index < segment.Points.Count; index++)
                 {
-                    double change = segment.Points[index].ElevationMetres!.Value -
-                        segment.Points[index - 1].ElevationMetres!.Value;
+                    double change = segment.Points[index].ElevationMetres.GetValueOrDefault() -
+                        segment.Points[index - 1].ElevationMetres.GetValueOrDefault();
                     if (change > 0) ascent += change;
                     if (change < 0) descent -= change;
                 }
@@ -88,7 +88,7 @@ public static class RouteStatisticsCalculator
     private static TimeStatistics? Time(IReadOnlyList<RoutePoint> points)
     {
         DateTimeOffset[] values = points.Where(point => point.Time.HasValue)
-            .Select(point => point.Time!.Value).Order().ToArray();
+            .Select(point => point.Time.GetValueOrDefault()).Order().ToArray();
         return values.Length == 0
             ? null
             : new TimeStatistics(values[0], values[^1], values.Length > 1 ? values[^1] - values[0] : null);

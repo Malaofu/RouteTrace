@@ -60,7 +60,7 @@
             "./generated/mapAdapter.js");
         selfReference = DotNetObjectReference.Create(this);
         await module.InvokeVoidAsync("initialize", elementId, MarkerOptions.Value, selfReference);
-        await RenderDocumentAsync();
+        await RenderDocumentAsync(module);
     }
 
     [JSInvokable]
@@ -99,20 +99,19 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (module is not null)
+        if (module is { } currentModule)
         {
-            await RenderDocumentAsync();
+            await RenderDocumentAsync(currentModule);
             if (FocusVersion != renderedFocusVersion)
             {
                 renderedFocusVersion = FocusVersion;
-                await module.InvokeVoidAsync("focusSelection", elementId, Selection.DocumentId, Selection.TrackIndex, Selection.SegmentIndex, Selection.RouteIndex, Selection.WaypointIndex, Selection.WholeDocument, Selection.WaypointGroup);
+                await currentModule.InvokeVoidAsync("focusSelection", elementId, Selection.DocumentId, Selection.TrackIndex, Selection.SegmentIndex, Selection.RouteIndex, Selection.WaypointIndex, Selection.WholeDocument, Selection.WaypointGroup);
             }
         }
     }
 
-    private async Task RenderDocumentAsync()
+    private async Task RenderDocumentAsync(IJSObjectReference currentModule)
     {
-        IJSObjectReference currentModule = module!;
         await currentModule.InvokeVoidAsync("beginDocumentUpdate", elementId);
         var current = Documents.ToDictionary(document => document.Id);
 

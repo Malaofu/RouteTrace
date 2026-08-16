@@ -95,24 +95,45 @@ public static class GpxImporter
                     trackName = null;
                     trackType = null;
                     trackSegments = [];
+                    if (!reader.IsEmptyElement) continue;
+
+                    tracks.Add(new Track());
+                    trackSegments = null;
                 }
                 else if (name == Gpx + "trkseg")
                 {
-                    segmentPoints = [];
+                    if (trackSegments is null)
+                        throw new InvalidDataException("A GPX track segment must belong to a track.");
+                    if (reader.IsEmptyElement)
+                        trackSegments.Add(new TrackSegment());
+                    else
+                        segmentPoints = [];
                 }
                 else if (name == Gpx + "trkpt")
                 {
-                    segmentPoints!.Add(ParsePoint(reader, extensionNamespaces));
+                    if (segmentPoints is null)
+                        throw new InvalidDataException("A GPX track point must belong to a track segment.");
+                    segmentPoints.Add(ParsePoint(reader, extensionNamespaces));
                 }
                 else if (name == Gpx + "rte")
                 {
                     routeName = null;
                     routePoints = [];
                     routeIndex = routes.Count;
+                    if (!reader.IsEmptyElement) continue;
+
+                    routes.Add(new Route(
+                        routeName,
+                        routePoints,
+                        preservedXml.StringViewAt(GpxExtensionScope.Route, routeIndex)));
+                    routePoints = null;
+                    routeIndex = -1;
                 }
                 else if (name == Gpx + "rtept")
                 {
-                    routePoints!.Add(ParsePoint(reader, extensionNamespaces));
+                    if (routePoints is null)
+                        throw new InvalidDataException("A GPX route point must belong to a route.");
+                    routePoints.Add(ParsePoint(reader, extensionNamespaces));
                 }
                 else if (name == Gpx + "wpt")
                 {
@@ -136,36 +157,35 @@ public static class GpxImporter
                 }
                 else if (name == Gpx + "extensions")
                 {
-                    if (routePoints is not null)
-                    {
-                        CollectExtensionNamespaces(reader, extensionNamespaces);
-                    }
-                    else
-                    {
-                        CollectExtensionNamespaces(reader, extensionNamespaces);
-                    }
+                    CollectExtensionNamespaces(reader, extensionNamespaces);
                 }
             }
             else if (reader.NodeType == XmlNodeType.EndElement && reader.NamespaceURI == Gpx.NamespaceName)
             {
-                if (reader.LocalName == "trkseg")
+                switch (reader.LocalName)
                 {
-                    trackSegments!.Add(new TrackSegment(segmentPoints));
-                    segmentPoints = null;
-                }
-                else if (reader.LocalName == "trk")
-                {
-                    tracks.Add(new Track(trackName, trackSegments, trackType));
-                    trackSegments = null;
-                }
-                else if (reader.LocalName == "rte")
-                {
-                    routes.Add(new Route(
-                        routeName,
-                        routePoints!,
-                        preservedXml.StringViewAt(GpxExtensionScope.Route, routeIndex)));
-                    routePoints = null;
-                    routeIndex = -1;
+                    case "trkseg" when trackSegments is null || segmentPoints is null:
+                        throw new InvalidDataException("A GPX track segment is not correctly nested inside a track.");
+                    case "trkseg":
+                        trackSegments.Add(new TrackSegment(segmentPoints));
+                        segmentPoints = null;
+                        break;
+                    case "trk" when trackSegments is null:
+                        throw new InvalidDataException("A GPX track is not correctly formed.");
+                    case "trk":
+                        tracks.Add(new Track(trackName, trackSegments, trackType));
+                        trackSegments = null;
+                        break;
+                    case "rte" when routePoints is null:
+                        throw new InvalidDataException("A GPX route is not correctly formed.");
+                    case "rte":
+                        routes.Add(new Route(
+                            routeName,
+                            routePoints,
+                            preservedXml.StringViewAt(GpxExtensionScope.Route, routeIndex)));
+                        routePoints = null;
+                        routeIndex = -1;
+                        break;
                 }
             }
         }

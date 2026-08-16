@@ -173,7 +173,7 @@
     [Parameter]
     public EventCallback<MapSelection> SelectionChanged { get; set; }
 
-    private RouteStatistics statistics = null!;
+    private RouteStatistics statistics = RouteStatisticsCalculator.Calculate(new RouteDocument());
 
     protected override void OnParametersSet() =>
         statistics = RouteStatisticsCalculator.Calculate(Document);

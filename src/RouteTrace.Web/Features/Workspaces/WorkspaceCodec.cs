@@ -59,14 +59,14 @@ public static class WorkspaceCodec
 
                 await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(storedDocument.Gpx));
                 GpxImportResult imported = await GpxImporter.ImportAsync(stream, cancellationToken);
-                if (!imported.IsSuccess)
+                if (imported.Document is not { } routeDocument)
                     return WorkspaceDecodeResult.Failure($"A saved workspace document is invalid: {imported.Error}");
                 documents.Add(new WorkspaceDocument(
                     storedDocument.Id,
-                    imported.Document!,
+                    routeDocument,
                     storedDocument.SourceFileName,
                     storedDocument.IsVisible ?? true,
-                    storedDocument.Colour ?? DefaultColour(documents.Count),
+                    storedDocument.Colour ?? WorkspaceDocument.DefaultColour(documents.Count),
                     storedDocument.PresentationOverrides?.Select(item => new NodePresentationOverride(new WorkspaceNode(item.Kind, item.PrimaryIndex, item.SecondaryIndex), item.IsVisible, item.Colour))));
             }
 
@@ -77,12 +77,6 @@ public static class WorkspaceCodec
         {
             return WorkspaceDecodeResult.Failure("The saved workspace contains invalid identifiers or state.");
         }
-    }
-
-    private static string DefaultColour(int index)
-    {
-        string[] colours = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0891b2"];
-        return colours[index % colours.Length];
     }
 
     private static async Task<string> EncodeDocumentAsync(RouteDocument document, CancellationToken cancellationToken)

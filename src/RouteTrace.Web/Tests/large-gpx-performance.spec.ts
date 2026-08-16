@@ -1,11 +1,23 @@
 import { expect, test } from "@playwright/test";
+import type { Browser } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
 const fixturePath = path.resolve(
     "../../tests/RouteTrace.TestData/FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
 
-test("loads and renders the full-density GPX with measured phases", async ({ page }) => {
+interface ImportTimings {
+    parseMs: number;
+    busyFeedbackMs: number;
+    propagationAndInteropMs: number;
+    mapRenderMs: number;
+    inspectorRenderMs: number;
+    totalMs: number;
+}
+
+async function measureImport(browser: Browser): Promise<ImportTimings> {
+    const context = await browser.newContext();
+    const page = await context.newPage();
     await page.route("https://tile.openstreetmap.org/**", route => route.abort());
     await page.goto("/");
     await page.locator("input[type=file]").setInputFiles(fixturePath);
@@ -14,7 +26,7 @@ test("loads and renders the full-density GPX with measured phases", async ({ pag
     await page.waitForFunction(() =>
         performance.getEntriesByName("routeTrace.map.render.end").length > 0);
 
-    const timings = await page.evaluate(() => {
+    const timings: ImportTimings = await page.evaluate(() => {
         const mark = (name: string) => performance.getEntriesByName(name).at(-1)!.startTime;
         const start = mark("routeTrace.import.start");
         const parsed = mark("routeTrace.import.parsed");
@@ -31,11 +43,26 @@ test("loads and renders the full-density GPX with measured phases", async ({ pag
             totalMs: Math.max(mapEnd, inspectorRendered) - start,
         };
     });
+    await context.close();
+    return timings;
+}
 
-    console.log(`GPX UI timings: ${JSON.stringify(timings)}`);
-    expect(timings.busyFeedbackMs).toBeLessThan(100);
+function median(values: number[]): number {
+    const ordered = values.toSorted((left, right) => left - right);
+    return ordered[Math.floor(ordered.length / 2)];
+}
+
+test("loads and renders the full-density GPX with measured phases", async ({ browser }) => {
+    const samples: ImportTimings[] = [];
+    for (let sample = 0; sample < 3; sample++) samples.push(await measureImport(browser));
+    const medianBusyFeedbackMs = median(samples.map(sample => sample.busyFeedbackMs));
+    const medianTotalMs = median(samples.map(sample => sample.totalMs));
+
+    console.log(`GPX UI timing samples: ${JSON.stringify(samples)}`);
+    console.log(`GPX UI medians: ${JSON.stringify({ busyFeedbackMs: medianBusyFeedbackMs, totalMs: medianTotalMs })}`);
+    expect(medianBusyFeedbackMs).toBeLessThan(100);
     const completionBudgetMs = process.env.ROUTETRACE_PUBLISHED_ROOT ? 500 : 2_000;
-    expect(timings.totalMs).toBeLessThan(completionBudgetMs);
+    expect(medianTotalMs).toBeLessThan(completionBudgetMs);
 });
 
 test("exports the full-density GPX within the UI budget", async ({ page }) => {

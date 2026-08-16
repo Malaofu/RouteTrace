@@ -52,6 +52,8 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 | PBI-051         | FX-GPX-002-a                                   | Ask before performance tests. |
 | PBI-060         | Reuse PBI-030 GPX fixtures plus FX-GPX-005     | Ask only if they are absent. |
 | PBI-061         | None                                           | State that none are needed. |
+| PBI-062         | Reuse existing fixtures                        | State that no new fixtures are needed. |
+| PBI-063–PBI-066 | Reuse existing fixtures                        | Ask only if they are absent; no new user-supplied files are required. |
 | PBI-070–PBI-074 | Reuse existing GPX fixtures                    | Ask only if they are absent; no new user-supplied files are required. |
 | PBI-075         | FX-GPX-004, FX-GPX-006                         | Synthetic symbol coverage is sufficient; ask only if real-device symbol evidence is desired. |
 | PBI-076         | FX-ELE-001                                     | Ask only if it is absent. |

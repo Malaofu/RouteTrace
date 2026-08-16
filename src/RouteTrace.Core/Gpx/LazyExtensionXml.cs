@@ -65,7 +65,7 @@ internal sealed class LazyExtensionXml(byte[] sourceXml) : IReadOnlyList<string>
     {
         using var input = new MemoryStream(sourceXml, writable: false);
         XDocument document = XDocument.Load(input, LoadOptions.None);
-        XElement root = document.Root!;
+        XElement root = document.Root ?? throw new InvalidDataException("The GPX document has no root element.");
         var extensionsByOwner = new Dictionary<ExtensionOwner, IReadOnlyList<XElement>>();
         var standardChildrenByOwner = new Dictionary<ExtensionOwner, IReadOnlyList<XElement>>();
 

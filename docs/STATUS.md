@@ -1,41 +1,39 @@
 # Project status
 
-**Phase:** Workspace development
+**Phase:** Engineering quality baseline complete
 
-**Current PBI:** PBI-075 — Route endpoints and POI symbols
+**Current PBI:** PBI-062 — Establish the engineering quality baseline
 
 **Last updated:** 2026-08-16
 
 ## Current state
 
-- PBI-000 through PBI-075 are complete.
-- Visible tracks and routes have derived start and finish badges; tracks use
-  only their first and last populated points across all segments.
-- Starts render as green circles and finishes as checkered-flag badges; loop
-  endpoints are offset so both meanings remain legible at a shared coordinate.
-- Waypoint `sym` aliases, marker assets, and sizing bind from `appsettings.json`
-  through DI and typed options; map-pin layers, POI artwork, and the finish
-  marker are standalone SVG assets.
-  Missing and unknown values use a configured generic marker while original
-  GPX symbols remain canonical and round-trip unchanged.
-- Hovering a POI shows its name, symbol, coordinates, optional elevation, and
-  description in a compact non-interactive card rendered and styled by the
-  Blazor map feature; the OpenLayers adapter reports only hover identity and
-  position.
-- FX-GPX-004 contains common POI symbols and synthetic FX-GPX-006 covers open,
-  loop, multi-segment, known-symbol, unknown-symbol, and missing-symbol cases.
+- All implemented PBIs through PBI-075 are complete. PBI-063 through PBI-066
+  record focused document-explorer, Razor code-behind, GPX codec, and map
+  adapter decompositions discovered by the review.
+- Accepted architecture decisions are compliant or not yet applicable; none
+  are superseded and no unresolved decision drift remains.
+- Obsolete UI and map-rendering paths, duplicated defaults, unjustified null
+  suppressions, and one CSS specificity override were removed. FakeItEasy
+  remains the agreed test-double framework.
+- Route and workspace model responsibilities are split into focused files;
+  metadata and command dispatch use pattern switches where they improve flow.
+  Repository naming conventions are explicit in `.editorconfig`.
+- GPX import now reports malformed nesting cleanly and retains empty structural
+  elements. Visible large-file results render before browser-local persistence.
 
 ## Verification
 
 - Release build and WebAssembly AOT publish: passed with zero warnings.
-- .NET tests: 65 passed, zero failed.
-- Functional Playwright coverage and the marker-asset regression pass. The
-  published large-file timing sample currently exceeds its 500 ms budget
-  (565 ms; busy feedback 128 ms against 100 ms).
+- .NET tests: 69 passed, zero failed.
+- Published Playwright suite: 15 passed, zero failed.
+- Full-density import medians across three isolated samples: 481.5 ms total and
+  1.7 ms busy feedback, within the 500 ms and 100 ms budgets; export completed
+  in 68.9 ms.
 - Formatting and TypeScript checks: passed.
 
-**Blockers:** Published large-file timing verification needs a clean passing sample.
+**Blockers:** None.
 
 ## Next action
 
-- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-075.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-062.

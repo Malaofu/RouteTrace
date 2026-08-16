@@ -42,6 +42,8 @@ a {
 }
 
 .visually-hidden {
+  // These declarations must win over component styles so accessible labels
+  // cannot become visible when reused inside a styled component.
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -54,6 +56,7 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  // The user preference intentionally overrides every component animation.
   *,
   *::before,
   *::after {

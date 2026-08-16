@@ -14,7 +14,7 @@
 .document-explorer--hidden { display: none; }
 .document-explorer h2 { margin: 0 0 .5rem; font-size: 1rem; }
 .document-explorer ul { margin: 0; padding-left: 1rem; list-style: none; }
-.document-explorer__tree { padding-left: 0 !important; }
+.document-explorer ul.document-explorer__tree { padding-left: 0; }
 .document-explorer__row { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) 1.5rem; align-items: center; min-height: 2rem; border-radius: .35rem; }
 .document-explorer__row:hover { background: rgb(255 255 255 / 7%); }
 .document-explorer__row--active { background: #3b3b3f; }

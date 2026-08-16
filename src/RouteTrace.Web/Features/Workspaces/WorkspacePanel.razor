@@ -86,14 +86,14 @@
         await RunAsync(async () =>
         {
             WorkspaceDecodeResult result = await Store.OpenAsync(id);
-            if (!result.IsSuccess)
+            if (result.Workspace is not { } openedWorkspace)
             {
                 error = result.Error;
                 return;
             }
-            workspaceName = result.Workspace!.Name;
-            await WorkspaceChanged.InvokeAsync(result.Workspace);
-            message = $"Opened {result.Workspace.Name}.";
+            workspaceName = openedWorkspace.Name;
+            await WorkspaceChanged.InvokeAsync(openedWorkspace);
+            message = $"Opened {openedWorkspace.Name}.";
         });
     }
 

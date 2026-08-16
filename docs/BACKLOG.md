@@ -197,6 +197,206 @@ Blazor WebAssembly application.
 - Existing .NET and Playwright checks still pass.
 - No fixture is required and no product behaviour changes.
 
+## PBI-062 — Establish the engineering quality baseline
+
+**Status:** Complete
+
+### Goal
+
+Establish a maintainable quality baseline before further feature development.
+Identify and correct architectural drift, unnecessary complexity, regressions,
+and violations of documented project decisions.
+
+This PBI must not become an unrestricted rewrite of the application.
+
+### Scope
+
+- Verify that completed PBI behaviour remains functional unless explicitly
+  superseded by a later PBI or decision.
+- Compare the implementation with the current architecture and decisions.
+- Review separation between:
+  - Razor markup
+  - component styling
+  - C# application and domain logic
+  - TypeScript browser interoperability
+  - configuration
+  - static media and icons
+- Identify unnecessary abstractions, dependencies, duplication, dead code,
+  premature extensibility, and other YAGNI violations.
+- Review nullable handling and unjustified use of the null-forgiving operator.
+- Review styling for `!important`, global leakage, embedded media, and
+  component-style violations.
+- Review files and types for unclear or excessive responsibility.
+- Review whether language usage is modern, readable, and appropriate.
+- Add or refine deterministic quality checks where they provide immediate value.
+- Record material problems as focused follow-up PBIs rather than expanding this
+  PBI indefinitely.
+
+### Implementation principles
+
+- Prefer small, safe corrections over broad refactoring.
+- Do not change user-visible behaviour except to repair a regression.
+- Do not add abstractions merely to make the architecture appear cleaner.
+- Do not add a package when built-in tooling is sufficient.
+- Keep TypeScript limited to browser APIs, map-library adaptation, and JavaScript
+  interop that cannot reasonably be implemented in Blazor/C#.
+- Keep domain rules, validation, workspace state, GPX processing, and other
+  application behaviour in C#.
+- A later PBI may supersede an earlier decision, but must update the applicable
+  decision or architecture documentation explicitly.
+
+### Acceptance criteria
+
+- The solution builds without warnings.
+- The complete automated test suite passes.
+- Existing formatting and analyzer checks pass.
+- Completed PBI acceptance criteria have been checked for regression, with
+  automated coverage used where available.
+- Unprotected behaviour considered important enough to preserve has either:
+  - received regression coverage, or
+  - been recorded as a focused follow-up task.
+- Architectural decisions are classified as:
+  - compliant,
+  - drifted,
+  - superseded, or
+  - not yet applicable.
+- Confirmed low-risk drift has been corrected.
+- Larger refactorings have been captured as separate PBIs.
+- No unjustified business logic remains in TypeScript.
+- No unjustified null-forgiving operators or `!important` declarations remain.
+- Documentation describes the current state rather than accumulating an
+  implementation diary.
+- No new test fixtures are required; existing fixtures are reused.
+
+### Out of scope
+
+- Large-scale redesign.
+- Replacing working libraries without a demonstrated problem.
+- Performance optimisation without evidence of a relevant bottleneck.
+- Cosmetic refactoring across otherwise unaffected features.
+- Automatically modifying code based only on textual pattern matching.
+
+### Review result
+
+- D-001, D-002, D-004, D-005, D-007, and D-009 through D-021 are compliant.
+  D-014 and D-018 had low-risk drift that was corrected during this PBI.
+- D-003 and D-008 are not yet applicable to implemented product features.
+  No decision is superseded and no unresolved decision drift remains.
+- Removed an obsolete import component, a dead map-rendering path, and
+  duplicated colour defaults. FakeItEasy remains the selected mocking baseline
+  so future tests use the agreed framework without test-project setup churn.
+- Production null-forgiving operators and the unjustified component
+  `!important` override were removed. The remaining `!important` declarations
+  intentionally enforce screen-reader-only and reduced-motion accessibility.
+- Malformed GPX nesting now returns readable failures, while empty tracks,
+  segments, and routes remain represented. Focused regression coverage protects
+  both behaviours.
+- Large-file rendering was restored within its published AOT budget by avoiding
+  a redundant track flattening allocation and rendering before local
+  persistence work. The quality gate now uses the median of three isolated
+  browser samples to reject sustained regressions without failing on one noisy
+  scheduler sample; the final medians were 481.5 ms total and 1.7 ms busy
+  feedback.
+- Completed PBI behaviour through PBI-075 is covered by the passing .NET and
+  Playwright suites.
+- Independent route and workspace model types now have focused files;
+  metadata-update and command dispatch branches use pattern switches and
+  purpose-named methods. Repository naming conventions are explicit in
+  `.editorconfig` so IDE suggestions match the established code style.
+- Larger UI and adapter decompositions are deferred to PBI-063 through PBI-066.
+
+## PBI-063 — Decompose document explorer responsibilities
+
+**Status:** Proposed
+
+**Goal:** Reduce the responsibility of the document explorer without changing
+its user-visible behaviour or workspace model.
+
+**Tasks:**
+
+- Separate semantic tree rendering from context-action and dialog state.
+- Keep selection, visibility, appearance, metadata, focus, close, and export
+  behaviour on the existing shared workspace command paths.
+- Preserve keyboard and pointer accessibility and avoid per-point UI nodes.
+- Add component-level coverage where extraction creates independently testable
+  interaction logic; retain the existing browser regression suite.
+
+**Acceptance criteria:**
+
+- No component combines tree rendering, multi-selection, context-menu
+  positioning, appearance editing, metadata editing, and GPX export orchestration.
+- Existing document-explorer and context-action browser tests pass unchanged.
+- Workspace persistence and exported canonical GPX remain unchanged.
+- The solution builds without warnings and all automated checks pass.
+
+## PBI-064 — Extract substantial Razor component logic
+
+**Status:** Proposed
+
+**Goal:** Keep substantial Blazor component behaviour in code-behind files so
+Razor files remain readable descriptions of rendered structure.
+
+**Tasks:**
+
+- Move the non-trivial `@code` sections from `Home`, `ApplicationMenu`,
+  `DocumentExplorer`, `MapViewport`, and `WorkspacePanel` into matching
+  `.razor.cs` partial classes.
+- Keep small presentation-only components inline where separation would add
+  navigation cost without improving comprehension.
+- Preserve feature namespaces, dependency injection, disposal, and component
+  parameter contracts.
+
+**Acceptance criteria:**
+
+- The listed Razor files primarily contain markup and directives.
+- Extracted code-behind classes remain feature-scoped and do not introduce a
+  generic base-component abstraction.
+- Existing .NET and Playwright tests pass without user-visible changes.
+
+## PBI-065 — Decompose GPX codec internals
+
+**Status:** Proposed
+
+**Goal:** Make the GPX importer and exporter easier to reason about without
+changing their canonical model, streaming, preservation, or output semantics.
+
+**Tasks:**
+
+- Separate parser state and element handling from public import orchestration.
+- Separate schema writing, preserved-content restoration, and XML helper
+  concerns where each extracted unit has a clear invariant.
+- Prefer guard clauses and pattern switches where they flatten state handling;
+  retain conditional logic where ordering or ownership is the central concern.
+
+**Acceptance criteria:**
+
+- No GPX codec source file requires understanding import/export orchestration,
+  XML traversal, and preserved-content bookkeeping at once.
+- Existing fixtures round-trip identically and malformed input remains readable.
+- Performance budgets and all automated checks pass.
+
+## PBI-066 — Decompose the OpenLayers adapter
+
+**Status:** Proposed
+
+**Goal:** Separate map lifecycle, feature synchronisation, and feature styling
+without leaking OpenLayers details outside the TypeScript adapter boundary.
+
+**Tasks:**
+
+- Extract marker/style construction from map lifecycle and document updates.
+- Keep boundary DTOs small, serialisable, and aligned with the existing C# map
+  geometry contracts.
+- Avoid a framework or generic plug-in layer; preserve the current single map
+  adapter entry point used by Blazor.
+
+**Acceptance criteria:**
+
+- Map lifecycle, geometry synchronisation, and feature styling can be reviewed
+  independently.
+- Projection and OpenLayers types remain confined to TypeScript.
+- Existing endpoint, POI, selection, and multi-document tests pass unchanged.
+
 ## PBI-070 — Browser-local workspace persistence
 
 **Status:** Complete

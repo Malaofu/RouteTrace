@@ -6,6 +6,7 @@
 @using RouteTrace.Web.Features.Commands
 @using RouteTrace.Core.Routes
 @inject IWorkspaceStore WorkspaceStore
+@inject IJSRuntime JavaScript
 
 <PageTitle>Route Trace</PageTitle>
 
@@ -45,9 +46,9 @@
     protected override async Task OnInitializedAsync()
     {
         WorkspaceDecodeResult? restored = await WorkspaceStore.OpenMostRecentAsync();
-        if (restored?.IsSuccess == true)
+        if (restored?.Workspace is { } restoredWorkspace)
         {
-            workspace = restored.Workspace!;
+            workspace = restoredWorkspace;
         }
         RefreshMapDocuments();
     }
@@ -57,6 +58,8 @@
         workspace = workspace.AddDocument(importedDocument.Document, importedDocument.SourceFileName);
         RefreshMapDocuments();
         selection = MapSelection.None;
+        await InvokeAsync(StateHasChanged);
+        await JavaScript.InvokeVoidAsync("routeTrace.waitForAnimationFrame");
         await WorkspaceStore.SaveAsync(workspace);
     }
 

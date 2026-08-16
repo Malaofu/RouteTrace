@@ -21,14 +21,14 @@ test("file menu exposes availability and keyboard dismissal", async ({ page }) =
 
     const menuBox = await page.locator(".application-menu").boundingBox();
     const inspectorBox = await page.getByRole("complementary", { name: "GPX inspector" }).boundingBox();
-    expect(menuBox).not.toBeNull();
-    expect(inspectorBox).not.toBeNull();
-    expect(Math.abs(menuBox!.x + menuBox!.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(2);
-    expect(menuBox!.x).toBeGreaterThanOrEqual(inspectorBox!.x + inspectorBox!.width);
+    const viewport = page.viewportSize();
+    if (!menuBox || !inspectorBox || !viewport) throw new Error("Expected visible menu, inspector, and viewport bounds.");
+    expect(Math.abs(menuBox.x + menuBox.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    expect(menuBox.x).toBeGreaterThanOrEqual(inspectorBox.x + inspectorBox.width);
 
     const logoBox = await page.getByRole("link", { name: "Route Trace home" }).boundingBox();
-    expect(logoBox).not.toBeNull();
-    expect(inspectorBox!.y).toBeGreaterThanOrEqual(logoBox!.y + logoBox!.height);
+    if (!logoBox) throw new Error("Expected visible logo bounds.");
+    expect(inspectorBox.y).toBeGreaterThanOrEqual(logoBox.y + logoBox.height);
 
     await fileButton.click();
     await expect(page.getByRole("menuitem", { name: /Download GPX/ })).toBeEnabled();

@@ -111,6 +111,9 @@ public sealed class GpxImporterTests
     [Theory]
     [InlineData("<gpx>")]
     [InlineData("<gpx xmlns='http://www.topografix.com/GPX/1/1' version='1.1'><trk><trkseg><trkpt lat='91' lon='0'/></trkseg></trk></gpx>")]
+    [InlineData("<gpx xmlns='http://www.topografix.com/GPX/1/1' version='1.1'><trkpt lat='1' lon='2'/></gpx>")]
+    [InlineData("<gpx xmlns='http://www.topografix.com/GPX/1/1' version='1.1'><rtept lat='1' lon='2'/></gpx>")]
+    [InlineData("<gpx xmlns='http://www.topografix.com/GPX/1/1' version='1.1'><trkseg/></gpx>")]
     [InlineData("<gpx xmlns='http://www.topografix.com/GPX/1/1' version='1.0'/>")]
     public async Task ReturnsReadableFailureForInvalidInput(string xml)
     {
@@ -121,6 +124,27 @@ public sealed class GpxImporterTests
         result.IsSuccess.ShouldBeFalse();
         result.Document.ShouldBeNull();
         result.Error.ShouldNotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public async Task PreservesEmptyTracksSegmentsAndRoutes()
+    {
+        const string xml = """
+            <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="test">
+              <rte />
+              <trk><trkseg /></trk>
+              <trk />
+            </gpx>
+            """;
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+
+        GpxImportResult result = await GpxImporter.ImportAsync(stream, TestContext.Current.CancellationToken);
+
+        result.IsSuccess.ShouldBeTrue(result.Error);
+        result.Document.ShouldNotBeNull();
+        result.Document.Routes.Count.ShouldBe(1);
+        result.Document.Tracks.Count.ShouldBe(2);
+        result.Document.Tracks[0].Segments.Count.ShouldBe(1);
     }
 
     private static async Task<GpxImportResult> ImportFixture(string name)

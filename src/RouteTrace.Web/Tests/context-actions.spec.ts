@@ -48,8 +48,9 @@ test("context actions follow selection, pointer position, and outside dismissal"
     await expect(menu.getByRole("menuitem", { name: /Select all/ })).toHaveCount(0);
     const menuBox = await menu.boundingBox();
     const targetBox = await firstChild.boundingBox();
-    expect(menuBox!.x).toBeGreaterThanOrEqual(targetBox!.x);
-    expect(menuBox!.y).toBeGreaterThanOrEqual(targetBox!.y);
+    if (!menuBox || !targetBox) throw new Error("Expected visible menu and target bounds.");
+    expect(menuBox.x).toBeGreaterThanOrEqual(targetBox.x);
+    expect(menuBox.y).toBeGreaterThanOrEqual(targetBox.y);
 
     await page.locator(".document-explorer__menu-dismiss").click({ position: { x: 2, y: 2 } });
     await expect(menu).toBeHidden();

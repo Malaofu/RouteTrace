@@ -32,14 +32,6 @@ interface ImportedGeometry {
     endpoints: Array<{ ownerKind: "track" | "route"; ownerIndex: number; endpointKind: "start" | "finish"; coordinate: Wgs84Coordinate; overlap: boolean }>;
 }
 
-interface WorkspaceGeometry {
-    id: string;
-    geometry: ImportedGeometry;
-    colour: string;
-    isActive: boolean;
-    isSelected: boolean;
-}
-
 const maps = new Map<string, MapHandle>();
 const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const attribution =
@@ -57,7 +49,7 @@ interface DotNetViewport {
     invokeMethodAsync(method: string, ...args: unknown[]): Promise<unknown>;
 }
 
-let markerConfig!: MarkerConfig;
+let markerConfig: MarkerConfig | null = null;
 const markerAssetRoot = new URL("../images/map-markers/", import.meta.url);
 const endpointMarkerRadius = 10;
 const endpointMarkerSize = endpointMarkerRadius * 2;
@@ -129,6 +121,7 @@ export function upsertDocument(
 ): void {
     removeDocument(elementId, documentId);
     const source = getMap(elementId).geometrySource;
+    const markers = configuredMarkers();
     const properties = { documentId, documentColour: colour };
     geometry.tracks.forEach((track, trackIndex) => track.segments.forEach((segment, segmentIndex) => {
         if (segment.length === 0) return;
@@ -158,7 +151,7 @@ export function upsertDocument(
         geometry: new Point(fromLonLat(waypoint.coordinate)),
         kind: "waypoint",
         waypointIndex,
-        symbolKey: markerConfig.symbols[waypoint.symbol?.trim().toLowerCase() ?? ""] ?? markerConfig.defaultIcon,
+        symbolKey: markers.symbols[waypoint.symbol?.trim().toLowerCase() ?? ""] ?? markers.defaultIcon,
         waypointCoordinate: waypoint.coordinate,
     })));
     geometry.endpoints.forEach(endpoint => source.addFeature(new Feature({
@@ -253,77 +246,6 @@ export function focusSelection(elementId: string, documentId: string, trackIndex
     handle.map.getView().fit(extent, { duration: 250, maxZoom: 18, padding: [64, 64, 64, 64] });
 }
 
-export function renderDocuments(
-    elementId: string,
-    documents: WorkspaceGeometry[],
-    selectedTrack: number | null,
-    selectedSegment: number | null,
-): void {
-    performance.mark("routeTrace.map.render.start");
-    const handle = getMap(elementId);
-    handle.geometrySource.clear();
-    handle.geometryLayer.setStyle(featureStyle(selectedTrack, selectedSegment));
-
-    if (documents.length === 0) {
-        performance.mark("routeTrace.map.render.end");
-        return;
-    }
-
-    documents.forEach(document => {
-    const geometry = document.geometry;
-    geometry.tracks.forEach((track, trackIndex) => {
-        track.segments.forEach((segment, segmentIndex) => {
-            if (segment.length === 0) return;
-            handle.geometrySource.addFeature(new Feature({
-                geometry: segment.length === 1
-                    ? new Point(fromLonLat(segment[0]))
-                    : new LineString(segment.map(coordinate => fromLonLat(coordinate))),
-                kind: "track",
-                trackIndex,
-                segmentIndex,
-                documentColour: document.colour,
-                activeDocument: document.isActive,
-                selectedDocument: document.isSelected,
-            }));
-        });
-    });
-    geometry.routes.forEach((route, routeIndex) => {
-        if (route.length === 0) return;
-        handle.geometrySource.addFeature(new Feature({
-            geometry: route.length === 1
-                ? new Point(fromLonLat(route[0]))
-                : new LineString(route.map(coordinate => fromLonLat(coordinate))),
-            kind: "route",
-            routeIndex,
-            documentColour: document.colour,
-            activeDocument: document.isActive,
-            selectedDocument: document.isSelected,
-        }));
-    });
-    geometry.waypoints.forEach((waypoint, waypointIndex) => {
-        handle.geometrySource.addFeature(new Feature({
-            geometry: new Point(fromLonLat(waypoint.coordinate)),
-            kind: "waypoint",
-            waypointIndex,
-            documentColour: document.colour,
-            activeDocument: document.isActive,
-            selectedDocument: document.isSelected,
-        }));
-    });
-    });
-
-    if (!handle.geometrySource.isEmpty()) {
-        const extent = handle.geometrySource.getExtent();
-        if (!extent) return;
-        handle.map.getView().fit(extent, {
-            duration: 250,
-            maxZoom: 18,
-            padding: [64, 64, 64, 64],
-        });
-    }
-    performance.mark("routeTrace.map.render.end");
-}
-
 export function fitBounds(
     elementId: string,
     bounds: Wgs84Bounds,
@@ -392,20 +314,29 @@ function cachedIcon(key: string, options: ConstructorParameters<typeof Icon>[0])
     return icon;
 }
 
+function configuredMarkers(): MarkerConfig {
+    if (!markerConfig) {
+        throw new Error("Map marker configuration has not been initialized.");
+    }
+    return markerConfig;
+}
+
 function poiStyles(symbolKey: string, colour: string, selected: boolean): Style[] {
-    const scale = selected ? markerConfig.selectedPinScale : markerConfig.pinScale;
+    const markers = configuredMarkers();
+    const scale = selected ? markers.selectedPinScale : markers.pinScale;
     const common = { scale, anchor: [0.5, 1] as [number, number] };
     return [
-        new Style({ image: cachedIcon(`pin-fill|${colour}|${scale}`, { ...common, src: markerAsset(markerConfig.assets.pinFill), color: colour }), zIndex: 30 }),
-        new Style({ image: cachedIcon(`pin-outline|${scale}`, { ...common, src: markerAsset(markerConfig.assets.pinOutline) }), zIndex: 31 }),
+        new Style({ image: cachedIcon(`pin-fill|${colour}|${scale}`, { ...common, src: markerAsset(markers.assets.pinFill), color: colour }), zIndex: 30 }),
+        new Style({ image: cachedIcon(`pin-outline|${scale}`, { ...common, src: markerAsset(markers.assets.pinOutline) }), zIndex: 31 }),
         new Style({ image: cachedIcon(`${symbolKey}|${scale}`, { ...common, src: markerAsset(symbolKey) }), zIndex: 32 }),
     ];
 }
 
 function finishIcon(overlap: boolean): Icon {
+    const markers = configuredMarkers();
     const key = `finish|${overlap}`;
     return cachedIcon(key, {
-        src: markerAsset(markerConfig.assets.finish),
+        src: markerAsset(markers.assets.finish),
         width: endpointMarkerSize,
         height: endpointMarkerSize,
         displacement: overlap ? [8, 0] : [0, 0],

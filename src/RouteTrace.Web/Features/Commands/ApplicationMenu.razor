@@ -190,30 +190,31 @@ else if (message is not null)
     {
         if (activeMenu is null) return;
 
-        if (eventArgs.Key == "Escape")
+        switch (eventArgs.Key)
         {
-            string closingMenu = activeMenu;
-            activeMenu = null;
-            await (closingMenu == "view" ? viewMenuButton : menuButton).FocusAsync();
-        }
-        else if (eventArgs.Key == "ArrowDown")
-        {
-            await (activeMenu == "view" ? inspectorButton : exportCommand.CanExecute ? saveButton : openButton).FocusAsync();
-        }
-        else if (eventArgs.Key == "ArrowUp")
-        {
-            await (activeMenu == "view" ? explorerButton : openButton).FocusAsync();
+            case "Escape":
+                string closingMenu = activeMenu;
+                activeMenu = null;
+                await (closingMenu == "view" ? viewMenuButton : menuButton).FocusAsync();
+                break;
+            case "ArrowDown":
+                await (activeMenu == "view" ? inspectorButton : exportCommand.CanExecute ? saveButton : openButton).FocusAsync();
+                break;
+            case "ArrowUp":
+                await (activeMenu == "view" ? explorerButton : openButton).FocusAsync();
+                break;
         }
     }
 
     [JSInvokable]
-    public async Task RunShortcutAsync(string command)
+    public Task RunShortcutAsync(string command) => command switch
     {
-        if (command == "open") await openCommand.TryExecuteAsync();
-        if (command == "export") await exportCommand.TryExecuteAsync();
-        if (command == "inspector") await inspectorCommand.TryExecuteAsync();
-        if (command == "explorer") await explorerCommand.TryExecuteAsync();
-    }
+        "open" => openCommand.TryExecuteAsync(),
+        "export" => exportCommand.TryExecuteAsync(),
+        "inspector" => inspectorCommand.TryExecuteAsync(),
+        "explorer" => explorerCommand.TryExecuteAsync(),
+        _ => Task.CompletedTask
+    };
 
     [JSInvokable]
     public void DismissMenu()
@@ -243,14 +244,13 @@ else if (message is not null)
             await using Stream stream = file.OpenReadStream(MaximumFileSize);
             GpxImportResult result = await GpxImporter.ImportAsync(stream);
             await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.parsed");
-            if (!result.IsSuccess)
+            if (result.Document is not { } document)
             {
                 hasError = true;
                 message = result.Error;
                 return;
             }
 
-            RouteDocument document = result.Document!;
             int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
                 + document.Routes.Sum(route => route.Points.Count)
                 + document.Waypoints.Count;

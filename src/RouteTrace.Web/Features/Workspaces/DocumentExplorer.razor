@@ -201,12 +201,21 @@
         await OpenActionsAsync(document, node, name, targetSelection, new MouseEventArgs { ClientX = 24, ClientY = 80 });
     }
     private void CloseActions() => actionTarget = null;
-    private IReadOnlyList<ActionTarget> SelectedTargets => selectedNodes.Select(ResolveTarget).Where(item => item is not null).Cast<ActionTarget>().ToArray();
+    private IReadOnlyList<ActionTarget> SelectedTargets => selectedNodes.Select(ResolveTarget).OfType<ActionTarget>().ToArray();
     private bool AllTargetsVisible => SelectedTargets.All(TargetIsVisible);
-    private string TargetColour => actionTarget!.Node is null ? actionTarget.Document.Colour : actionTarget.Document.NodeColour(actionTarget.Node.Value);
-    private bool CanEditInfo => SelectedTargets.Count == 1 && HasInfo(actionTarget!.Node);
-    private async Task ActivateTargetAsync() { await WorkspaceChanged.InvokeAsync(Workspace.Activate(actionTarget!.Document.Id)); CloseActions(); }
-    private async Task FocusTargetAsync() { await FocusRequested.InvokeAsync(actionTarget!.Selection); CloseActions(); }
+    private bool CanEditInfo => actionTarget is { } target && SelectedTargets.Count == 1 && HasInfo(target.Node);
+    private async Task ActivateTargetAsync()
+    {
+        if (actionTarget is not { } target) return;
+        await WorkspaceChanged.InvokeAsync(Workspace.Activate(target.Document.Id));
+        CloseActions();
+    }
+    private async Task FocusTargetAsync()
+    {
+        if (actionTarget is not { } target) return;
+        await FocusRequested.InvokeAsync(target.Selection);
+        CloseActions();
+    }
     private async Task ToggleTargetVisibilityAsync()
     {
         bool visible = !AllTargetsVisible;
@@ -215,7 +224,13 @@
             changed = target.Node is null ? changed.SetVisibility(target.Document.Id, visible) : changed.SetNodeVisibility(target.Document.Id, target.Node.Value, visible);
         await WorkspaceChanged.InvokeAsync(changed); CloseActions();
     }
-    private void OpenAppearance() { appearanceTarget = actionTarget; appearanceColour = TargetColour; CloseActions(); }
+    private void OpenAppearance()
+    {
+        if (actionTarget is not { } target) return;
+        appearanceTarget = target;
+        appearanceColour = target.Node is null ? target.Document.Colour : target.Document.NodeColour(target.Node.Value);
+        CloseActions();
+    }
     private void CloseAppearance() => appearanceTarget = null;
     private bool CanResetAppearance => SelectedTargets.Count > 0 && SelectedTargets.All(target => target.Node is not null);
     private async Task SaveAppearanceAsync()
@@ -228,13 +243,20 @@
     private async Task ResetAppearanceAsync()
     {
         RouteWorkspace changed = Workspace;
-        foreach (ActionTarget target in SelectedTargets.Where(target => target.Node is not null)) changed = changed.SetNodeColour(target.Document.Id, target.Node!.Value, null);
+        foreach (ActionTarget target in SelectedTargets)
+            if (target.Node is { } node) changed = changed.SetNodeColour(target.Document.Id, node, null);
         await WorkspaceChanged.InvokeAsync(changed); CloseAppearance();
     }
-    private async Task CloseTargetAsync() { await WorkspaceChanged.InvokeAsync(Workspace.Close(actionTarget!.Document.Id)); CloseActions(); }
+    private async Task CloseTargetAsync()
+    {
+        if (actionTarget is not { } target) return;
+        await WorkspaceChanged.InvokeAsync(Workspace.Close(target.Document.Id));
+        CloseActions();
+    }
     private async Task ExportTargetAsync()
     {
-        WorkspaceDocument target = actionTarget!.Document; await using var stream = new MemoryStream();
+        if (actionTarget is not { } action) return;
+        WorkspaceDocument target = action.Document; await using var stream = new MemoryStream();
         await GpxExporter.ExportAsync(target.Document, stream, "Route Trace"); stream.Position = 0;
         using var reference = new DotNetStreamReference(stream); downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
         await downloadModule.InvokeVoidAsync("downloadStream", GpxDownloadFileName.From(target.Document.Metadata?.Name, target.SourceFileName), "application/gpx+xml", reference); CloseActions();
@@ -244,16 +266,26 @@
     private bool InfoHasDescription => infoTarget?.Node is null || infoTarget?.Node?.Kind == WorkspaceNodeKind.Waypoint;
     private void OpenInfo()
     {
-        infoTarget = actionTarget; CloseActions();
-        if (infoTarget!.Node is null) { infoName = infoTarget.Document.Document.Metadata?.Name; infoDescription = infoTarget.Document.Document.Metadata?.Description; }
-        else if (infoTarget.Node.Value.Kind == WorkspaceNodeKind.Track) infoName = infoTarget.Document.Document.Tracks[infoTarget.Node.Value.PrimaryIndex].Name;
-        else if (infoTarget.Node.Value.Kind == WorkspaceNodeKind.Route) infoName = infoTarget.Document.Document.Routes[infoTarget.Node.Value.PrimaryIndex].Name;
-        else { Waypoint waypoint = infoTarget.Document.Document.Waypoints[infoTarget.Node.Value.PrimaryIndex]; infoName = waypoint.Name; infoDescription = waypoint.Description; }
+        if (actionTarget is not { } target) return;
+        infoTarget = target; CloseActions();
+        (infoName, infoDescription) = InfoFields(target);
     }
+
+    private static (string? Name, string? Description) InfoFields(ActionTarget target) => target.Node switch
+    {
+        null => (target.Document.Document.Metadata?.Name, target.Document.Document.Metadata?.Description),
+        { Kind: WorkspaceNodeKind.Track } node => (target.Document.Document.Tracks[node.PrimaryIndex].Name, null),
+        { Kind: WorkspaceNodeKind.Route } node => (target.Document.Document.Routes[node.PrimaryIndex].Name, null),
+        { Kind: WorkspaceNodeKind.Waypoint } node => WaypointInfo(target.Document.Document.Waypoints[node.PrimaryIndex]),
+        _ => (null, null)
+    };
+
+    private static (string? Name, string? Description) WaypointInfo(Waypoint waypoint) =>
+        (waypoint.Name, waypoint.Description);
     private void CloseInfo() { infoTarget = null; infoName = null; infoDescription = null; }
     private async Task SaveInfoAsync()
     {
-        ActionTarget target = infoTarget!;
+        if (infoTarget is not { } target) return;
         await WorkspaceChanged.InvokeAsync(Workspace.UpdateNodeInfo(target.Document.Id, target.Node, EmptyToNull(infoName), EmptyToNull(infoDescription)));
         CloseInfo();
     }
@@ -306,7 +338,7 @@
         await WorkspaceChanged.InvokeAsync(Workspace.Activate(id).Select(id));
         MapSelection mapSelection = selectedNodes.Contains(identity)
             ? selection with { DocumentId = id }
-            : selectedNodes.Count == 0 ? MapSelection.None : ResolveTarget(selectedNodes.First())!.Selection;
+            : selectedNodes.Count == 0 ? MapSelection.None : ResolveTarget(selectedNodes.First())?.Selection ?? MapSelection.None;
         await SelectionChanged.InvokeAsync(mapSelection);
     }
 
@@ -320,10 +352,10 @@
     private static WorkspaceNode? TargetNode(MapSelection selection) => selection switch
     {
         { WholeDocument: true } => null,
-        { SegmentIndex: not null } => new(WorkspaceNodeKind.Segment, selection.TrackIndex!.Value, selection.SegmentIndex.Value),
-        { TrackIndex: not null } => new(WorkspaceNodeKind.Track, selection.TrackIndex.Value),
-        { RouteIndex: not null } => new(WorkspaceNodeKind.Route, selection.RouteIndex.Value),
-        { WaypointIndex: not null } => new(WorkspaceNodeKind.Waypoint, selection.WaypointIndex.Value),
+        { TrackIndex: int trackIndex, SegmentIndex: int segmentIndex } => new(WorkspaceNodeKind.Segment, trackIndex, segmentIndex),
+        { TrackIndex: int trackIndex } => new(WorkspaceNodeKind.Track, trackIndex),
+        { RouteIndex: int routeIndex } => new(WorkspaceNodeKind.Route, routeIndex),
+        { WaypointIndex: int waypointIndex } => new(WorkspaceNodeKind.Waypoint, waypointIndex),
         { WaypointGroup: true } => new(WorkspaceNodeKind.WaypointGroup),
         _ => null
     };
