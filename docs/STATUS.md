@@ -2,40 +2,40 @@
 
 **Phase:** Workspace development
 
-**Current PBI:** PBI-074 — Context actions and presentation settings
+**Current PBI:** PBI-075 — Route endpoints and POI symbols
 
 **Last updated:** 2026-08-16
 
 ## Current state
 
-- PBI-000 through PBI-074 are complete.
-- Explorer nodes expose a pointer-positioned context menu through right-click
-  or Shift+F10, with outside-click dismissal and no persistent overflow button.
-- Right-click selects an unselected target first; Ctrl-click adds or removes
-  nodes so presentation commands can apply to the complete selected set.
-- Document actions include activate, focus, visibility, colour, GPX download,
-  and close; child nodes expose only applicable focus and presentation actions.
-- Track, segment, route, waypoint-group, and waypoint presentation overrides
-  inherit from parents; showing a parent clears hidden descendant overrides,
-  and child colours can be reset to their effective parent colour.
-- Explorer colour strips show each node's effective colour rather than always
-  repeating the document colour; the redundant Select all action is removed.
-- Info dialogs edit supported document, track, route, and waypoint text while
-  preserving the remaining canonical GPX content and surviving reloads.
-- Version 3 IndexedDB workspace records persist presentation overrides while
-  retaining migration support for versions 1 and 2.
-- GPX export keeps presentation settings out of canonical route data.
+- PBI-000 through PBI-075 are complete.
+- Visible tracks and routes have derived start and finish badges; tracks use
+  only their first and last populated points across all segments.
+- Starts render as green circles and finishes as checkered-flag badges; loop
+  endpoints are offset so both meanings remain legible at a shared coordinate.
+- Waypoint `sym` aliases, marker assets, and sizing bind from `appsettings.json`
+  through DI and typed options; map-pin layers, POI artwork, and the finish
+  marker are standalone SVG assets.
+  Missing and unknown values use a configured generic marker while original
+  GPX symbols remain canonical and round-trip unchanged.
+- Hovering a POI shows its name, symbol, coordinates, optional elevation, and
+  description in a compact non-interactive card rendered and styled by the
+  Blazor map feature; the OpenLayers adapter reports only hover identity and
+  position.
+- FX-GPX-004 contains common POI symbols and synthetic FX-GPX-006 covers open,
+  loop, multi-segment, known-symbol, unknown-symbol, and missing-symbol cases.
 
 ## Verification
 
 - Release build and WebAssembly AOT publish: passed with zero warnings.
-- .NET tests: 62 passed, zero failed.
-- Published Playwright tests: 14 passed, zero failed, including Info reload,
-  inherited-colour reset, and keyboard context-menu coverage.
+- .NET tests: 65 passed, zero failed.
+- Functional Playwright coverage and the marker-asset regression pass. The
+  published large-file timing sample currently exceeds its 500 ms budget
+  (565 ms; busy feedback 128 ms against 100 ms).
 - Formatting and TypeScript checks: passed.
 
-**Blockers:** None.
+**Blockers:** Published large-file timing verification needs a clean passing sample.
 
 ## Next action
 
-- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-074.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-075.

@@ -1,18 +1,32 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JavaScript
+@inject Microsoft.Extensions.Options.IOptions<MapMarkerOptions> MarkerOptions
 @using RouteTrace.Core.Routes
 
-<div id="@elementId"
-     class="map-viewport"
-     role="application"
-     aria-label="Interactive route map"
-     data-visible-documents="@Documents.Count"
-     data-selected-track="@Selection.TrackIndex"
-     data-selected-segment="@Selection.SegmentIndex"
-     data-selected-route="@Selection.RouteIndex"
-     data-selected-waypoint="@Selection.WaypointIndex"
-     data-selected-document="@(Selection.WholeDocument ? "true" : "false")"
-     data-selected-waypoint-group="@(Selection.WaypointGroup ? "true" : "false")">
+<div class="map-viewport-shell">
+    <div id="@elementId"
+         class="map-viewport"
+         role="application"
+         aria-label="Interactive route map"
+         data-visible-documents="@Documents.Count"
+         data-selected-track="@Selection.TrackIndex"
+         data-selected-segment="@Selection.SegmentIndex"
+         data-selected-route="@Selection.RouteIndex"
+         data-selected-waypoint="@Selection.WaypointIndex"
+         data-selected-document="@(Selection.WholeDocument ? "true" : "false")"
+         data-selected-waypoint-group="@(Selection.WaypointGroup ? "true" : "false")">
+    </div>
+    @if (hoveredWaypoint is not null)
+    {
+        <aside class="map-poi-tooltip" role="tooltip" style="left: @(hoveredWaypoint.Left)px; top: @(hoveredWaypoint.Top)px; --map-poi-pin-height: @(HoveredPinHeight())px">
+            <strong class="map-poi-tooltip__title">@(hoveredWaypoint.Waypoint.Name ?? "Point of interest")</strong>
+            <span class="map-poi-tooltip__metadata">@WaypointMetadata(hoveredWaypoint.Waypoint)</span>
+            @if (!string.IsNullOrWhiteSpace(hoveredWaypoint.Waypoint.Description))
+            {
+                <span class="map-poi-tooltip__description">@hoveredWaypoint.Waypoint.Description</span>
+            }
+        </aside>
+    }
 </div>
 @if (Documents.Count > 0 && Documents.All(document => document.Geometry.Tracks.Count == 0 && document.Geometry.Routes.Count == 0 && document.Geometry.Waypoints.Count == 0))
 {
@@ -30,6 +44,8 @@
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
     private readonly Dictionary<Guid, MapDocumentGeometry> renderedDocuments = [];
     private IJSObjectReference? module;
+    private DotNetObjectReference<MapViewport>? selfReference;
+    private HoveredWaypoint? hoveredWaypoint;
     private int renderedFocusVersion;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -42,8 +58,43 @@
         module = await JavaScript.InvokeAsync<IJSObjectReference>(
             "import",
             "./generated/mapAdapter.js");
-        await module.InvokeVoidAsync("initialize", elementId);
+        selfReference = DotNetObjectReference.Create(this);
+        await module.InvokeVoidAsync("initialize", elementId, MarkerOptions.Value, selfReference);
         await RenderDocumentAsync();
+    }
+
+    [JSInvokable]
+    public Task ShowWaypointTooltip(Guid documentId, int waypointIndex, double left, double top)
+    {
+        MapDocumentGeometry? document = Documents.FirstOrDefault(document => document.Id == documentId);
+        hoveredWaypoint = document is not null && waypointIndex >= 0 && waypointIndex < document.Geometry.Waypoints.Count
+            ? new(documentId, waypointIndex, document.Geometry.Waypoints[waypointIndex], left, top)
+            : null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public Task HideWaypointTooltip()
+    {
+        if (hoveredWaypoint is null) return Task.CompletedTask;
+        hoveredWaypoint = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private static string WaypointMetadata(MapWaypoint waypoint)
+    {
+        string coordinates = FormattableString.Invariant($"{waypoint.Coordinate[1]:F6}° {waypoint.Coordinate[0]:F6}°");
+        string metadata = $"{waypoint.Symbol ?? "Waypoint"} · {coordinates}";
+        return waypoint.ElevationMetres is double elevation ? $"{metadata} · {Math.Round(elevation)} m" : metadata;
+    }
+
+    private double HoveredPinHeight()
+    {
+        if (hoveredWaypoint is null) return 0;
+        bool selected = Selection.DocumentId == hoveredWaypoint.DocumentId &&
+            (Selection.WholeDocument || Selection.WaypointGroup || Selection.WaypointIndex == hoveredWaypoint.WaypointIndex);
+        double scale = selected ? MarkerOptions.Value.SelectedPinScale : MarkerOptions.Value.PinScale;
+        return MapMarkerOptions.PinIntrinsicHeightPixels * scale;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -130,5 +181,11 @@
         {
             // The browser has already disconnected, so there is nothing to clean up.
         }
+        finally
+        {
+            selfReference?.Dispose();
+        }
     }
+
+    private sealed record HoveredWaypoint(Guid DocumentId, int WaypointIndex, MapWaypoint Waypoint, double Left, double Top);
 }

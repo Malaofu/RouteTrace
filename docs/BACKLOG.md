@@ -325,7 +325,7 @@ the document explorer.
 
 ## PBI-075 — Route endpoints and POI symbols
 
-**Status:** Not started
+**Status:** Done
 
 **Goal:** Make route direction and imported points of interest immediately
 recognisable on the map.

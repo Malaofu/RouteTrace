@@ -64,7 +64,18 @@ tokens, or private start/end locations.
 - **Sanitisation:** No personal identifiers, timestamps, or private movement
   history were present. The source describes a purpose-created test route.
 - **Expected content:** Metadata, track and route points, four waypoints,
-  elevation, and unsupported extension XML in a non-GPX namespace.
+  elevation, common POI symbols, and unsupported extension XML in a non-GPX
+  namespace.
+
+## FX-GPX-006-endpoints-and-symbols.gpx
+
+- **Fixture ID:** FX-GPX-006
+- **Provenance:** Synthetic, created for Route Trace with user approval.
+- **Expected content:** An open multi-segment track, a loop track, an open
+  route, a loop route, and waypoints with known, unknown, and missing `sym`
+  values. Segment boundaries are deliberately distinct from track endpoints.
+- **Sanitisation:** All coordinates and labels are synthetic and contain no
+  movement history or personal information.
 
 ## FX-ELE-001-elevation-coverage.gpx
 

@@ -13,6 +13,7 @@ public sealed class GpxFileRoundTripTests
     [InlineData("FX-GPX-003-multiple-tracks-segments.gpx")]
     [InlineData("FX-GPX-004-gpx-studio-supplemented.gpx")]
     [InlineData("FX-GPX-005-full-schema-surface.gpx")]
+    [InlineData("FX-GPX-006-endpoints-and-symbols.gpx")]
     [InlineData("FX-ELE-001-elevation-coverage.gpx")]
     public async Task ImportExportPreservesTheGpxFileExceptCreatorAndNumericFormatting(string fixtureName)
     {

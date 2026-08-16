@@ -55,6 +55,19 @@ public sealed class GpxImporterTests
     }
 
     [Fact]
+    public async Task ImportsEndpointAndSymbolCoverageFixture()
+    {
+        GpxImportResult result = await ImportFixture("FX-GPX-006-endpoints-and-symbols.gpx");
+
+        result.IsSuccess.ShouldBeTrue(result.Error);
+        result.Document!.Tracks.Count.ShouldBe(2);
+        result.Document.Tracks[0].Segments.Count.ShouldBe(2);
+        result.Document.Routes.Count.ShouldBe(2);
+        result.Document.Waypoints.Select(waypoint => waypoint.Symbol)
+            .ShouldBe(["Park", "Parking Area", "Vendor Mystery 42", null]);
+    }
+
+    [Fact]
     public async Task StreamsFullDensitySanitisedPerformanceFixture()
     {
         GpxImportResult result = await ImportFixture("FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");

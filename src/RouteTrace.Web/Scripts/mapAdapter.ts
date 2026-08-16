@@ -9,7 +9,7 @@ import LineString from "ol/geom/LineString.js";
 import Point from "ol/geom/Point.js";
 import VectorLayer from "ol/layer/Vector.js";
 import VectorSource from "ol/source/Vector.js";
-import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style.js";
+import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from "ol/style.js";
 import type { StyleFunction } from "ol/style/Style.js";
 
 type Wgs84Bounds = [west: number, south: number, east: number, north: number];
@@ -19,6 +19,8 @@ interface MapHandle {
     resizeObserver: ResizeObserver;
     geometrySource: VectorSource;
     geometryLayer: VectorLayer<VectorSource>;
+    dotNetViewport: DotNetViewport;
+    hoveredWaypointKey: string | null;
 }
 
 type Wgs84Coordinate = [longitude: number, latitude: number];
@@ -26,7 +28,8 @@ type Wgs84Coordinate = [longitude: number, latitude: number];
 interface ImportedGeometry {
     tracks: Array<{ segments: Wgs84Coordinate[][] }>;
     routes: Wgs84Coordinate[][];
-    waypoints: Wgs84Coordinate[];
+    waypoints: Array<{ coordinate: Wgs84Coordinate; name: string | null; symbol: string | null; description: string | null; elevationMetres: number | null }>;
+    endpoints: Array<{ ownerKind: "track" | "route"; ownerIndex: number; endpointKind: "start" | "finish"; coordinate: Wgs84Coordinate; overlap: boolean }>;
 }
 
 interface WorkspaceGeometry {
@@ -41,9 +44,27 @@ const maps = new Map<string, MapHandle>();
 const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const attribution =
     '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>';
+const iconCache = new Map<string, Icon>();
+interface MarkerConfig {
+    defaultIcon: string;
+    pinScale: number;
+    selectedPinScale: number;
+    assets: { pinFill: string; pinOutline: string; finish: string };
+    symbols: Record<string, string>;
+}
 
-export function initialize(elementId: string): void {
+interface DotNetViewport {
+    invokeMethodAsync(method: string, ...args: unknown[]): Promise<unknown>;
+}
+
+let markerConfig!: MarkerConfig;
+const markerAssetRoot = new URL("../images/map-markers/", import.meta.url);
+const endpointMarkerRadius = 10;
+const endpointMarkerSize = endpointMarkerRadius * 2;
+
+export function initialize(elementId: string, config: MarkerConfig, dotNetViewport: DotNetViewport): void {
     dispose(elementId);
+    markerConfig = config;
 
     const target = document.getElementById(elementId);
     if (!target) {
@@ -77,8 +98,15 @@ export function initialize(elementId: string): void {
 
     const resizeObserver = new ResizeObserver(() => map.updateSize());
     resizeObserver.observe(target);
-    maps.set(elementId, { map, resizeObserver, geometrySource, geometryLayer });
+    const handle = { map, resizeObserver, geometrySource, geometryLayer, dotNetViewport, hoveredWaypointKey: null };
+    map.on("pointermove", event => notifyWaypointHover(handle, event.pixel));
+    maps.set(elementId, handle);
     fitBounds(elementId, [7.5, 54.5, 15.5, 57.8], 32);
+}
+
+function markerAsset(name: string): string {
+    if (!/^[a-z0-9-]+$/.test(name)) throw new Error(`Invalid marker asset name '${name}'.`);
+    return new URL(`${name}.svg`, markerAssetRoot).href;
 }
 
 export function beginDocumentUpdate(elementId: string): void {
@@ -127,9 +155,20 @@ export function upsertDocument(
     });
     geometry.waypoints.forEach((waypoint, waypointIndex) => source.addFeature(new Feature({
         ...properties,
-        geometry: new Point(fromLonLat(waypoint)),
+        geometry: new Point(fromLonLat(waypoint.coordinate)),
         kind: "waypoint",
         waypointIndex,
+        symbolKey: markerConfig.symbols[waypoint.symbol?.trim().toLowerCase() ?? ""] ?? markerConfig.defaultIcon,
+        waypointCoordinate: waypoint.coordinate,
+    })));
+    geometry.endpoints.forEach(endpoint => source.addFeature(new Feature({
+        ...properties,
+        geometry: new Point(fromLonLat(endpoint.coordinate)),
+        kind: "endpoint",
+        ownerKind: endpoint.ownerKind,
+        ownerIndex: endpoint.ownerIndex,
+        endpointKind: endpoint.endpointKind,
+        endpointOverlap: endpoint.overlap,
     })));
 }
 
@@ -152,12 +191,17 @@ export function setDocumentPresentation(
         .filter(feature => feature.get("documentId") === documentId)
         .forEach(feature => {
             const kind = feature.get("kind") as string;
-            const primaryIndex = kind === "track" ? feature.get("trackIndex") : kind === "route" ? feature.get("routeIndex") : feature.get("waypointIndex");
-            const secondaryIndex = kind === "track" ? feature.get("segmentIndex") : -1;
-            const override = presentation.find(item => item.kind === kind && item.primaryIndex === primaryIndex && item.secondaryIndex === secondaryIndex);
+            const presentationKind = kind === "endpoint" ? feature.get("ownerKind") as string : kind;
+            const primaryIndex = kind === "endpoint" ? feature.get("ownerIndex") : kind === "track" ? feature.get("trackIndex") : kind === "route" ? feature.get("routeIndex") : feature.get("waypointIndex");
+            const secondaryIndex = presentationKind === "track" && kind !== "endpoint" ? feature.get("segmentIndex") : -1;
+            const trackEndpointItems = kind === "endpoint" && presentationKind === "track"
+                ? presentation.filter(item => item.kind === presentationKind && item.primaryIndex === primaryIndex)
+                : [];
+            const override = trackEndpointItems.find(item => item.visible) ??
+                presentation.find(item => item.kind === presentationKind && item.primaryIndex === primaryIndex && item.secondaryIndex === secondaryIndex);
             feature.setProperties({
             documentColour: override?.colour ?? colour,
-            presentationVisible: override?.visible ?? true,
+            presentationVisible: trackEndpointItems.length > 0 ? trackEndpointItems.some(item => item.visible) : override?.visible ?? true,
             activeDocument: active,
             selectedDocument: selected,
             selectedTrack,
@@ -258,7 +302,7 @@ export function renderDocuments(
     });
     geometry.waypoints.forEach((waypoint, waypointIndex) => {
         handle.geometrySource.addFeature(new Feature({
-            geometry: new Point(fromLonLat(waypoint)),
+            geometry: new Point(fromLonLat(waypoint.coordinate)),
             kind: "waypoint",
             waypointIndex,
             documentColour: document.colour,
@@ -295,6 +339,30 @@ export function fitBounds(
     });
 }
 
+function notifyWaypointHover(handle: MapHandle, pixel: number[]): void {
+    const feature = handle.map.forEachFeatureAtPixel(
+        pixel,
+        candidate => candidate.get("kind") === "waypoint" ? candidate : undefined,
+        { hitTolerance: 6 });
+    const target = handle.map.getTargetElement();
+    target.style.cursor = feature ? "pointer" : "";
+    if (!feature) {
+        if (handle.hoveredWaypointKey !== null) {
+            handle.hoveredWaypointKey = null;
+            void handle.dotNetViewport.invokeMethodAsync("HideWaypointTooltip");
+        }
+        return;
+    }
+
+    const documentId = feature.get("documentId") as string;
+    const waypointIndex = feature.get("waypointIndex") as number;
+    const key = `${documentId}|${waypointIndex}`;
+    if (handle.hoveredWaypointKey === key) return;
+    handle.hoveredWaypointKey = key;
+    const anchorPixel = handle.map.getPixelFromCoordinate(fromLonLat(feature.get("waypointCoordinate") as Wgs84Coordinate));
+    void handle.dotNetViewport.invokeMethodAsync("ShowWaypointTooltip", documentId, waypointIndex, anchorPixel[0], anchorPixel[1]);
+}
+
 export function dispose(elementId: string): void {
     const handle = maps.get(elementId);
     if (!handle) {
@@ -315,8 +383,37 @@ function getMap(elementId: string): MapHandle {
     return handle;
 }
 
+function cachedIcon(key: string, options: ConstructorParameters<typeof Icon>[0]): Icon {
+    let icon = iconCache.get(key);
+    if (!icon) {
+        icon = new Icon(options);
+        iconCache.set(key, icon);
+    }
+    return icon;
+}
+
+function poiStyles(symbolKey: string, colour: string, selected: boolean): Style[] {
+    const scale = selected ? markerConfig.selectedPinScale : markerConfig.pinScale;
+    const common = { scale, anchor: [0.5, 1] as [number, number] };
+    return [
+        new Style({ image: cachedIcon(`pin-fill|${colour}|${scale}`, { ...common, src: markerAsset(markerConfig.assets.pinFill), color: colour }), zIndex: 30 }),
+        new Style({ image: cachedIcon(`pin-outline|${scale}`, { ...common, src: markerAsset(markerConfig.assets.pinOutline) }), zIndex: 31 }),
+        new Style({ image: cachedIcon(`${symbolKey}|${scale}`, { ...common, src: markerAsset(symbolKey) }), zIndex: 32 }),
+    ];
+}
+
+function finishIcon(overlap: boolean): Icon {
+    const key = `finish|${overlap}`;
+    return cachedIcon(key, {
+        src: markerAsset(markerConfig.assets.finish),
+        width: endpointMarkerSize,
+        height: endpointMarkerSize,
+        displacement: overlap ? [8, 0] : [0, 0],
+    });
+}
+
 function featureStyle(selectedTrack: number | null, selectedSegment: number | null): StyleFunction {
-    return (feature): Style | undefined => {
+    return (feature): Style | Style[] | undefined => {
         if (feature.get("presentationVisible") === false) return undefined;
         const kind = feature.get("kind") as string;
         const trackIndex = feature.get("trackIndex") as number | undefined;
@@ -343,12 +440,17 @@ function featureStyle(selectedTrack: number | null, selectedSegment: number | nu
             (selectedWaypointGroup === true && kind === "waypoint");
 
         if (kind === "waypoint") {
+            return poiStyles(feature.get("symbolKey") as string, colour, semanticSelected);
+        }
+
+        if (kind === "endpoint") {
+            const start = feature.get("endpointKind") === "start";
+            const overlap = feature.get("endpointOverlap") === true;
             return new Style({
-                image: new CircleStyle({
-                    radius: semanticSelected ? 9 : 7,
-                    fill: new Fill({ color: colour }),
-                    stroke: new Stroke({ color: "#ffffff", width: 2 }),
-                }),
+                image: start
+                    ? new CircleStyle({ radius: endpointMarkerRadius, displacement: overlap ? [-8, 0] : [0, 0], fill: new Fill({ color: "#16803c" }), stroke: new Stroke({ color: "#ffffff", width: 2 }) })
+                    : finishIcon(overlap),
+                zIndex: start ? 41 : 42,
             });
         }
 

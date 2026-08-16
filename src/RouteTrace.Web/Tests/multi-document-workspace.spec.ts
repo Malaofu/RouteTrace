@@ -3,6 +3,28 @@ import path from "node:path";
 
 const fixtures = path.resolve(process.cwd(), "../../tests/RouteTrace.TestData");
 
+test("loads marker assets configured through app settings", async ({ page }) => {
+    await page.route("https://tile.openstreetmap.org/**", route => route.abort());
+    const loadedMarkers = new Set<string>();
+    page.on("response", response => {
+        const match = new URL(response.url()).pathname.match(/\/images\/map-markers\/([^/]+\.svg)$/);
+        if (match && response.ok()) loadedMarkers.add(match[1]);
+    });
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles(
+        path.join(fixtures, "FX-GPX-004-gpx-studio-supplemented.gpx"));
+    await expect(page.getByText(/Imported FX-GPX-004/)).toBeVisible();
+
+    await expect.poll(() => [...loadedMarkers]).toEqual(expect.arrayContaining([
+        "pin-fill.svg",
+        "pin-outline.svg",
+        "park.svg",
+        "shop.svg",
+        "parking.svg",
+        "finish.svg",
+    ]));
+});
+
 test("manages three visible documents independently", async ({ page }) => {
     await page.route("https://tile.openstreetmap.org/**", route => route.abort());
     await page.goto("/");
