@@ -1,39 +1,39 @@
 # Project status
 
-**Phase:** Engineering quality baseline complete
+**Phase:** Razor component structure review complete
 
-**Current PBI:** PBI-062 — Establish the engineering quality baseline
+**Current PBI:** PBI-064 — Extract substantial Razor component logic
 
 **Last updated:** 2026-08-16
 
 ## Current state
 
-- All implemented PBIs through PBI-075 are complete. PBI-063 through PBI-066
-  record focused document-explorer, Razor code-behind, GPX codec, and map
-  adapter decompositions discovered by the review.
+- PBI-064 is complete; the other engineering-review follow-ups remain
+  independently selectable work.
 - Accepted architecture decisions are compliant or not yet applicable; none
   are superseded and no unresolved decision drift remains.
-- Obsolete UI and map-rendering paths, duplicated defaults, unjustified null
-  suppressions, and one CSS specificity override were removed. FakeItEasy
-  remains the agreed test-double framework.
-- Route and workspace model responsibilities are split into focused files;
-  metadata and command dispatch use pattern switches where they improve flow.
-  Repository naming conventions are explicit in `.editorconfig`.
-- GPX import now reports malformed nesting cleanly and retains empty structural
-  elements. Visible large-file results render before browser-local persistence.
+- `Home`, `ApplicationMenu`, `DocumentExplorer`, `MapViewport`, and
+  `WorkspacePanel` keep their markup and directives in `.razor` files while
+  their substantial behaviour resides in matching feature-scoped partial
+  classes.
+- Small presentation-only components remain inline, and no generic component
+  base abstraction was introduced.
+- Dependency injection, component parameters, and async disposal contracts are
+  unchanged. FakeItEasy remains the agreed test-double framework.
 
 ## Verification
 
 - Release build and WebAssembly AOT publish: passed with zero warnings.
 - .NET tests: 69 passed, zero failed.
 - Published Playwright suite: 15 passed, zero failed.
-- Full-density import medians across three isolated samples: 481.5 ms total and
-  1.7 ms busy feedback, within the 500 ms and 100 ms budgets; export completed
-  in 68.9 ms.
+- Full-density import medians: 473.5 ms total and 2.8 ms busy feedback, within
+  the 500 ms and 100 ms release budgets; export completed in 71.8 ms.
 - Formatting and TypeScript checks: passed.
+- Structural review confirmed the five listed Razor files contain no `@code`
+  blocks and retain their existing rendered markup.
 
 **Blockers:** None.
 
 ## Next action
 
-- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-062.
+- Select the next PBI explicitly; `CURRENT_PBI.md` remains PBI-064.

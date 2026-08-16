@@ -1,10 +1,8 @@
 @using RouteTrace.Core.Routes
-@using RouteTrace.Web.Features.Map
-@using RouteTrace.Core.Gpx
-@using RouteTrace.Web.Features.Import
-@inject IJSRuntime JavaScript
 
-<aside class="document-explorer @(Visible ? null : "document-explorer--hidden")" aria-label="Document explorer" aria-hidden="@(!Visible)">
+<aside class="document-explorer @(Visible ? null : "document-explorer--hidden")"
+       aria-label="Document explorer"
+       aria-hidden="@(!Visible)">
     <header><h2>Documents</h2></header>
     @if (Workspace.Documents.Count == 0)
     {
@@ -19,12 +17,28 @@
                 string documentKey = $"document:{workspaceDocument.Id}";
                 bool documentExpanded = expandedNodes.Contains(documentKey);
                 bool documentActive = SelectsWholeDocument(workspaceDocument.Id);
+                ActionTarget documentTarget = TargetFrom(workspaceDocument, null);
+
                 <li @key="workspaceDocument.Id"
                     class="document-explorer__document @(!workspaceDocument.IsVisible ? "document-explorer__node--hidden" : null)"
                     data-document-name="@DocumentName(workspaceDocument)">
-                    <div class="document-explorer__row document-explorer__row--colour @(documentActive ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.Colour" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, null, DocumentName(workspaceDocument), new(null, null, DocumentId: workspaceDocument.Id, WholeDocument: true), args)" @oncontextmenu:preventDefault>
-                        <button type="button" class="document-explorer__expander" aria-label="@(documentExpanded ? "Collapse" : "Expand") @DocumentName(workspaceDocument)" aria-expanded="@(documentExpanded ? "true" : "false")" @onclick="() => Toggle(documentKey)"><DisclosureIcon Expanded="documentExpanded" /></button>
-                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectDocumentAsync(workspaceDocument.Id, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, null, DocumentName(workspaceDocument), new(null, null, DocumentId: workspaceDocument.Id, WholeDocument: true), args)">@DocumentName(workspaceDocument)</button>
+                    <div class="@RowClass(documentActive)"
+                         style="--document-colour: @workspaceDocument.Colour"
+                         @oncontextmenu="args => OpenActionsAsync(documentTarget, args)"
+                         @oncontextmenu:preventDefault>
+                        <button type="button"
+                                class="document-explorer__expander"
+                                aria-label="@(documentExpanded ? "Collapse" : "Expand") @DocumentName(workspaceDocument)"
+                                aria-expanded="@(documentExpanded ? "true" : "false")"
+                                @onclick="() => Toggle(documentKey)">
+                            <DisclosureIcon Expanded="documentExpanded" />
+                        </button>
+                        <button type="button"
+                                class="document-explorer__label"
+                                @onclick="args => SelectTargetAsync(documentTarget, args)"
+                                @onkeydown="args => HandleContextKeyAsync(documentTarget, args)">
+                            @DocumentName(workspaceDocument)
+                        </button>
                         <VisibilityStatus Name="@DocumentName(workspaceDocument)" Visible="workspaceDocument.IsVisible" />
                     </div>
                     @if (documentExpanded)
@@ -38,11 +52,30 @@
                                 string trackKey = $"track:{workspaceDocument.Id}:{currentTrack}";
                                 bool trackExpanded = expandedNodes.Contains(trackKey);
                                 bool trackActive = IsTrackSelected(workspaceDocument.Id, currentTrack);
+                                var trackNode = new WorkspaceNode(WorkspaceNodeKind.Track, currentTrack);
+                                ActionTarget trackTarget = TargetFrom(workspaceDocument, trackNode);
+                                bool trackVisible = workspaceDocument.IsNodeVisible(trackNode);
+
                                 <li class="document-explorer__colour-node">
-                                    <div class="document-explorer__row document-explorer__row--colour @(trackActive ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.NodeColour(new(WorkspaceNodeKind.Track, currentTrack))" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, new(WorkspaceNodeKind.Track, currentTrack), trackName, new(currentTrack, null, DocumentId: workspaceDocument.Id), args)" @oncontextmenu:preventDefault>
-                                        <button type="button" class="document-explorer__expander" aria-label="@(trackExpanded ? "Collapse" : "Expand") @(track.Name ?? $"Track {currentTrack + 1}")" aria-expanded="@(trackExpanded ? "true" : "false")" @onclick="() => Toggle(trackKey)"><DisclosureIcon Expanded="trackExpanded" /></button>
-                                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectTrackAsync(workspaceDocument.Id, currentTrack, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, new(WorkspaceNodeKind.Track, currentTrack), trackName, new(currentTrack, null, DocumentId: workspaceDocument.Id), args)">@trackName <span class="document-explorer__count">@track.Segments.Count segment(s)</span></button>
-                                        <VisibilityStatus Name="@trackName" Visible="@workspaceDocument.IsNodeVisible(new(WorkspaceNodeKind.Track, currentTrack))" />
+                                    <div class="@RowClass(trackActive)"
+                                         style="--document-colour: @workspaceDocument.NodeColour(trackNode)"
+                                         @oncontextmenu="args => OpenActionsAsync(trackTarget, args)"
+                                         @oncontextmenu:preventDefault>
+                                        <button type="button"
+                                                class="document-explorer__expander"
+                                                aria-label="@(trackExpanded ? "Collapse" : "Expand") @trackName"
+                                                aria-expanded="@(trackExpanded ? "true" : "false")"
+                                                @onclick="() => Toggle(trackKey)">
+                                            <DisclosureIcon Expanded="trackExpanded" />
+                                        </button>
+                                        <button type="button"
+                                                class="document-explorer__label"
+                                                @onclick="args => SelectTargetAsync(trackTarget, args)"
+                                                @onkeydown="args => HandleContextKeyAsync(trackTarget, args)">
+                                            @trackName
+                                            <span class="document-explorer__count">@track.Segments.Count segment(s)</span>
+                                        </button>
+                                        <VisibilityStatus Name="@trackName" Visible="trackVisible" />
                                     </div>
                                     @if (trackExpanded)
                                     {
@@ -52,11 +85,28 @@
                                                 int currentSegment = segmentIndex;
                                                 string segmentName = $"Segment {currentSegment + 1}";
                                                 bool segmentActive = IsSegmentSelected(workspaceDocument.Id, currentTrack, currentSegment);
+                                                var segmentNode = new WorkspaceNode(
+                                                    WorkspaceNodeKind.Segment,
+                                                    currentTrack,
+                                                    currentSegment);
+                                                ActionTarget segmentTarget = TargetFrom(workspaceDocument, segmentNode);
+                                                bool segmentVisible = workspaceDocument.IsNodeVisible(segmentNode);
+                                                int segmentPointCount = track.Segments[currentSegment].Points.Count;
+
                                                 <li>
-                                                    <div class="document-explorer__row document-explorer__row--colour @(segmentActive ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.NodeColour(new(WorkspaceNodeKind.Segment, currentTrack, currentSegment))" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, new(WorkspaceNodeKind.Segment, currentTrack, currentSegment), segmentName, new(currentTrack, currentSegment, DocumentId: workspaceDocument.Id), args)" @oncontextmenu:preventDefault>
+                                                    <div class="@RowClass(segmentActive)"
+                                                         style="--document-colour: @workspaceDocument.NodeColour(segmentNode)"
+                                                         @oncontextmenu="args => OpenActionsAsync(segmentTarget, args)"
+                                                         @oncontextmenu:preventDefault>
                                                         <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
-                                                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectSegmentAsync(workspaceDocument.Id, currentTrack, currentSegment, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, new(WorkspaceNodeKind.Segment, currentTrack, currentSegment), segmentName, new(currentTrack, currentSegment, DocumentId: workspaceDocument.Id), args)">@segmentName <span class="document-explorer__count">@track.Segments[currentSegment].Points.Count points</span></button>
-                                                        <VisibilityStatus Name="@segmentName" Visible="@workspaceDocument.IsNodeVisible(new(WorkspaceNodeKind.Segment, currentTrack, currentSegment))" />
+                                                        <button type="button"
+                                                                class="document-explorer__label"
+                                                                @onclick="args => SelectTargetAsync(segmentTarget, args)"
+                                                                @onkeydown="args => HandleContextKeyAsync(segmentTarget, args)">
+                                                            @segmentName
+                                                            <span class="document-explorer__count">@segmentPointCount points</span>
+                                                        </button>
+                                                        <VisibilityStatus Name="@segmentName" Visible="segmentVisible" />
                                                     </div>
                                                 </li>
                                             }
@@ -70,24 +120,56 @@
                                 Route route = document.Routes[currentRoute];
                                 string routeName = route.Name ?? $"Route {currentRoute + 1}";
                                 bool routeActive = IsRouteSelected(workspaceDocument.Id, currentRoute);
+                                var routeNode = new WorkspaceNode(WorkspaceNodeKind.Route, currentRoute);
+                                ActionTarget routeTarget = TargetFrom(workspaceDocument, routeNode);
+                                bool routeVisible = workspaceDocument.IsNodeVisible(routeNode);
+
                                 <li class="document-explorer__colour-node">
-                                    <div class="document-explorer__row document-explorer__row--colour @(routeActive ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.NodeColour(new(WorkspaceNodeKind.Route, currentRoute))" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, new(WorkspaceNodeKind.Route, currentRoute), routeName, new(null, null, currentRoute, DocumentId: workspaceDocument.Id), args)" @oncontextmenu:preventDefault>
+                                    <div class="@RowClass(routeActive)"
+                                         style="--document-colour: @workspaceDocument.NodeColour(routeNode)"
+                                         @oncontextmenu="args => OpenActionsAsync(routeTarget, args)"
+                                         @oncontextmenu:preventDefault>
                                         <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
-                                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectRouteAsync(workspaceDocument.Id, currentRoute, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, new(WorkspaceNodeKind.Route, currentRoute), routeName, new(null, null, currentRoute, DocumentId: workspaceDocument.Id), args)">@routeName <span class="document-explorer__count">@route.Points.Count points</span></button>
-                                        <VisibilityStatus Name="@routeName" Visible="@workspaceDocument.IsNodeVisible(new(WorkspaceNodeKind.Route, currentRoute))" />
+                                        <button type="button"
+                                                class="document-explorer__label"
+                                                @onclick="args => SelectTargetAsync(routeTarget, args)"
+                                                @onkeydown="args => HandleContextKeyAsync(routeTarget, args)">
+                                            @routeName
+                                            <span class="document-explorer__count">@route.Points.Count points</span>
+                                        </button>
+                                        <VisibilityStatus Name="@routeName" Visible="routeVisible" />
                                     </div>
                                 </li>
                             }
                             @if (document.Waypoints.Count > 0)
                             {
                                 string poiKey = $"poi:{workspaceDocument.Id}";
-                                string poiName = "Points of interest";
                                 bool poiExpanded = expandedNodes.Contains(poiKey);
+                                var poiNode = new WorkspaceNode(WorkspaceNodeKind.WaypointGroup);
+                                ActionTarget poiTarget = TargetFrom(workspaceDocument, poiNode);
+                                bool poiActive = IsWaypointGroupSelected(workspaceDocument.Id);
+                                bool poiVisible = workspaceDocument.IsNodeVisible(poiNode);
+
                                 <li class="document-explorer__colour-node">
-                                    <div class="document-explorer__row document-explorer__row--colour @(IsWaypointGroupSelected(workspaceDocument.Id) ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.NodeColour(new(WorkspaceNodeKind.WaypointGroup))" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, new(WorkspaceNodeKind.WaypointGroup), poiName, new(null, null, DocumentId: workspaceDocument.Id, WaypointGroup: true), args)" @oncontextmenu:preventDefault>
-                                        <button type="button" class="document-explorer__expander" aria-label="@(poiExpanded ? "Collapse" : "Expand") points of interest" aria-expanded="@(poiExpanded ? "true" : "false")" @onclick="() => Toggle(poiKey)"><DisclosureIcon Expanded="poiExpanded" /></button>
-                                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectWaypointGroupAsync(workspaceDocument.Id, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, new(WorkspaceNodeKind.WaypointGroup), poiName, new(null, null, DocumentId: workspaceDocument.Id, WaypointGroup: true), args)">Points of interest <span class="document-explorer__count">@document.Waypoints.Count</span></button>
-                                        <VisibilityStatus Name="Points of interest" Visible="@workspaceDocument.IsNodeVisible(new(WorkspaceNodeKind.WaypointGroup))" />
+                                    <div class="@RowClass(poiActive)"
+                                         style="--document-colour: @workspaceDocument.NodeColour(poiNode)"
+                                         @oncontextmenu="args => OpenActionsAsync(poiTarget, args)"
+                                         @oncontextmenu:preventDefault>
+                                        <button type="button"
+                                                class="document-explorer__expander"
+                                                aria-label="@(poiExpanded ? "Collapse" : "Expand") points of interest"
+                                                aria-expanded="@(poiExpanded ? "true" : "false")"
+                                                @onclick="() => Toggle(poiKey)">
+                                            <DisclosureIcon Expanded="poiExpanded" />
+                                        </button>
+                                        <button type="button"
+                                                class="document-explorer__label"
+                                                @onclick="args => SelectTargetAsync(poiTarget, args)"
+                                                @onkeydown="args => HandleContextKeyAsync(poiTarget, args)">
+                                            Points of interest
+                                            <span class="document-explorer__count">@document.Waypoints.Count</span>
+                                        </button>
+                                        <VisibilityStatus Name="Points of interest" Visible="poiVisible" />
                                     </div>
                                     @if (poiExpanded)
                                     {
@@ -98,11 +180,23 @@
                                                 Waypoint waypoint = document.Waypoints[currentWaypoint];
                                                 string waypointName = waypoint.Name ?? $"Waypoint {currentWaypoint + 1}";
                                                 bool waypointActive = IsWaypointSelected(workspaceDocument.Id, currentWaypoint);
+                                                var waypointNode = new WorkspaceNode(WorkspaceNodeKind.Waypoint, currentWaypoint);
+                                                ActionTarget waypointTarget = TargetFrom(workspaceDocument, waypointNode);
+                                                bool waypointVisible = workspaceDocument.IsNodeVisible(waypointNode);
+
                                                 <li>
-                                                    <div class="document-explorer__row document-explorer__row--colour @(waypointActive ? "document-explorer__row--active" : null)" style="--document-colour: @workspaceDocument.NodeColour(new(WorkspaceNodeKind.Waypoint, currentWaypoint))" @oncontextmenu="(MouseEventArgs args) => OpenActionsAsync(workspaceDocument, new(WorkspaceNodeKind.Waypoint, currentWaypoint), waypointName, new(null, null, null, currentWaypoint, workspaceDocument.Id), args)" @oncontextmenu:preventDefault>
+                                                    <div class="@RowClass(waypointActive)"
+                                                         style="--document-colour: @workspaceDocument.NodeColour(waypointNode)"
+                                                         @oncontextmenu="args => OpenActionsAsync(waypointTarget, args)"
+                                                         @oncontextmenu:preventDefault>
                                                         <span class="document-explorer__leaf" aria-hidden="true">⌖</span>
-                                                        <button type="button" class="document-explorer__label" @onclick="(MouseEventArgs args) => SelectWaypointAsync(workspaceDocument.Id, currentWaypoint, args.CtrlKey)" @onkeydown="(KeyboardEventArgs args) => HandleContextKeyAsync(workspaceDocument, new(WorkspaceNodeKind.Waypoint, currentWaypoint), waypointName, new(null, null, null, currentWaypoint, workspaceDocument.Id), args)">@waypointName</button>
-                                                        <VisibilityStatus Name="@waypointName" Visible="@workspaceDocument.IsNodeVisible(new(WorkspaceNodeKind.Waypoint, currentWaypoint))" />
+                                                        <button type="button"
+                                                                class="document-explorer__label"
+                                                                @onclick="args => SelectTargetAsync(waypointTarget, args)"
+                                                                @onkeydown="args => HandleContextKeyAsync(waypointTarget, args)">
+                                                            @waypointName
+                                                        </button>
+                                                        <VisibilityStatus Name="@waypointName" Visible="waypointVisible" />
                                                     </div>
                                                 </li>
                                             }
@@ -120,38 +214,106 @@
 
 @if (actionTarget is not null)
 {
-    <div class="document-explorer__menu-dismiss" @onclick="CloseActions" @oncontextmenu="CloseActions" @oncontextmenu:preventDefault></div>
-    <div class="document-explorer__actions" style="left:min(@(menuX)px, calc(100vw - 11rem)); top:min(@(menuY)px, calc(100vh - 22rem))" role="menu" aria-label="Actions for @actionTarget.Name">
-        <button role="menuitem" disabled="@(!CanEditInfo)" @onclick="OpenInfo"><span class="document-explorer__action-icon">ⓘ</span><span>Info…</span><kbd>Ctrl I</kbd></button>
-        <button role="menuitem" @onclick="OpenAppearance"><span class="document-explorer__action-icon">◉</span><span>Appearance…</span><span class="document-explorer__submenu-cue">›</span></button>
-        <button role="menuitemcheckbox" aria-checked="@AllTargetsVisible" @onclick="ToggleTargetVisibilityAsync"><span class="document-explorer__action-icon">@(AllTargetsVisible ? "◉̸" : "◉")</span><span>@(AllTargetsVisible ? "Hide" : "Show")</span><kbd>Ctrl H</kbd></button>
+    <div class="document-explorer__menu-dismiss"
+         @onclick="CloseActions"
+         @oncontextmenu="CloseActions"
+         @oncontextmenu:preventDefault></div>
+    <div class="document-explorer__actions"
+         style="left:min(@(menuX)px, calc(100vw - 11rem)); top:min(@(menuY)px, calc(100vh - 22rem))"
+         role="menu"
+         aria-label="Actions for @actionTarget.Name">
+        <button role="menuitem" disabled="@(!CanEditInfo)" @onclick="OpenInfo">
+            <span class="document-explorer__action-icon">ⓘ</span>
+            <span>Info…</span>
+            <kbd>Ctrl I</kbd>
+        </button>
+        <button role="menuitem" @onclick="OpenAppearance">
+            <span class="document-explorer__action-icon">◉</span>
+            <span>Appearance…</span>
+            <span class="document-explorer__submenu-cue">›</span>
+        </button>
+        <button role="menuitemcheckbox"
+                aria-checked="@AllTargetsVisible"
+                @onclick="ToggleTargetVisibilityAsync">
+            <span class="document-explorer__action-icon">@(AllTargetsVisible ? "◉̸" : "◉")</span>
+            <span>@(AllTargetsVisible ? "Hide" : "Show")</span>
+            <kbd>Ctrl H</kbd>
+        </button>
         <div class="document-explorer__action-separator" role="separator"></div>
-        <button role="menuitem" disabled><span class="document-explorer__action-icon">＋</span><span>New segment</span><span></span></button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">＋</span>
+            <span>New segment</span>
+            <span></span>
+        </button>
         <div class="document-explorer__action-separator" role="separator"></div>
-        <button role="menuitem" @onclick="FocusTargetAsync"><span class="document-explorer__action-icon">⌗</span><span>Center</span><kbd>Ctrl ↵</kbd></button>
+        <button role="menuitem" @onclick="FocusTargetAsync">
+            <span class="document-explorer__action-icon">⌗</span>
+            <span>Center</span>
+            <kbd>Ctrl ↵</kbd>
+        </button>
         <div class="document-explorer__action-separator" role="separator"></div>
-        <button role="menuitem" disabled><span class="document-explorer__action-icon">▱</span><span>Duplicate</span><kbd>Ctrl D</kbd></button>
-        <button role="menuitem" disabled><span class="document-explorer__action-icon">▣</span><span>Copy</span><kbd>Ctrl C</kbd></button>
-        <button role="menuitem" disabled><span class="document-explorer__action-icon">✂</span><span>Cut</span><kbd>Ctrl X</kbd></button>
-        <button role="menuitem" disabled><span class="document-explorer__action-icon">▧</span><span>Paste</span><kbd>Ctrl V</kbd></button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▱</span>
+            <span>Duplicate</span>
+            <kbd>Ctrl D</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▣</span>
+            <span>Copy</span>
+            <kbd>Ctrl C</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">✂</span>
+            <span>Cut</span>
+            <kbd>Ctrl X</kbd>
+        </button>
+        <button role="menuitem" disabled>
+            <span class="document-explorer__action-icon">▧</span>
+            <span>Paste</span>
+            <kbd>Ctrl V</kbd>
+        </button>
         @if (SelectedTargets.Count == 1 && actionTarget.Node is null)
         {
             <div class="document-explorer__action-separator" role="separator"></div>
-            <button role="menuitem" @onclick="ExportTargetAsync"><span class="document-explorer__action-icon">↓</span><span>Download GPX</span><kbd>Ctrl S</kbd></button>
-            <button role="menuitem" @onclick="ActivateTargetAsync"><span class="document-explorer__action-icon">◆</span><span>Activate</span><span></span></button>
+            <button role="menuitem" @onclick="ExportTargetAsync">
+                <span class="document-explorer__action-icon">↓</span>
+                <span>Download GPX</span>
+                <kbd>Ctrl S</kbd>
+            </button>
+            <button role="menuitem" @onclick="ActivateTargetAsync">
+                <span class="document-explorer__action-icon">◆</span>
+                <span>Activate</span>
+                <span></span>
+            </button>
         }
         <div class="document-explorer__action-separator" role="separator"></div>
-        <button role="menuitem" disabled="@(SelectedTargets.Count != 1 || actionTarget.Node is not null)" @onclick="CloseTargetAsync"><span class="document-explorer__action-icon">♜</span><span>Delete</span><kbd>Ctrl ⌫</kbd></button>
+        <button role="menuitem"
+                disabled="@(SelectedTargets.Count != 1 || actionTarget.Node is not null)"
+                @onclick="CloseTargetAsync">
+            <span class="document-explorer__action-icon">♜</span>
+            <span>Delete</span>
+            <kbd>Ctrl ⌫</kbd>
+        </button>
     </div>
 }
 
 @if (appearanceTarget is not null)
 {
     <div class="document-explorer__dialog-backdrop" @onclick="CloseAppearance">
-        <section class="document-explorer__appearance" role="dialog" aria-modal="true" aria-labelledby="appearance-title" @onclick:stopPropagation>
+        <section class="document-explorer__appearance"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="appearance-title"
+                 @onclick:stopPropagation>
             <h2 id="appearance-title">Appearance</h2>
             <label>Colour <input type="color" @bind="appearanceColour" /></label>
-            <div><button type="button" @onclick="SaveAppearanceAsync">Apply</button><button type="button" disabled="@(!CanResetAppearance)" @onclick="ResetAppearanceAsync">Reset to parent</button><button type="button" @onclick="CloseAppearance">Cancel</button></div>
+            <div>
+                <button type="button" @onclick="SaveAppearanceAsync">Apply</button>
+                <button type="button" disabled="@(!CanResetAppearance)" @onclick="ResetAppearanceAsync">
+                    Reset to parent
+                </button>
+                <button type="button" @onclick="CloseAppearance">Cancel</button>
+            </div>
         </section>
     </div>
 }
@@ -159,205 +321,21 @@
 @if (infoTarget is not null)
 {
     <div class="document-explorer__dialog-backdrop" @onclick="CloseInfo">
-        <section class="document-explorer__info" role="dialog" aria-modal="true" aria-labelledby="node-info-title" @onclick:stopPropagation>
+        <section class="document-explorer__info"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="node-info-title"
+                 @onclick:stopPropagation>
             <h2 id="node-info-title">Info</h2>
             <label>Name <input @bind="infoName" /></label>
-            @if (InfoHasDescription) { <label>Description <textarea @bind="infoDescription"></textarea></label> }
-            <div><button type="button" @onclick="SaveInfoAsync">Save</button><button type="button" @onclick="CloseInfo">Cancel</button></div>
+            @if (InfoHasDescription)
+            {
+                <label>Description <textarea @bind="infoDescription"></textarea></label>
+            }
+            <div>
+                <button type="button" @onclick="SaveInfoAsync">Save</button>
+                <button type="button" @onclick="CloseInfo">Cancel</button>
+            </div>
         </section>
     </div>
-}
-
-@code {
-    [Parameter, EditorRequired] public required RouteWorkspace Workspace { get; set; }
-    [Parameter] public MapSelection Selection { get; set; }
-    [Parameter] public bool Visible { get; set; }
-    [Parameter] public EventCallback<RouteWorkspace> WorkspaceChanged { get; set; }
-    [Parameter] public EventCallback<MapSelection> SelectionChanged { get; set; }
-    [Parameter] public EventCallback<MapSelection> FocusRequested { get; set; }
-
-    private readonly HashSet<Guid> initialisedDocuments = [];
-    private readonly HashSet<string> expandedNodes = [];
-    private readonly HashSet<NodeIdentity> selectedNodes = [];
-    private ActionTarget? actionTarget;
-    private ActionTarget? infoTarget;
-    private ActionTarget? appearanceTarget;
-    private double menuX;
-    private double menuY;
-    private string? infoName;
-    private string? infoDescription;
-    private string appearanceColour = "#2563eb";
-    private IJSObjectReference? downloadModule;
-
-    private async Task OpenActionsAsync(WorkspaceDocument document, WorkspaceNode? node, string name, MapSelection targetSelection, MouseEventArgs args)
-    {
-        var identity = new NodeIdentity(document.Id, node);
-        if (!selectedNodes.Contains(identity)) await SelectNodeAsync(document.Id, node, targetSelection, false);
-        actionTarget = new(document, node, name, targetSelection); menuX = args.ClientX; menuY = args.ClientY;
-    }
-    private async Task HandleContextKeyAsync(WorkspaceDocument document, WorkspaceNode? node, string name, MapSelection targetSelection, KeyboardEventArgs args)
-    {
-        if (args.Key is not ("ContextMenu" or "F10") || (args.Key == "F10" && !args.ShiftKey)) return;
-        await OpenActionsAsync(document, node, name, targetSelection, new MouseEventArgs { ClientX = 24, ClientY = 80 });
-    }
-    private void CloseActions() => actionTarget = null;
-    private IReadOnlyList<ActionTarget> SelectedTargets => selectedNodes.Select(ResolveTarget).OfType<ActionTarget>().ToArray();
-    private bool AllTargetsVisible => SelectedTargets.All(TargetIsVisible);
-    private bool CanEditInfo => actionTarget is { } target && SelectedTargets.Count == 1 && HasInfo(target.Node);
-    private async Task ActivateTargetAsync()
-    {
-        if (actionTarget is not { } target) return;
-        await WorkspaceChanged.InvokeAsync(Workspace.Activate(target.Document.Id));
-        CloseActions();
-    }
-    private async Task FocusTargetAsync()
-    {
-        if (actionTarget is not { } target) return;
-        await FocusRequested.InvokeAsync(target.Selection);
-        CloseActions();
-    }
-    private async Task ToggleTargetVisibilityAsync()
-    {
-        bool visible = !AllTargetsVisible;
-        RouteWorkspace changed = Workspace;
-        foreach (ActionTarget target in SelectedTargets)
-            changed = target.Node is null ? changed.SetVisibility(target.Document.Id, visible) : changed.SetNodeVisibility(target.Document.Id, target.Node.Value, visible);
-        await WorkspaceChanged.InvokeAsync(changed); CloseActions();
-    }
-    private void OpenAppearance()
-    {
-        if (actionTarget is not { } target) return;
-        appearanceTarget = target;
-        appearanceColour = target.Node is null ? target.Document.Colour : target.Document.NodeColour(target.Node.Value);
-        CloseActions();
-    }
-    private void CloseAppearance() => appearanceTarget = null;
-    private bool CanResetAppearance => SelectedTargets.Count > 0 && SelectedTargets.All(target => target.Node is not null);
-    private async Task SaveAppearanceAsync()
-    {
-        RouteWorkspace changed = Workspace;
-        foreach (ActionTarget target in SelectedTargets)
-            changed = target.Node is null ? changed.SetColour(target.Document.Id, appearanceColour) : changed.SetNodeColour(target.Document.Id, target.Node.Value, appearanceColour);
-        await WorkspaceChanged.InvokeAsync(changed); CloseAppearance();
-    }
-    private async Task ResetAppearanceAsync()
-    {
-        RouteWorkspace changed = Workspace;
-        foreach (ActionTarget target in SelectedTargets)
-            if (target.Node is { } node) changed = changed.SetNodeColour(target.Document.Id, node, null);
-        await WorkspaceChanged.InvokeAsync(changed); CloseAppearance();
-    }
-    private async Task CloseTargetAsync()
-    {
-        if (actionTarget is not { } target) return;
-        await WorkspaceChanged.InvokeAsync(Workspace.Close(target.Document.Id));
-        CloseActions();
-    }
-    private async Task ExportTargetAsync()
-    {
-        if (actionTarget is not { } action) return;
-        WorkspaceDocument target = action.Document; await using var stream = new MemoryStream();
-        await GpxExporter.ExportAsync(target.Document, stream, "Route Trace"); stream.Position = 0;
-        using var reference = new DotNetStreamReference(stream); downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        await downloadModule.InvokeVoidAsync("downloadStream", GpxDownloadFileName.From(target.Document.Metadata?.Name, target.SourceFileName), "application/gpx+xml", reference); CloseActions();
-    }
-    private static bool TargetIsVisible(ActionTarget target) => target.Node is null ? target.Document.IsVisible : target.Document.IsNodeVisible(target.Node.Value);
-    private static bool HasInfo(WorkspaceNode? node) => node is null || node.Value.Kind is WorkspaceNodeKind.Track or WorkspaceNodeKind.Route or WorkspaceNodeKind.Waypoint;
-    private bool InfoHasDescription => infoTarget?.Node is null || infoTarget?.Node?.Kind == WorkspaceNodeKind.Waypoint;
-    private void OpenInfo()
-    {
-        if (actionTarget is not { } target) return;
-        infoTarget = target; CloseActions();
-        (infoName, infoDescription) = InfoFields(target);
-    }
-
-    private static (string? Name, string? Description) InfoFields(ActionTarget target) => target.Node switch
-    {
-        null => (target.Document.Document.Metadata?.Name, target.Document.Document.Metadata?.Description),
-        { Kind: WorkspaceNodeKind.Track } node => (target.Document.Document.Tracks[node.PrimaryIndex].Name, null),
-        { Kind: WorkspaceNodeKind.Route } node => (target.Document.Document.Routes[node.PrimaryIndex].Name, null),
-        { Kind: WorkspaceNodeKind.Waypoint } node => WaypointInfo(target.Document.Document.Waypoints[node.PrimaryIndex]),
-        _ => (null, null)
-    };
-
-    private static (string? Name, string? Description) WaypointInfo(Waypoint waypoint) =>
-        (waypoint.Name, waypoint.Description);
-    private void CloseInfo() { infoTarget = null; infoName = null; infoDescription = null; }
-    private async Task SaveInfoAsync()
-    {
-        if (infoTarget is not { } target) return;
-        await WorkspaceChanged.InvokeAsync(Workspace.UpdateNodeInfo(target.Document.Id, target.Node, EmptyToNull(infoName), EmptyToNull(infoDescription)));
-        CloseInfo();
-    }
-    private static string? EmptyToNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private ActionTarget? ResolveTarget(NodeIdentity identity)
-    {
-        WorkspaceDocument? document = Workspace.Documents.FirstOrDefault(item => item.Id == identity.DocumentId);
-        return document is null ? null : TargetFrom(document, identity.Node);
-    }
-    private static ActionTarget TargetFrom(WorkspaceDocument document, WorkspaceNode? node) => node switch
-    {
-        null => new(document, null, DocumentName(document), new(null, null, DocumentId: document.Id, WholeDocument: true)),
-        { Kind: WorkspaceNodeKind.Track } value => new(document, value, document.Document.Tracks[value.PrimaryIndex].Name ?? $"Track {value.PrimaryIndex + 1}", new(value.PrimaryIndex, null, DocumentId: document.Id)),
-        { Kind: WorkspaceNodeKind.Segment } value => new(document, value, $"Segment {value.SecondaryIndex + 1}", new(value.PrimaryIndex, value.SecondaryIndex, DocumentId: document.Id)),
-        { Kind: WorkspaceNodeKind.Route } value => new(document, value, document.Document.Routes[value.PrimaryIndex].Name ?? $"Route {value.PrimaryIndex + 1}", new(null, null, value.PrimaryIndex, DocumentId: document.Id)),
-        { Kind: WorkspaceNodeKind.WaypointGroup } value => new(document, value, "Points of interest", new(null, null, DocumentId: document.Id, WaypointGroup: true)),
-        { Kind: WorkspaceNodeKind.Waypoint } value => new(document, value, document.Document.Waypoints[value.PrimaryIndex].Name ?? $"Waypoint {value.PrimaryIndex + 1}", new(null, null, null, value.PrimaryIndex, document.Id)),
-        _ => throw new InvalidOperationException()
-    };
-    private sealed record ActionTarget(WorkspaceDocument Document, WorkspaceNode? Node, string Name, MapSelection Selection);
-    private readonly record struct NodeIdentity(Guid DocumentId, WorkspaceNode? Node);
-
-    protected override void OnParametersSet()
-    {
-        foreach (WorkspaceDocument workspaceDocument in Workspace.Documents.Where(document => initialisedDocuments.Add(document.Id)))
-        {
-            expandedNodes.Add($"document:{workspaceDocument.Id}");
-            for (int track = 0; track < workspaceDocument.Document.Tracks.Count; track++) expandedNodes.Add($"track:{workspaceDocument.Id}:{track}");
-            if (workspaceDocument.Document.Waypoints.Count > 0) expandedNodes.Add($"poi:{workspaceDocument.Id}");
-        }
-    }
-
-    private void Toggle(string key)
-    {
-        if (!expandedNodes.Remove(key)) expandedNodes.Add(key);
-    }
-
-    private bool SelectsWholeDocument(Guid id) => selectedNodes.Contains(new(id, null));
-    private bool IsTrackSelected(Guid id, int track) => SelectsWholeDocument(id) || selectedNodes.Contains(new(id, new(WorkspaceNodeKind.Track, track)));
-    private bool IsSegmentSelected(Guid id, int track, int segment) => SelectsWholeDocument(id) || IsTrackSelected(id, track) || selectedNodes.Contains(new(id, new(WorkspaceNodeKind.Segment, track, segment)));
-    private bool IsRouteSelected(Guid id, int route) => SelectsWholeDocument(id) || selectedNodes.Contains(new(id, new(WorkspaceNodeKind.Route, route)));
-    private bool IsWaypointGroupSelected(Guid id) => SelectsWholeDocument(id) || selectedNodes.Contains(new(id, new(WorkspaceNodeKind.WaypointGroup)));
-    private bool IsWaypointSelected(Guid id, int waypoint) => IsWaypointGroupSelected(id) || selectedNodes.Contains(new(id, new(WorkspaceNodeKind.Waypoint, waypoint)));
-
-    private async Task SelectNodeAsync(Guid id, WorkspaceNode? node, MapSelection selection, bool additive)
-    {
-        var identity = new NodeIdentity(id, node);
-        if (!additive) { selectedNodes.Clear(); selectedNodes.Add(identity); }
-        else if (!selectedNodes.Remove(identity)) selectedNodes.Add(identity);
-        await WorkspaceChanged.InvokeAsync(Workspace.Activate(id).Select(id));
-        MapSelection mapSelection = selectedNodes.Contains(identity)
-            ? selection with { DocumentId = id }
-            : selectedNodes.Count == 0 ? MapSelection.None : ResolveTarget(selectedNodes.First())?.Selection ?? MapSelection.None;
-        await SelectionChanged.InvokeAsync(mapSelection);
-    }
-
-    private Task SelectAsync(Guid id, MapSelection selection) => SelectNodeAsync(id, TargetNode(selection), selection, false);
-    private Task SelectDocumentAsync(Guid id, bool additive) => SelectNodeAsync(id, null, new(null, null, DocumentId: id, WholeDocument: true), additive);
-    private Task SelectTrackAsync(Guid id, int track, bool additive) => SelectNodeAsync(id, new(WorkspaceNodeKind.Track, track), new(track, null), additive);
-    private Task SelectSegmentAsync(Guid id, int track, int segment, bool additive) => SelectNodeAsync(id, new(WorkspaceNodeKind.Segment, track, segment), new(track, segment), additive);
-    private Task SelectRouteAsync(Guid id, int route, bool additive) => SelectNodeAsync(id, new(WorkspaceNodeKind.Route, route), new(null, null, route), additive);
-    private Task SelectWaypointGroupAsync(Guid id, bool additive) => SelectNodeAsync(id, new(WorkspaceNodeKind.WaypointGroup), new(null, null, WaypointGroup: true), additive);
-    private Task SelectWaypointAsync(Guid id, int waypoint, bool additive) => SelectNodeAsync(id, new(WorkspaceNodeKind.Waypoint, waypoint), new(null, null, null, waypoint), additive);
-    private static WorkspaceNode? TargetNode(MapSelection selection) => selection switch
-    {
-        { WholeDocument: true } => null,
-        { TrackIndex: int trackIndex, SegmentIndex: int segmentIndex } => new(WorkspaceNodeKind.Segment, trackIndex, segmentIndex),
-        { TrackIndex: int trackIndex } => new(WorkspaceNodeKind.Track, trackIndex),
-        { RouteIndex: int routeIndex } => new(WorkspaceNodeKind.Route, routeIndex),
-        { WaypointIndex: int waypointIndex } => new(WorkspaceNodeKind.Waypoint, waypointIndex),
-        { WaypointGroup: true } => new(WorkspaceNodeKind.WaypointGroup),
-        _ => null
-    };
-    private static string DocumentName(WorkspaceDocument document) => document.Document.Metadata?.Name ?? document.SourceFileName ?? "Unnamed document";
 }

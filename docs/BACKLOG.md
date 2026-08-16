@@ -331,7 +331,7 @@ its user-visible behaviour or workspace model.
 
 ## PBI-064 — Extract substantial Razor component logic
 
-**Status:** Proposed
+**Status:** Complete
 
 **Goal:** Keep substantial Blazor component behaviour in code-behind files so
 Razor files remain readable descriptions of rendered structure.
