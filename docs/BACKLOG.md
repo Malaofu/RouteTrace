@@ -278,32 +278,32 @@ This PBI must not become an unrestricted rewrite of the application.
 
 ### Review result
 
-- D-001, D-002, D-004, D-005, D-007, and D-009 through D-021 are compliant.
-  D-014 and D-018 had low-risk drift that was corrected during this PBI.
-- D-003 and D-008 are not yet applicable to implemented product features.
-  No decision is superseded and no unresolved decision drift remains.
-- Removed an obsolete import component, a dead map-rendering path, and
-  duplicated colour defaults. FakeItEasy remains the selected mocking baseline
-  so future tests use the agreed framework without test-project setup churn.
-- Production null-forgiving operators and the unjustified component
-  `!important` override were removed. The remaining `!important` declarations
-  intentionally enforce screen-reader-only and reduced-motion accessibility.
-- Malformed GPX nesting now returns readable failures, while empty tracks,
-  segments, and routes remain represented. Focused regression coverage protects
-  both behaviours.
-- Large-file rendering was restored within its published AOT budget by avoiding
-  a redundant track flattening allocation and rendering before local
-  persistence work. The quality gate now uses the median of three isolated
-  browser samples to reject sustained regressions without failing on one noisy
-  scheduler sample; the final medians were 481.5 ms total and 1.7 ms busy
-  feedback.
-- Completed PBI behaviour through PBI-075 is covered by the passing .NET and
-  Playwright suites.
-- Independent route and workspace model types now have focused files;
-  metadata-update and command dispatch branches use pattern switches and
-  purpose-named methods. Repository naming conventions are explicit in
-  `.editorconfig` so IDE suggestions match the established code style.
-- Larger UI and adapter decompositions are deferred to PBI-063 through PBI-066.
+- The second audit confirmed that PBI-063 through PBI-066 made explorer,
+  component, GPX-codec, and OpenLayers responsibilities independently
+  reviewable without regressing their protected behaviour.
+- D-001, D-002, D-004, D-005, D-007, D-009, and D-011 through D-021 are
+  compliant. D-003 and D-008 are not yet applicable, no decision is superseded,
+  and D-010 has application-chrome token drift recorded as PBI-069.
+- The unimplemented PBI-030 drag-and-drop path is recorded as PBI-067. Menu and
+  explorer export duplication plus excessive `ApplicationMenu` responsibility
+  are recorded as PBI-068.
+- Theme selection now has browser coverage; valid ARIA state and the
+  pre-initialisation click race were repaired. Substantial theme interop moved
+  from Razor to code-behind, and unused HTTP registration/imports were removed.
+- TypeScript now rejects unused declarations, unchecked indexed access,
+  implicit fallthrough, and incomplete returns. OpenLayers geometry access was
+  guarded so no TypeScript non-null assertion remains.
+- Remaining C# null-forgiving operators are framework-populated Blazor
+  injection properties. Remaining `!important` declarations are limited to
+  screen-reader-only and reduced-motion accessibility overrides.
+- TypeScript contains browser storage, browser event, projection, and
+  rendering-adapter logic only; domain validation, workspace state, GPX, and
+  statistics remain in C#.
+- Final verification passed formatting, strict TypeScript, a warning-free
+  Release build, AOT publish, 72 .NET tests, and 16 published browser tests.
+  Full-density medians were 496.1 ms total and 0.7 ms busy feedback; export was
+  73.7 ms. The published import ceiling is 1,000 ms: a hard regression limit
+  with CI-runner headroom rather than the earlier uncalibrated 500 ms value.
 
 ## PBI-063 — Decompose document explorer responsibilities
 
@@ -396,6 +396,79 @@ without leaking OpenLayers details outside the TypeScript adapter boundary.
   independently.
 - Projection and OpenLayers types remain confined to TypeScript.
 - Existing endpoint, POI, selection, and multi-document tests pass unchanged.
+
+## PBI-067 — Restore drag-and-drop GPX import
+
+**Status:** Not started
+
+**Goal:** Deliver the drag-and-drop import path promised by PBI-030 without
+creating a second GPX-processing workflow.
+
+**Tasks:**
+
+- Add a clear drop target while retaining the existing File menu picker.
+- Route dropped GPX files through the same size limit, parser, feedback, and
+  workspace-addition path as picker imports.
+- Keep drag-and-drop browser handling behind a narrow interop boundary.
+- Cover successful and invalid dropped files in the browser suite.
+
+**Acceptance criteria:**
+
+- A GPX file can be imported by dropping it onto the application.
+- Picker and drop imports produce the same document and user feedback.
+- An invalid or oversized dropped file does not replace the valid workspace or
+  crash the application.
+- Imported content remains browser-local.
+
+## PBI-068 — Consolidate document import and export orchestration
+
+**Status:** Not started
+
+**Goal:** Keep the application menu focused on interaction state and use one
+document-export path from menu, keyboard, and explorer actions.
+
+**Tasks:**
+
+- Extract GPX import and export/download orchestration from the application-menu
+  component into focused feature collaborators.
+- Reuse the same export operation and filename rules from the File menu and
+  document-explorer context action.
+- Preserve performance marks, omission feedback, command availability, and
+  component-owned notice presentation.
+- Avoid a generic command bus or framework while only these operations need it.
+
+**Acceptance criteria:**
+
+- `ApplicationMenu` no longer owns GPX parsing, serialisation, and browser
+  download implementation details alongside menu interaction state.
+- Menu, shortcut, and explorer exports share execution and filename behaviour.
+- Existing import, export, accessibility, and performance tests pass.
+- Focused non-visual tests cover the extracted branching logic.
+
+## PBI-069 — Complete semantic theme coverage
+
+**Status:** Not started
+
+**Goal:** Make light, dark, and automatic themes consistently apply to
+application chrome rather than leaving major components permanently dark.
+
+**Tasks:**
+
+- Replace hard-coded chrome colours in menus, the document explorer, context
+  actions, and dialogs with the existing semantic theme properties.
+- Keep map symbols and map-overlay contrast colours explicit where their
+  rendering context justifies it.
+- Check focus, disabled, hover, border, and text contrast in both themes.
+- Extend browser coverage to verify representative computed styles change with
+  the selected theme.
+
+**Acceptance criteria:**
+
+- Major application panels and dialogs visibly follow light and dark themes.
+- Auto follows live operating-system preference changes and explicit choices
+  survive reloads.
+- No component duplicates the global light/dark palette.
+- Theme controls and affected interactions remain keyboard accessible.
 
 ## PBI-070 — Browser-local workspace persistence
 

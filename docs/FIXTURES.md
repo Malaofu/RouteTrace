@@ -54,6 +54,7 @@ behaviour in `tests/RouteTrace.TestData/README.md`.
 | PBI-061         | None                                           | State that none are needed. |
 | PBI-062         | Reuse existing fixtures                        | State that no new fixtures are needed. |
 | PBI-063–PBI-066 | Reuse existing fixtures                        | Ask only if they are absent; no new user-supplied files are required. |
+| PBI-067–PBI-069 | Reuse existing GPX fixtures                    | Ask only if they are absent; browser-generated drop events and theme settings need no new fixture. |
 | PBI-070–PBI-074 | Reuse existing GPX fixtures                    | Ask only if they are absent; no new user-supplied files are required. |
 | PBI-075         | FX-GPX-004, FX-GPX-006                         | Synthetic symbol coverage is sufficient; ask only if real-device symbol evidence is desired. |
 | PBI-076         | FX-ELE-001                                     | Ask only if it is absent. |

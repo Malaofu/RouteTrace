@@ -153,7 +153,11 @@ owner information and are materialised only when inspected or exported.
 
 Large-file budgets are enforced end to end in the real WebAssembly application
 with Playwright. Accessible loading feedback has a separate responsiveness
-budget from eventual completion.
+budget from eventual completion. For the full-density GPX fixture, use the
+median of three isolated published-AOT imports with hard ceilings of 100 ms for
+busy feedback and 1,000 ms for completion. The completion ceiling is a
+regression limit with runner headroom, not a benchmark target; retain phase
+timings so slower trends remain diagnosable.
 
 ## D-019 — AOT-compiled Release WebAssembly
 

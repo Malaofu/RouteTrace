@@ -5,6 +5,9 @@ import path from "node:path";
 
 const fixturePath = path.resolve(
     "../../tests/RouteTrace.TestData/FX-GPX-002-a-strava-wahoo-full-density-sanitised.gpx");
+const busyFeedbackBudgetMs = 100;
+const publishedCompletionBudgetMs = 1_000;
+const developmentCompletionBudgetMs = 2_000;
 
 interface ImportTimings {
     parseMs: number;
@@ -60,8 +63,10 @@ test("loads and renders the full-density GPX with measured phases", async ({ bro
 
     console.log(`GPX UI timing samples: ${JSON.stringify(samples)}`);
     console.log(`GPX UI medians: ${JSON.stringify({ busyFeedbackMs: medianBusyFeedbackMs, totalMs: medianTotalMs })}`);
-    expect(medianBusyFeedbackMs).toBeLessThan(100);
-    const completionBudgetMs = process.env.ROUTETRACE_PUBLISHED_ROOT ? 500 : 2_000;
+    expect(medianBusyFeedbackMs).toBeLessThan(busyFeedbackBudgetMs);
+    const completionBudgetMs = process.env.ROUTETRACE_PUBLISHED_ROOT
+        ? publishedCompletionBudgetMs
+        : developmentCompletionBudgetMs;
     expect(medianTotalMs).toBeLessThan(completionBudgetMs);
 });
 

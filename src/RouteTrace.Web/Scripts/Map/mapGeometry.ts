@@ -28,11 +28,12 @@ export function upsertDocument(
 
     geometry.tracks.forEach((track, trackIndex) => {
         track.segments.forEach((segment, segmentIndex) => {
-            if (segment.length === 0) return;
+            const firstCoordinate = segment[0];
+            if (!firstCoordinate) return;
             handle.geometrySource.addFeature(new Feature({
                 ...properties,
                 geometry: segment.length === 1
-                    ? new Point(fromLonLat(segment[0]))
+                    ? new Point(fromLonLat(firstCoordinate))
                     : new LineString(segment.map(coordinate => fromLonLat(coordinate))),
                 kind: "track",
                 trackIndex,
@@ -42,11 +43,12 @@ export function upsertDocument(
     });
 
     geometry.routes.forEach((route, routeIndex) => {
-        if (route.length === 0) return;
+        const firstCoordinate = route[0];
+        if (!firstCoordinate) return;
         handle.geometrySource.addFeature(new Feature({
             ...properties,
             geometry: route.length === 1
-                ? new Point(fromLonLat(route[0]))
+                ? new Point(fromLonLat(firstCoordinate))
                 : new LineString(route.map(coordinate => fromLonLat(coordinate))),
             kind: "route",
             routeIndex,
@@ -179,9 +181,15 @@ export function focusSelection(
     });
     if (features.length === 0) return;
 
-    const extent = features[0].getGeometry()!.getExtent().slice() as [number, number, number, number];
+    const firstGeometry = features[0]?.getGeometry();
+    if (!firstGeometry) return;
+
+    const extent = firstGeometry.getExtent().slice() as [number, number, number, number];
     features.slice(1).forEach(feature => {
-        const next = feature.getGeometry()!.getExtent();
+        const geometry = feature.getGeometry();
+        if (!geometry) return;
+
+        const next = geometry.getExtent() as [number, number, number, number];
         extent[0] = Math.min(extent[0], next[0]);
         extent[1] = Math.min(extent[1], next[1]);
         extent[2] = Math.max(extent[2], next[2]);
