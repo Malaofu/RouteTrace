@@ -399,7 +399,7 @@ without leaking OpenLayers details outside the TypeScript adapter boundary.
 
 ## PBI-067 — Restore drag-and-drop GPX import
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Deliver the drag-and-drop import path promised by PBI-030 without
 creating a second GPX-processing workflow.

@@ -3,6 +3,8 @@ type MenuReference = {
 };
 
 let reference: MenuReference | null = null;
+let fileInput: HTMLInputElement | null = null;
+let fileDragDepth = 0;
 
 function handleKeyDown(event: KeyboardEvent): void {
     if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -27,16 +29,76 @@ function handleDocumentClick(event: MouseEvent): void {
     }
 }
 
-export function attachApplicationMenu(dotNetReference: MenuReference): void {
+function isFileDrag(event: DragEvent): boolean {
+    return event.dataTransfer?.types.includes("Files") === true;
+}
+
+function showDropTarget(visible: boolean): void {
+    void reference?.invokeMethodAsync("SetDropTargetVisible", visible);
+}
+
+function handleDragEnter(event: DragEvent): void {
+    if (!isFileDrag(event)) return;
+
+    event.preventDefault();
+    fileDragDepth++;
+    if (fileDragDepth === 1) showDropTarget(true);
+}
+
+function handleDragOver(event: DragEvent): void {
+    if (!isFileDrag(event)) return;
+
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+}
+
+function handleDragLeave(event: DragEvent): void {
+    if (!isFileDrag(event)) return;
+
+    fileDragDepth = Math.max(0, fileDragDepth - 1);
+    if (fileDragDepth === 0) showDropTarget(false);
+}
+
+function handleDrop(event: DragEvent): void {
+    if (!isFileDrag(event)) return;
+
+    event.preventDefault();
+    fileDragDepth = 0;
+    showDropTarget(false);
+
+    const file = event.dataTransfer?.files[0];
+    if (!file || !fileInput) return;
+
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    fileInput.files = transfer.files;
+    fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+export function attachApplicationMenu(
+    dotNetReference: MenuReference,
+    input: HTMLInputElement,
+): void {
     reference = dotNetReference;
+    fileInput = input;
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("click", handleDocumentClick);
+    document.addEventListener("dragenter", handleDragEnter);
+    document.addEventListener("dragover", handleDragOver);
+    document.addEventListener("dragleave", handleDragLeave);
+    document.addEventListener("drop", handleDrop);
 }
 
 export function detachApplicationMenu(): void {
     document.removeEventListener("keydown", handleKeyDown);
     document.removeEventListener("click", handleDocumentClick);
+    document.removeEventListener("dragenter", handleDragEnter);
+    document.removeEventListener("dragover", handleDragOver);
+    document.removeEventListener("dragleave", handleDragLeave);
+    document.removeEventListener("drop", handleDrop);
     reference = null;
+    fileInput = null;
+    fileDragDepth = 0;
 }
 
 export function openFilePicker(input: HTMLInputElement): void {

@@ -1,40 +1,35 @@
 # Project status
 
-**Phase:** Second engineering quality audit complete
+**Phase:** Import interaction restoration
 
-**Current PBI:** PBI-062 — Establish the engineering quality baseline
+**Current PBI:** PBI-067 — Restore drag-and-drop GPX import
 
-**Last updated:** 2026-08-16
+**Last updated:** 2026-08-17
 
 ## Current state
 
-- PBI-062 has been rerun from scratch after PBI-063 through PBI-066; their
-  explorer, Razor, GPX-codec, and OpenLayers decompositions remain sound.
-- Theme controls now wait for interop readiness, expose valid ARIA state, and
-  have regression coverage for light, dark, Auto, live system changes, and
-  reload persistence.
-- Dead HTTP client/import plumbing was removed. TypeScript checks now reject
-  unused declarations, unchecked indexed access, switch fallthrough, and
-  incomplete returns.
-- PBI-067 records the previously missed PBI-030 drag-and-drop import gap.
-- PBI-068 records duplicated export orchestration and excessive application-menu
-  responsibility. PBI-069 records incomplete semantic theme-token coverage.
-- D-010 is drifted pending PBI-069; D-003 and D-008 are not yet applicable; all
-  other accepted decisions are compliant and none is superseded.
+- PBI-067 is complete. Dragging a file over the application presents a clear
+  drop target and dropping it starts the established picker import workflow.
+- Picker and drop imports share the same browser file input, size limit, GPX
+  parser, performance measurements, feedback, and workspace-addition path.
+- The browser adapter only translates file drag events into the existing input
+  change event; GPX content remains browser-local.
+- Browser coverage verifies matching picker/drop results and confirms that an
+  invalid drop preserves the existing workspace and rendered map document.
+- PBI-068 remains the next import/export orchestration cleanup. PBI-069 remains
+  the outstanding semantic theme-token follow-up from the quality audit.
 
 ## Verification
 
-- Formatting, strict TypeScript, warning-free Release build, and WebAssembly
-  AOT publish: passed.
-- Automated tests: 72 .NET and 16 published Playwright passed; zero failed.
-- Full-density import medians: 496.1 ms total and 0.7 ms busy feedback; export
-  completed in 73.7 ms. The published import hard ceiling is 1,000 ms; the
+- Formatting, strict TypeScript, warning-free build, and WebAssembly AOT
+  publish: passed.
+- Automated tests: 72 .NET and 18 published Playwright passed; zero failed.
+- Full-density import medians: 493.6 ms total and 3.1 ms busy feedback; export
+  completed in 72.5 ms. The published import hard ceiling is 1,000 ms; the
   separate busy-feedback ceiling remains 100 ms.
-- Manual source review covered project boundaries, GPX ownership, component
-  styles, nullable suppressions, static assets, dependencies, and fixture use.
 
 **Blockers:** None.
 
 ## Next action
 
-- Select PBI-067, PBI-068, or PBI-069 explicitly; do not start it implicitly.
+- Select the next PBI explicitly; do not start it implicitly.

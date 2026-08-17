@@ -59,6 +59,16 @@
     </span>
 </div>
 
+@if (dropTargetVisible)
+{
+    <div class="application-menu__drop-target" role="status" aria-live="polite">
+        <div>
+            <strong>Drop GPX to import</strong>
+            <span>Processed locally in this browser.</span>
+        </div>
+    </div>
+}
+
 @if (isImporting)
 {
     <p role="status" class="application-menu__notice">Reading and processing locally…</p>

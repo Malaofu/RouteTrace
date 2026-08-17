@@ -43,6 +43,7 @@ public partial class ApplicationMenu
     private string? activeMenu;
     private string? focusMenu;
     private bool focusFirstItem;
+    private bool dropTargetVisible;
     private bool isImporting;
     private bool hasError;
     private string? message;
@@ -65,7 +66,10 @@ public partial class ApplicationMenu
         {
             menuModule = await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/applicationMenu.js");
             selfReference = DotNetObjectReference.Create(this);
-            await menuModule.InvokeVoidAsync("attachApplicationMenu", selfReference);
+            if (fileInput is { } input)
+            {
+                await menuModule.InvokeVoidAsync("attachApplicationMenu", selfReference, input.Element);
+            }
         }
 
         if (focusFirstItem)
@@ -163,6 +167,18 @@ public partial class ApplicationMenu
             activeMenu = null;
             StateHasChanged();
         }
+    }
+
+    [JSInvokable]
+    public Task SetDropTargetVisible(bool visible)
+    {
+        if (dropTargetVisible == visible)
+        {
+            return Task.CompletedTask;
+        }
+
+        dropTargetVisible = visible;
+        return InvokeAsync(StateHasChanged);
     }
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)

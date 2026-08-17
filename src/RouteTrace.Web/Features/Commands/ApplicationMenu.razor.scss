@@ -103,6 +103,38 @@
   display: none;
 }
 
+.application-menu__drop-target {
+  position: fixed;
+  z-index: 1080;
+  inset: 0;
+  display: grid;
+  padding: var(--space-6);
+  border: .25rem dashed var(--color-accent);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  pointer-events: none;
+  place-items: center;
+}
+
+.application-menu__drop-target div {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.application-menu__drop-target strong {
+  font-size: 1.25rem;
+}
+
+.application-menu__drop-target span {
+  color: var(--color-text-muted);
+}
+
 .application-menu__notice {
   position: absolute;
   z-index: 1090;
