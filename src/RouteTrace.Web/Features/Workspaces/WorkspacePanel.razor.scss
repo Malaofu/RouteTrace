@@ -9,7 +9,7 @@
   padding: 1rem;
   border-radius: 0.5rem;
   background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
-  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 20%);
+  box-shadow: var(--shadow-md);
 
   h2,
   h3 {

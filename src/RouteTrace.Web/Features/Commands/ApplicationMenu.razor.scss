@@ -7,9 +7,10 @@
   align-items: center;
   max-width: calc(100% - 2 * var(--space-3));
   padding: var(--space-1);
-  border: 1px solid rgb(255 255 255 / 14%);
+  border: 1px solid var(--color-border);
   border-radius: .5rem;
-  background: rgb(23 23 23 / 94%);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface-raised) 94%, transparent);
   box-shadow: var(--shadow-md);
   transform: translateX(-50%);
   backdrop-filter: blur(12px);
@@ -18,7 +19,7 @@
 .application-menu__trigger {
   min-width: 4rem;
   border-color: transparent;
-  color: #fff;
+  color: inherit;
   background: transparent;
   box-shadow: none;
   font-weight: 600;
@@ -27,8 +28,8 @@
 .application-menu__trigger:hover,
 .application-menu__trigger:focus-visible,
 .application-menu__trigger[aria-expanded="true"] {
-  color: #fff;
-  background: rgb(255 255 255 / 14%);
+  color: var(--color-text);
+  background: var(--color-hover);
 }
 
 .application-menu__popup {
@@ -40,10 +41,10 @@
   min-width: 13rem;
   padding: .25rem 0;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 12%);
+  border: 1px solid var(--color-border);
   border-radius: .5rem;
-  color: #f7f7f7;
-  background: #171717;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
   box-shadow: var(--shadow-md);
   transform: translateX(-50%);
 }
@@ -63,17 +64,17 @@
 }
 
 .application-menu__popup button + button {
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--color-border);
 }
 
 .application-menu__popup button:focus-visible,
 .application-menu__popup button:hover:not(:disabled) {
-  background: rgb(255 255 255 / 12%);
+  background: var(--color-hover);
   outline-offset: -2px;
 }
 
 .application-menu__popup button:disabled {
-  color: rgb(255 255 255 / 42%);
+  color: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
 }
 
 .application-menu__icon {
@@ -88,15 +89,15 @@
 .application-menu__popup kbd {
   padding: .1rem .3rem;
   border-radius: .25rem;
-  color: #c8c8c8;
-  background: rgb(255 255 255 / 10%);
+  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
   font: inherit;
   font-size: .75rem;
   white-space: nowrap;
 }
 
 .application-menu__popup button:disabled kbd {
-  color: rgb(255 255 255 / 38%);
+  color: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
 }
 
 .application-menu__file-input {

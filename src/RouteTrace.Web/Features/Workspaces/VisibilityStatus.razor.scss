@@ -6,7 +6,7 @@
   margin: auto;
   border: 1.5px solid currentColor;
   border-radius: 50%;
-  color: #bbb;
+  color: var(--color-text-muted);
 }
 
 .document-explorer__visibility::after {

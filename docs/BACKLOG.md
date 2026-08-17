@@ -447,7 +447,7 @@ document-export path from menu, keyboard, and explorer actions.
 
 ## PBI-069 — Complete semantic theme coverage
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Make light, dark, and automatic themes consistently apply to
 application chrome rather than leaving major components permanently dark.

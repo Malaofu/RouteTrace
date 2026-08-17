@@ -6,9 +6,10 @@
   height: 100%;
   overflow: auto;
   padding: .75rem;
-  color: #f5f5f5;
-  background: #121212;
-  box-shadow: -.25rem 0 .75rem rgb(0 0 0 / 20%);
+  border-left: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
 }
 
 .document-explorer--hidden { display: none; }
