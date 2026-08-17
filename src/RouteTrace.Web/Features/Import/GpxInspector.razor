@@ -1,9 +1,7 @@
 @using System.Globalization
 @using RouteTrace.Core.Routes.Analysis
 @using RouteTrace.Core.Routes.Documents
-@using RouteTrace.Core.Routes.Geometry
 @using RouteTrace.Web.Features.Map
-@inject IJSRuntime JavaScript
 
 <aside class="gpx-inspector" aria-labelledby="gpx-inspector-title">
     <h2 id="gpx-inspector-title">GPX inspector</h2>
@@ -179,11 +177,6 @@
 
     protected override void OnParametersSet() =>
         statistics = RouteStatisticsCalculator.Calculate(Document);
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.inspector.rendered");
-    }
 
     private Task Select(int trackIndex, int? segmentIndex) =>
         SelectionChanged.InvokeAsync(new MapSelection(trackIndex, segmentIndex));

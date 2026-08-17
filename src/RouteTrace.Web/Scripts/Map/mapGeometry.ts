@@ -5,10 +5,6 @@ import { fromLonLat } from "ol/proj.js";
 import type { DocumentPresentation, ImportedGeometry } from "./mapContracts.js";
 import type { MapHandle } from "./mapLifecycle.js";
 
-export function beginDocumentUpdate(): void {
-    performance.mark("routeTrace.map.render.start");
-}
-
 export function removeDocument(handle: MapHandle, documentId: string): void {
     handle.geometrySource.getFeatures()
         .filter(feature => feature.get("documentId") === documentId)
@@ -135,7 +131,6 @@ export function endDocumentUpdate(handle: MapHandle, fitGeometry: boolean): void
     if (fitGeometry && !handle.geometrySource.isEmpty()) {
         const extent = handle.geometrySource.getExtent();
         if (extent === null) {
-            performance.mark("routeTrace.map.render.end");
             return;
         }
         handle.map.getView().fit(extent, {
@@ -144,7 +139,6 @@ export function endDocumentUpdate(handle: MapHandle, fitGeometry: boolean): void
             padding: [64, 64, 64, 64],
         });
     }
-    performance.mark("routeTrace.map.render.end");
 }
 
 export function focusSelection(

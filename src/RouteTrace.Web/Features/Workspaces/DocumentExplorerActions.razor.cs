@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
-using RouteTrace.Core.Gpx;
 using RouteTrace.Core.Routes.Documents;
 using RouteTrace.Core.Routes.Workspaces;
 using RouteTrace.Web.Features.Import;
@@ -8,9 +6,9 @@ using RouteTrace.Web.Features.Map;
 
 namespace RouteTrace.Web.Features.Workspaces;
 
-public partial class DocumentExplorerActions : IAsyncDisposable
+public partial class DocumentExplorerActions
 {
-    [Inject] private IJSRuntime JavaScript { get; set; } = null!;
+    [Inject] private GpxExportOperation GpxExport { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public required RouteWorkspace Workspace { get; set; }
@@ -30,7 +28,6 @@ public partial class DocumentExplorerActions : IAsyncDisposable
     private string? infoName;
     private string? infoDescription;
     private string appearanceColour = "#2563eb";
-    private IJSObjectReference? downloadModule;
 
     public void Open(DocumentTreeActionRequest request, IReadOnlyList<DocumentTreeTarget> targets)
     {
@@ -143,21 +140,7 @@ public partial class DocumentExplorerActions : IAsyncDisposable
             return;
         }
 
-        WorkspaceDocument target = action.Document;
-        await using var stream = new MemoryStream();
-        await GpxExporter.ExportAsync(target.Document, stream, "Route Trace");
-        stream.Position = 0;
-
-        using var reference = new DotNetStreamReference(stream);
-        downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        string fileName = GpxDownloadFileName.From(
-            target.Document.Metadata?.Name,
-            target.SourceFileName);
-        await downloadModule.InvokeVoidAsync(
-            "downloadStream",
-            fileName,
-            "application/gpx+xml",
-            reference);
+        await GpxExport.ExecuteAsync(action.Document);
         CloseActions();
     }
 
@@ -225,11 +208,4 @@ public partial class DocumentExplorerActions : IAsyncDisposable
     private static string? EmptyToNull(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    public async ValueTask DisposeAsync()
-    {
-        if (downloadModule is not null)
-        {
-            await downloadModule.DisposeAsync();
-        }
-    }
 }

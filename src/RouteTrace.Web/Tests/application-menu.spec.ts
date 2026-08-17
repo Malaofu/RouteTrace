@@ -69,6 +69,21 @@ test("successful import notice dismisses automatically", async ({ page }) => {
     await expect(notice).toBeHidden({ timeout: 7_000 });
 });
 
+test("menu and keyboard exports use the same filename", async ({ page }) => {
+    await page.goto("/");
+    await page.locator('input[type="file"]').setInputFiles(fixturePath);
+    await expect(page.getByText(/Imported FX-GPX-001/)).toBeVisible();
+
+    const shortcutDownload = page.waitForEvent("download");
+    await page.keyboard.press("Control+s");
+    expect((await shortcutDownload).suggestedFilename()).toBe("Minimal elevated track.gpx");
+
+    const menuDownload = page.waitForEvent("download");
+    await page.getByRole("button", { name: "File", exact: true }).click();
+    await page.getByRole("menuitem", { name: /Download GPX/ }).click();
+    expect((await menuDownload).suggestedFilename()).toBe("Minimal elevated track.gpx");
+});
+
 test("file menu dismisses without affecting the map", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "File", exact: true }).click();

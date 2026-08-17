@@ -87,7 +87,6 @@ public partial class MapViewport
 
     private async Task RenderDocumentAsync(IJSObjectReference currentModule)
     {
-        await currentModule.InvokeVoidAsync("beginDocumentUpdate", elementId);
         var current = Documents.ToDictionary(document => document.Id);
 
         foreach (Guid removedId in renderedDocuments.Keys.Except(current.Keys).ToArray())

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using RouteTrace.Web;
+using RouteTrace.Web.Features.Import;
 using RouteTrace.Web.Features.Map;
 using RouteTrace.Web.Features.Workspaces;
 
@@ -9,6 +10,8 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped<IWorkspaceStore, IndexedDbWorkspaceStore>();
+builder.Services.AddScoped<GpxImportOperation>();
+builder.Services.AddScoped<GpxExportOperation>();
 builder.Services.Configure<MapMarkerOptions>(builder.Configuration.GetSection(MapMarkerOptions.SectionName));
 
 await builder.Build().RunAsync();

@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using RouteTrace.Core.Gpx;
-using RouteTrace.Core.Routes.Documents;
 using RouteTrace.Core.Routes.Workspaces;
 using RouteTrace.Web.Features.Import;
 
@@ -12,6 +10,8 @@ namespace RouteTrace.Web.Features.Commands;
 public partial class ApplicationMenu
 {
     [Inject] private IJSRuntime JavaScript { get; set; } = null!;
+    [Inject] private GpxImportOperation GpxImport { get; set; } = null!;
+    [Inject] private GpxExportOperation GpxExport { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public WorkspaceDocument? ActiveDocument { get; set; }
@@ -28,7 +28,6 @@ public partial class ApplicationMenu
     [Parameter] public bool ExplorerVisible { get; set; }
     [Parameter] public EventCallback<bool> ExplorerVisibilityChanged { get; set; }
 
-    private const long MaximumFileSize = 50 * 1024 * 1024;
     private readonly ApplicationCommand openCommand;
     private readonly ApplicationCommand exportCommand;
     private readonly ApplicationCommand inspectorCommand;
@@ -49,7 +48,6 @@ public partial class ApplicationMenu
     private string? message;
     private CancellationTokenSource? noticeDismissal;
     private IJSObjectReference? menuModule;
-    private IJSObjectReference? downloadModule;
     private DotNetObjectReference<ApplicationMenu>? selfReference;
 
     public ApplicationMenu()
@@ -183,40 +181,25 @@ public partial class ApplicationMenu
 
     private async Task ImportAsync(InputFileChangeEventArgs eventArgs)
     {
-        await JavaScript.InvokeVoidAsync("performance.clearMarks");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.start");
         isImporting = true;
         hasError = false;
         message = null;
         CancelNoticeDismissal();
         await InvokeAsync(StateHasChanged);
         await JavaScript.InvokeVoidAsync("routeTrace.waitForAnimationFrame");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.busy-rendered");
-
         try
         {
             IBrowserFile file = eventArgs.File;
-            await using Stream stream = file.OpenReadStream(MaximumFileSize);
-            GpxImportResult result = await GpxImporter.ImportAsync(stream);
-            await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.import.parsed");
-            if (result.Document is not { } document)
+            GpxImportOutcome outcome = await GpxImport.ExecuteAsync(file);
+            hasError = outcome.IsError;
+            message = outcome.Message;
+            if (outcome.ImportedDocument is not { } importedDocument)
             {
-                hasError = true;
-                message = result.Error;
                 return;
             }
 
-            int pointCount = document.Tracks.SelectMany(track => track.Segments).Sum(segment => segment.Points.Count)
-                + document.Routes.Sum(route => route.Points.Count)
-                + document.Waypoints.Count;
-            message = $"Imported {file.Name}: {pointCount} point(s).";
-            await DocumentImported.InvokeAsync(new ImportedGpxDocument(document, file.Name));
+            await DocumentImported.InvokeAsync(importedDocument);
             ScheduleNoticeDismissal();
-        }
-        catch (IOException exception)
-        {
-            hasError = true;
-            message = $"The file could not be read: {exception.Message}";
         }
         finally
         {
@@ -228,22 +211,8 @@ public partial class ApplicationMenu
     {
         if (ActiveDocument is null) return;
 
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.start");
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.serialized");
-        await JavaScript.InvokeVoidAsync("performance.clearMarks", "routeTrace.export.downloaded");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.start");
-        await using var stream = new MemoryStream();
-        GpxExportResult result = await GpxExporter.ExportAsync(ActiveDocument.Document, stream, "Route Trace");
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.serialized");
-        stream.Position = 0;
-        using var streamReference = new DotNetStreamReference(stream);
-        downloadModule ??= await JavaScript.InvokeAsync<IJSObjectReference>("import", "./generated/download.js");
-        string fileName = GpxDownloadFileName.From(ActiveDocument.Document.Metadata?.Name, ActiveDocument.SourceFileName);
-        await downloadModule.InvokeVoidAsync("downloadStream", fileName, "application/gpx+xml", streamReference);
-        await JavaScript.InvokeVoidAsync("performance.mark", "routeTrace.export.downloaded");
-        message = result.OmittedExtensionNamespaces.Count == 0
-            ? $"Downloaded GPX with {result.RetainedExtensionCount} retained extension element(s)."
-            : $"Downloaded GPX; omitted: {string.Join(", ", result.OmittedExtensionNamespaces)}.";
+        GpxExportOutcome outcome = await GpxExport.ExecuteAsync(ActiveDocument);
+        message = outcome.Notice;
         ScheduleNoticeDismissal();
     }
 
@@ -286,7 +255,6 @@ public partial class ApplicationMenu
             await menuModule.InvokeVoidAsync("detachApplicationMenu");
             await menuModule.DisposeAsync();
         }
-        if (downloadModule is not null) await downloadModule.DisposeAsync();
         selfReference?.Dispose();
     }
 }

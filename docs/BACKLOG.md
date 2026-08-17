@@ -422,7 +422,7 @@ creating a second GPX-processing workflow.
 
 ## PBI-068 — Consolidate document import and export orchestration
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Keep the application menu focused on interaction state and use one
 document-export path from menu, keyboard, and explorer actions.

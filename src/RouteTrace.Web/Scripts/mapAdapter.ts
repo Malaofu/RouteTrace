@@ -6,7 +6,6 @@ import type {
     Wgs84Bounds,
 } from "./Map/mapContracts.js";
 import {
-    beginDocumentUpdate as beginGeometryUpdate,
     endDocumentUpdate as endGeometryUpdate,
     focusSelection as focusGeometrySelection,
     removeDocument as removeGeometryDocument,
@@ -29,11 +28,6 @@ export function initialize(
 ): void {
     markerConfig = config;
     initializeMap(elementId, config, dotNetViewport);
-}
-
-export function beginDocumentUpdate(elementId: string): void {
-    getMap(elementId);
-    beginGeometryUpdate();
 }
 
 export function removeDocument(elementId: string, documentId: string): void {
