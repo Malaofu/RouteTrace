@@ -4,6 +4,7 @@ using RouteTrace.Core.Editing;
 using RouteTrace.Core.Routes.Documents;
 using RouteTrace.Core.Routes.Geometry;
 using RouteTrace.Core.Routes.Workspaces;
+using RouteTrace.Core.Routing;
 using RouteTrace.Web.Features.Import;
 using RouteTrace.Web.Features.Map;
 using RouteTrace.Web.Features.Workspaces;
@@ -12,8 +13,11 @@ namespace RouteTrace.Web.Pages;
 
 public partial class Home
 {
+    private const string RoutingProfileStorageKey = "routeTrace.routingProfile";
+
     [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
     [Inject] private IJSRuntime JavaScript { get; set; } = null!;
+    [Inject] private IRoutePlanner RoutePlanner { get; set; } = null!;
 
     private RouteWorkspace workspace = new(Guid.NewGuid(), "Untitled workspace");
     private MapSelection selection = MapSelection.None;
@@ -30,12 +34,25 @@ public partial class Home
     private int? selectedEditingPoint;
     private bool manualEditDirty;
     private bool editExitConfirmationVisible;
-    private IReadOnlyList<double[]> ManualEditingPoints => manualEditor?.Points
+    private CancellationTokenSource? routingCancellation;
+    private RoutingUiState routingState = RoutingUiState.Idle;
+    private string? routingMessage;
+    private BicycleRoutingProfile routingProfile = BicycleRoutingProfile.Cycling;
+    private IReadOnlyList<double[]> ManualEditingGeometry => manualEditor?.Points
+        .Select(point => new[] { point.Longitude, point.Latitude })
+        .ToArray() ?? [];
+    private IReadOnlyList<double[]> ManualEditingAnchors => manualEditor?.Anchors
         .Select(point => new[] { point.Longitude, point.Latitude })
         .ToArray() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
+        string? storedProfile = await JavaScript.InvokeAsync<string?>("localStorage.getItem", RoutingProfileStorageKey);
+        if (Enum.TryParse(storedProfile, true, out BicycleRoutingProfile parsedProfile) &&
+            Enum.IsDefined(parsedProfile))
+        {
+            routingProfile = parsedProfile;
+        }
         WorkspaceDecodeResult? restored = await WorkspaceStore.OpenMostRecentAsync();
         if (restored?.Workspace is { } restoredWorkspace)
         {
@@ -91,7 +108,9 @@ public partial class Home
         EditableLineTarget editableTarget = target.Value;
         Guid documentId = requestedTarget.Document.Id;
         WorkspaceDocument document = workspace.Documents.Single(item => item.Id == documentId);
-        manualEditor = new ManualRouteEditor(editableTarget.GetPoints(document.Document));
+        manualEditor = new ManualRouteEditor(
+            editableTarget.GetPoints(document.Document),
+            editableTarget.GetAnchorIndices(document.Document));
         manualDocumentId = documentId;
         manualTarget = editableTarget;
         manualOriginalDocument = document.Document;
@@ -101,6 +120,8 @@ public partial class Home
         selectedEditingPoint = null;
         manualEditDirty = false;
         editExitConfirmationVisible = false;
+        routingState = RoutingUiState.Idle;
+        routingMessage = null;
         workspace = workspace.Activate(documentId).Select(documentId);
         RefreshMapDocuments();
         focusVersion++;
@@ -109,6 +130,9 @@ public partial class Home
 
     private void FinishManualRoute()
     {
+        routingCancellation?.Cancel();
+        routingCancellation?.Dispose();
+        routingCancellation = null;
         manualEditor = null;
         manualDocumentId = null;
         manualTarget = null;
@@ -117,15 +141,30 @@ public partial class Home
         selectedEditingPoint = null;
         manualEditDirty = false;
         editExitConfirmationVisible = false;
+        routingState = RoutingUiState.Idle;
+        routingMessage = null;
     }
 
     private async Task HandleEditingPointAddedAsync(double[] coordinate)
     {
         if (manualEditor is null || coordinate.Length < 2) return;
-        var point = new GeoCoordinate(coordinate[1], coordinate[0]);
-        manualEditor.Add(point);
-        selectedEditingPoint = manualEditor.Points.Count - 1;
-        await CommitManualEditAsync();
+        RoutePoint[] anchors =
+        [
+            .. manualEditor.AnchorPoints,
+            new RoutePoint(new GeoCoordinate(coordinate[1], coordinate[0]))
+        ];
+        await ApplyAnchorEditAsync(anchors, false, anchors.Length - 1);
+    }
+
+    private async Task HandleEditingAnchorInsertedAsync(EditingAnchorInsert insertion)
+    {
+        if (manualEditor is null || insertion.Coordinate.Length < 2 ||
+            insertion.AfterAnchorIndex < 0 || insertion.AfterAnchorIndex >= manualEditor.AnchorPoints.Count) return;
+        var anchors = manualEditor.AnchorPoints.ToList();
+        anchors.Insert(
+            insertion.AfterAnchorIndex + 1,
+            new RoutePoint(new GeoCoordinate(insertion.Coordinate[1], insertion.Coordinate[0])));
+        await ApplyAnchorEditAsync(anchors, manualEditor.IsLoop, insertion.AfterAnchorIndex + 1);
     }
 
     private void HandleEditingPointSelected(int index)
@@ -135,33 +174,25 @@ public partial class Home
 
     private async Task HandleEditingPointMovedAsync(EditingPointMove move)
     {
-        if (manualEditor is null || move.Index < 0 || move.Index >= EditablePointCount()) return;
-        manualEditor.Move(move.Index, new GeoCoordinate(move.Coordinate[1], move.Coordinate[0]));
-        selectedEditingPoint = move.Index;
-        await CommitManualEditAsync();
-    }
-
-    private async Task HandleEditingPointsReplacedAsync(double[][] coordinates)
-    {
-        if (manualEditor is null || coordinates.Any(coordinate => coordinate.Length < 2)) return;
-        GeoCoordinate[] replacement = coordinates
-            .Select(coordinate => new GeoCoordinate(coordinate[1], coordinate[0]))
-            .ToArray();
-        IReadOnlyList<GeoCoordinate> previous = manualEditor.Points;
-        int changedIndex = FirstChangedIndex(previous, replacement);
-        if (!manualEditor.ReplaceCoordinates(replacement)) return;
-        selectedEditingPoint = Math.Min(changedIndex, EditablePointCount() - 1);
-        await CommitManualEditAsync();
+        if (manualEditor is null || move.Coordinate.Length < 2 ||
+            move.Index < 0 || move.Index >= EditablePointCount()) return;
+        RoutePoint[] anchors = [.. manualEditor.AnchorPoints];
+        anchors[move.Index] = anchors[move.Index] with
+        {
+            Coordinate = new GeoCoordinate(move.Coordinate[1], move.Coordinate[0])
+        };
+        await ApplyAnchorEditAsync(anchors, manualEditor.IsLoop, move.Index);
     }
 
     private async Task DeleteEditingPointAsync()
     {
         if (manualEditor is null || selectedEditingPoint is not { } selected) return;
-        manualEditor.Delete(selected);
-        selectedEditingPoint = manualEditor.Points.Count == 0
-            ? null
-            : Math.Min(selected, EditablePointCount() - 1);
-        await CommitManualEditAsync();
+        RoutePoint[] anchors = manualEditor.AnchorPoints.Where((_, index) => index != selected).ToArray();
+        bool loop = manualEditor.IsLoop && anchors.Length >= 2;
+        await ApplyAnchorEditAsync(
+            anchors,
+            loop,
+            anchors.Length == 0 ? null : Math.Min(selected, anchors.Length - 1));
     }
 
     private async Task DeleteEditingPointAtAsync(int index)
@@ -174,19 +205,18 @@ public partial class Home
     private async Task ReverseManualRouteAsync()
     {
         if (manualEditor is null) return;
-        GeoCoordinate? selected = selectedEditingPoint is { } index ? manualEditor.Points[index] : null;
+        GeoCoordinate? selected = selectedEditingPoint is { } index ? manualEditor.Anchors[index] : null;
         manualEditor.Reverse();
         selectedEditingPoint = selected is null
             ? null
-            : manualEditor.Points.Take(EditablePointCount()).ToList().IndexOf(selected.Value);
+            : manualEditor.Anchors.ToList().IndexOf(selected.Value);
         await CommitManualEditAsync();
     }
 
     private async Task CloseManualRouteLoopAsync()
     {
         if (manualEditor is null) return;
-        manualEditor.CloseLoop();
-        await CommitManualEditAsync();
+        await ApplyAnchorEditAsync(manualEditor.AnchorPoints, true, selectedEditingPoint);
     }
 
     private async Task ClearManualRouteAsync()
@@ -211,18 +241,141 @@ public partial class Home
         await CommitManualEditAsync();
     }
 
-    private int EditablePointCount() => manualEditor is null
-        ? 0
-        : manualEditor.Points.Count - (manualEditor.IsLoop ? 1 : 0);
+    private int EditablePointCount() => manualEditor?.AnchorPoints.Count ?? 0;
+
+    private async Task HandleRoutingProfileChangedAsync(BicycleRoutingProfile profile)
+    {
+        if (profile == routingProfile) return;
+        routingProfile = profile;
+        await JavaScript.InvokeVoidAsync("localStorage.setItem", RoutingProfileStorageKey, profile.ToString());
+        if (manualEditor is not { } editor || editor.AnchorPoints.Count < 2)
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        await ApplyAnchorEditAsync(editor.AnchorPoints, editor.IsLoop, selectedEditingPoint, true);
+    }
+
+    private async Task ApplyAnchorEditAsync(
+        IReadOnlyList<RoutePoint> anchors,
+        bool isLoop,
+        int? selectedIndex,
+        bool rerouteAll = false)
+    {
+        if (manualEditor is not { } editor) return;
+        (IReadOnlyList<IReadOnlyList<RoutePoint>> legs, IReadOnlyList<int> affected) =
+            BuildProposedLegs(editor.AnchorPoints, editor.Legs, editor.IsLoop, anchors, isLoop, rerouteAll);
+        if (affected.Count == 0)
+        {
+            editor.ApplyRoutedEdit(anchors, legs, isLoop);
+            selectedEditingPoint = selectedIndex;
+            routingState = RoutingUiState.Idle;
+            routingMessage = null;
+            await CommitManualEditAsync();
+            return;
+        }
+
+        routingCancellation?.Cancel();
+        routingCancellation?.Dispose();
+        routingCancellation = new CancellationTokenSource();
+        CancellationToken cancellationToken = routingCancellation.Token;
+        routingState = RoutingUiState.Routing;
+        routingMessage = affected.Count == 1 ? "Calculating bicycle route…" : "Updating bicycle route legs…";
+        await InvokeAsync(StateHasChanged);
+
+        IReadOnlyList<RoutePoint>[] routedLegs = [.. legs];
+        foreach (int legIndex in affected)
+        {
+            RoutePoint start = anchors[legIndex];
+            RoutePoint finish = anchors[(legIndex + 1) % anchors.Count];
+            RoutePlanResult result;
+            try
+            {
+                result = await RoutePlanner.PlanAsync(
+                    new RoutePlanRequest(new[] { start.Coordinate, finish.Coordinate }, routingProfile),
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (result.Status != RoutePlanStatus.Success)
+            {
+                routingState = result.Status == RoutePlanStatus.NoRoute
+                    ? RoutingUiState.NoRoute
+                    : RoutingUiState.Failure;
+                routingMessage = result.Message;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+            routedLegs[legIndex] = NormaliseLegEndpoints(result.Geometry, start, finish);
+        }
+
+        if (cancellationToken.IsCancellationRequested || !ReferenceEquals(manualEditor, editor)) return;
+        editor.ApplyRoutedEdit(anchors, routedLegs, isLoop);
+        selectedEditingPoint = selectedIndex;
+        routingState = RoutingUiState.Success;
+        routingMessage = "Bicycle route updated.";
+        await CommitManualEditAsync();
+    }
+
+    private static (IReadOnlyList<IReadOnlyList<RoutePoint>> Legs, IReadOnlyList<int> Affected) BuildProposedLegs(
+        IReadOnlyList<RoutePoint> previousAnchors,
+        IReadOnlyList<IReadOnlyList<RoutePoint>> previousLegs,
+        bool previousLoop,
+        IReadOnlyList<RoutePoint> anchors,
+        bool loop,
+        bool rerouteAll)
+    {
+        int legCount = loop ? anchors.Count : Math.Max(0, anchors.Count - 1);
+        var legs = new List<IReadOnlyList<RoutePoint>>(legCount);
+        var affected = new List<int>();
+        for (int index = 0; index < legCount; index++)
+        {
+            RoutePoint start = anchors[index];
+            RoutePoint finish = anchors[(index + 1) % anchors.Count];
+            int previousIndex = previousAnchors.ToList().FindIndex(anchor => anchor == start);
+            int previousLegCount = previousLoop ? previousAnchors.Count : Math.Max(0, previousAnchors.Count - 1);
+            bool preserved = !rerouteAll && previousIndex >= 0 && previousIndex < previousLegCount &&
+                previousAnchors[(previousIndex + 1) % previousAnchors.Count] == finish;
+            if (preserved)
+            {
+                legs.Add(previousLegs[previousIndex]);
+            }
+            else
+            {
+                legs.Add(Array.AsReadOnly(new[] { start, finish }));
+                affected.Add(index);
+            }
+        }
+        return (Array.AsReadOnly(legs.ToArray()), Array.AsReadOnly(affected.ToArray()));
+    }
+
+    private static IReadOnlyList<RoutePoint> NormaliseLegEndpoints(
+        IReadOnlyList<RoutePoint> geometry,
+        RoutePoint start,
+        RoutePoint finish)
+    {
+        RoutePoint[] points = [.. geometry];
+        points[0] = start;
+        points[^1] = finish;
+        return Array.AsReadOnly(points);
+    }
 
     private async Task CommitManualEditAsync()
     {
         if (manualEditor is null || manualDocumentId is not { } documentId || manualTarget is not { } target) return;
         WorkspaceDocument current = workspace.Documents.Single(document => document.Id == documentId);
-        RouteDocument changed = target.ReplacePoints(current.Document, manualEditor.RoutePoints);
+        RouteDocument changed = target.ReplacePoints(
+            current.Document,
+            manualEditor.RoutePoints,
+            manualEditor.AnchorIndices);
         workspace = workspace.ReplaceDocument(documentId, changed);
         manualEditDirty = manualOriginalDocument is not null &&
-            !target.GetPoints(manualOriginalDocument).SequenceEqual(manualEditor.RoutePoints);
+            (!target.GetPoints(manualOriginalDocument).SequenceEqual(manualEditor.RoutePoints) ||
+             !target.GetAnchorIndices(manualOriginalDocument).SequenceEqual(manualEditor.AnchorIndices));
         RefreshMapDocuments();
         await WorkspaceStore.SaveAsync(workspace);
     }
@@ -261,14 +414,6 @@ public partial class Home
         _ => target.PrimaryIndex >= 0 && target.PrimaryIndex < document.Tracks.Count &&
              target.SecondaryIndex >= 0 && target.SecondaryIndex < document.Tracks[target.PrimaryIndex].Segments.Count
     };
-
-    private static int FirstChangedIndex(IReadOnlyList<GeoCoordinate> previous, IReadOnlyList<GeoCoordinate> replacement)
-    {
-        int common = Math.Min(previous.Count, replacement.Count);
-        int index = 0;
-        while (index < common && previous[index] == replacement[index]) index++;
-        return Math.Min(index, Math.Max(0, replacement.Count - 1));
-    }
 
     private void HandleSelectionChanged(MapSelection newSelection) => selection = newSelection;
     private void HandleFocusRequested(MapSelection _) => focusVersion++;
@@ -325,5 +470,14 @@ public partial class Home
             result.Add(new("waypoint", waypoint, -1, document.IsNodeVisible(node), document.NodeColour(node)));
         }
         return result;
+    }
+
+    private enum RoutingUiState
+    {
+        Idle,
+        Routing,
+        Success,
+        NoRoute,
+        Failure
     }
 }

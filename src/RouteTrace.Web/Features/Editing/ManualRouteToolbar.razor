@@ -1,18 +1,31 @@
 @if (Active)
 {
-    <section class="manual-route-toolbar" aria-label="Manual route editor">
+    <section class="manual-route-toolbar" aria-label="Manual route editor" data-routing-state="@RoutingState">
         <div class="manual-route-toolbar__status" role="status">
             <strong>@Title</strong>
             <span>@Instruction</span>
+            @if (!string.IsNullOrWhiteSpace(RoutingMessage))
+            {
+                <span class="manual-route-toolbar__routing">@RoutingMessage</span>
+            }
+            <small>Routing sends edited anchor coordinates to brouter.de.</small>
         </div>
         <div class="manual-route-toolbar__actions">
-            <button type="button" disabled="@(!CanUndo)" @onclick="UndoRequested" title="Undo">↶ <span>Undo</span></button>
-            <button type="button" disabled="@(!CanRedo)" @onclick="RedoRequested" title="Redo">↷ <span>Redo</span></button>
-            <button type="button" disabled="@(SelectedIndex is null)" @onclick="DeleteRequested">Delete point</button>
-            <button type="button" disabled="@(PointCount < 2)" @onclick="ReverseRequested">Reverse</button>
-            <button type="button" disabled="@(PointCount < 3 || IsLoop)" @onclick="CloseLoopRequested">Close loop</button>
-            <button type="button" disabled="@(PointCount == 0)" @onclick="ClearRequested">Clear</button>
-            <button type="button" class="manual-route-toolbar__primary" @onclick="FinishRequested">Done</button>
+            <label class="manual-route-toolbar__profile">
+                <span>Routing profile</span>
+                <select value="@RoutingProfile" disabled="@Routing" @onchange="HandleRoutingProfileChangedAsync">
+                    <option value="@BicycleRoutingProfile.Cycling">Cycling</option>
+                    <option value="@BicycleRoutingProfile.Gravel">Gravel</option>
+                    <option value="@BicycleRoutingProfile.MountainBike">MTB</option>
+                </select>
+            </label>
+            <button type="button" disabled="@(Routing || !CanUndo)" @onclick="UndoRequested" title="Undo">↶ <span>Undo</span></button>
+            <button type="button" disabled="@(Routing || !CanRedo)" @onclick="RedoRequested" title="Redo">↷ <span>Redo</span></button>
+            <button type="button" disabled="@(Routing || SelectedIndex is null)" @onclick="DeleteRequested">Delete anchor</button>
+            <button type="button" disabled="@(Routing || PointCount < 2)" @onclick="ReverseRequested">Reverse</button>
+            <button type="button" disabled="@(Routing || PointCount < 3 || IsLoop)" @onclick="CloseLoopRequested">Close loop</button>
+            <button type="button" disabled="@(Routing || PointCount == 0)" @onclick="ClearRequested">Clear</button>
+            <button type="button" disabled="@Routing" class="manual-route-toolbar__primary" @onclick="FinishRequested">Done</button>
         </div>
     </section>
 }
@@ -25,6 +38,11 @@
     [Parameter] public bool IsLoop { get; set; }
     [Parameter] public bool CanUndo { get; set; }
     [Parameter] public bool CanRedo { get; set; }
+    [Parameter] public bool Routing { get; set; }
+    [Parameter] public string RoutingState { get; set; } = "idle";
+    [Parameter] public string? RoutingMessage { get; set; }
+    [Parameter] public BicycleRoutingProfile RoutingProfile { get; set; } = BicycleRoutingProfile.Cycling;
+    [Parameter] public EventCallback<BicycleRoutingProfile> RoutingProfileChanged { get; set; }
     [Parameter] public EventCallback FinishRequested { get; set; }
     [Parameter] public EventCallback UndoRequested { get; set; }
     [Parameter] public EventCallback RedoRequested { get; set; }
@@ -34,6 +52,14 @@
     [Parameter] public EventCallback ClearRequested { get; set; }
 
     private string Instruction => SelectedIndex is null
-            ? "Click the line to insert, drag a point to move it, or right-click a point for actions."
-            : $"Point {SelectedIndex + 1} selected. Drag it to move it or right-click for actions.";
+            ? "Click the line to insert an anchor, drag an anchor to move it, or right-click an anchor for actions."
+            : $"Anchor {SelectedIndex + 1} selected. Drag it to move it or right-click for actions.";
+
+    private async Task HandleRoutingProfileChangedAsync(ChangeEventArgs change)
+    {
+        if (Enum.TryParse(change.Value?.ToString(), out BicycleRoutingProfile profile))
+        {
+            await RoutingProfileChanged.InvokeAsync(profile);
+        }
+    }
 }

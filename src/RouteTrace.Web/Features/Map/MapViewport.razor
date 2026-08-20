@@ -11,7 +11,7 @@
          data-selected-route="@Selection.RouteIndex"
          data-selected-waypoint="@Selection.WaypointIndex"
          data-editing="@(EditingEnabled ? "true" : "false")"
-         data-editing-points="@EditingPoints.Count"
+         data-editing-points="@EditingAnchors.Count"
          data-selected-editing-point="@SelectedEditingPoint"
          data-selected-document="@(Selection.WholeDocument ? "true" : "false")"
          data-selected-waypoint-group="@(Selection.WaypointGroup ? "true" : "false")">
@@ -31,9 +31,9 @@
     {
         <div class="map-editing-point-menu"
              role="menu"
-             aria-label="Editing point actions"
+             aria-label="Editing anchor actions"
              style="left: @(editingPointMenu.Left)px; top: @(editingPointMenu.Top)px">
-            <button type="button" role="menuitem" @onclick="DeleteEditingPointFromMenuAsync">Delete point</button>
+            <button type="button" role="menuitem" @onclick="DeleteEditingPointFromMenuAsync">Delete anchor</button>
         </div>
     }
 </div>

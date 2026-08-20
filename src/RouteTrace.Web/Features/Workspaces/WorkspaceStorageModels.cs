@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using RouteTrace.Core.Routes.Workspaces;
+using RouteTrace.Core.Editing;
 
 namespace RouteTrace.Web.Features.Workspaces;
 
@@ -17,7 +18,14 @@ public sealed record WorkspaceDocumentStorageDto(
     [property: JsonPropertyName("isVisible")] bool? IsVisible,
     [property: JsonPropertyName("colour")] string? Colour,
     [property: JsonPropertyName("presentationOverrides")] IReadOnlyList<NodePresentationStorageDto>? PresentationOverrides,
-    [property: JsonPropertyName("gpx")] string Gpx);
+    [property: JsonPropertyName("gpx")] string Gpx,
+    [property: JsonPropertyName("editingAnchors")] IReadOnlyList<LineAnchorStorageDto>? EditingAnchors = null);
+
+public sealed record LineAnchorStorageDto(
+    [property: JsonPropertyName("kind")] EditableLineKind Kind,
+    [property: JsonPropertyName("primaryIndex")] int PrimaryIndex,
+    [property: JsonPropertyName("secondaryIndex")] int SecondaryIndex,
+    [property: JsonPropertyName("pointIndices")] IReadOnlyList<int> PointIndices);
 
 public sealed record NodePresentationStorageDto(
     [property: JsonPropertyName("kind")] WorkspaceNodeKind Kind,

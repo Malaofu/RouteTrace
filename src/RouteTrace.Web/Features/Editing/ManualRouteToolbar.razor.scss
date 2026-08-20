@@ -24,9 +24,25 @@
 
 .manual-route-toolbar__status {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   align-items: baseline;
   padding-inline: var(--space-1);
+}
+
+.manual-route-toolbar__status small {
+  flex-basis: 100%;
+  color: var(--color-text-muted);
+  font-size: .72rem;
+}
+
+.manual-route-toolbar[data-routing-state="routing"] .manual-route-toolbar__routing {
+  color: var(--color-accent);
+}
+
+.manual-route-toolbar[data-routing-state="noroute"] .manual-route-toolbar__routing,
+.manual-route-toolbar[data-routing-state="failure"] .manual-route-toolbar__routing {
+  color: var(--color-danger);
 }
 
 .manual-route-toolbar__status span {
@@ -37,7 +53,25 @@
 .manual-route-toolbar__actions {
   display: flex;
   gap: var(--space-1);
+  align-items: stretch;
   overflow-x: auto;
+}
+
+.manual-route-toolbar__profile {
+  display: grid;
+  gap: .1rem;
+  min-width: 7.5rem;
+  color: var(--color-text-muted);
+  font-size: .68rem;
+}
+
+.manual-route-toolbar__profile select {
+  min-height: 2.25rem;
+  padding: .25rem .5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
 }
 
 .manual-route-toolbar button {

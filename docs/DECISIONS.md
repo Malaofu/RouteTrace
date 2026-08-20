@@ -188,6 +188,20 @@ documents. Active, selected, and visible are independent states. Colour,
 visibility, explorer state, and derived endpoint markers are project-local
 presentation data and are not written into GPX vendor extensions.
 
+## D-022 — BRouter for initial client-side bicycle routing
+
+**Status:** Accepted
+**Date:** 2026-08-20
+
+The first routing adapter uses BRouter's HTTP API with a configurable endpoint
+defaulting to `https://brouter.de/brouter`. Provider-neutral Cycling, Gravel,
+and MTB modes map to BRouter's `fastbike`, `gravel`, and `mtb` profiles, while
+the last selection is stored as a browser-local preference. BRouter needs no
+browser credential and supports the static-first application, but route anchors
+are disclosed to that external service and its public availability is not
+guaranteed. The UI states this transfer, failures retain the last valid route,
+and a self-hosted compatible endpoint remains possible.
+
 ## Decision template
 
 ```markdown

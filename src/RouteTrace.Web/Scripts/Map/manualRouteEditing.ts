@@ -8,45 +8,57 @@ import type { MapHandle } from "./mapLifecycle.js";
 import { endpointStyle } from "./mapStyles.js";
 
 const lineStroke = new Stroke({ color: "#f97316", width: 5 });
+const arrowSpacingPixels = 140;
+const maximumDirectionArrows = 20;
 
 export function setManualRouteEditing(
     handle: MapHandle,
     enabled: boolean,
     pointAddEnabled: boolean,
-    points: Wgs84Coordinate[],
+    geometry: Wgs84Coordinate[],
+    anchors: Wgs84Coordinate[],
     selectedIndex: number | null,
 ): void {
     handle.editingEnabled = enabled;
     handle.editingPointAddEnabled = pointAddEnabled;
     if (!enabled) handle.map.getTargetElement().dataset.editingLive = "false";
-    handle.editingModify.setActive(enabled && points.length > 0);
+    handle.editingModify.setActive(enabled && anchors.length > 0);
     handle.editingLineSource.clear();
     handle.editingPointSource.clear();
-    if (!enabled) return;
+    if (!enabled) {
+        handle.map.getTargetElement().dataset.editingDirectionArrows = "0";
+        return;
+    }
 
-    const projected = points.map(point => fromLonLat(point));
-    if (projected.length > 0) {
+    const projectedGeometry = geometry.map(point => fromLonLat(point));
+    if (projectedGeometry.length > 0) {
         const line = new Feature({
-            geometry: projected.length === 1 ? new Point(projected[0]!) : new LineString(projected),
+            geometry: projectedGeometry.length === 1
+                ? new Point(projectedGeometry[0]!)
+                : new LineString(projectedGeometry),
             kind: "editing-line",
         });
         line.setStyle(directionStyles);
         handle.editingLineSource.addFeature(line);
     }
 
-    const closesLoop = points.length >= 3 &&
-        points[0]?.[0] === points.at(-1)?.[0] &&
-        points[0]?.[1] === points.at(-1)?.[1];
-    const editableCount = points.length - (closesLoop ? 1 : 0);
-    projected.slice(0, editableCount).forEach((coordinate, index) => {
+    const closesLoop = geometry.length >= 3 &&
+        geometry[0]?.[0] === geometry.at(-1)?.[0] &&
+        geometry[0]?.[1] === geometry.at(-1)?.[1];
+    const projectedAnchors = anchors.map(point => fromLonLat(point));
+    let geometrySearchStart = 0;
+    projectedAnchors.forEach((coordinate, index) => {
+        const geometryIndex = findCoordinateIndex(projectedGeometry, coordinate, geometrySearchStart);
+        geometrySearchStart = Math.max(geometrySearchStart, geometryIndex + 1);
         const point = new Feature({
             geometry: new Point(coordinate),
             kind: "editing-point",
             editIndex: index,
+            geometryIndex,
         });
         point.setStyle(editingPointStyles(
             index,
-            editableCount,
+            anchors.length,
             index === selectedIndex,
             closesLoop,
         ));
@@ -60,53 +72,35 @@ export function refreshEditingPointPixels(handle: MapHandle): void {
         const geometry = feature.getGeometry();
         return geometry instanceof Point ? handle.map.getPixelFromCoordinate(geometry.getCoordinates()) : null;
     }).filter(pixel => pixel !== null);
-    handle.map.getTargetElement().dataset.editingPointPixels = JSON.stringify(pixels);
+    const target = handle.map.getTargetElement();
+    target.dataset.editingPointPixels = JSON.stringify(pixels);
+    const line = handle.editingLineSource.getFeatures()[0]?.getGeometry();
+    const resolution = handle.map.getView().getResolution();
+    target.dataset.editingDirectionArrows = line instanceof LineString && resolution
+        ? directionArrowPlacements(line.getCoordinates(), resolution).length.toString()
+        : "0";
 }
 
-export function synchronizeEditingPointsFromLine(handle: MapHandle): void {
-    const geometry = handle.editingLineSource.getFeatures()[0]?.getGeometry();
-    if (!(geometry instanceof LineString)) return;
-
-    const coordinates = geometry.getCoordinates();
-    const closesLoop = coordinates.length >= 3 &&
-        coordinates[0]?.[0] === coordinates.at(-1)?.[0] &&
-        coordinates[0]?.[1] === coordinates.at(-1)?.[1];
-    const editableCount = coordinates.length - (closesLoop ? 1 : 0);
-    handle.editingPointSource.clear();
-    coordinates.slice(0, editableCount).forEach((coordinate, index) => {
-        const point = new Feature({
-            geometry: new Point(coordinate),
-            kind: "editing-point",
-            editIndex: index,
-        });
-        point.setStyle(editingPointStyles(index, editableCount, false, closesLoop));
-        handle.editingPointSource.addFeature(point);
-    });
-    refreshEditingPointPixels(handle);
+function findCoordinateIndex(geometry: number[][], anchor: number[], start: number): number {
+    for (let index = start; index < geometry.length; index++) {
+        const candidate = geometry[index];
+        if (candidate?.[0] === anchor[0] && candidate?.[1] === anchor[1]) return index;
+    }
+    return start;
 }
 
-function directionStyles(feature: FeatureLike): Style[] {
+function directionStyles(feature: FeatureLike, resolution: number): Style[] {
     const geometry = feature.getGeometry();
     if (!(geometry instanceof LineString)) return [];
 
-    const coordinates = geometry.getCoordinates();
     const styles = [new Style({ stroke: lineStroke, zIndex: 50 })];
-    for (let index = 1; index < coordinates.length; index++) {
-        const start = coordinates[index - 1];
-        const finish = coordinates[index];
-        if (!start || !finish) continue;
-        const startX = start[0]!;
-        const startY = start[1]!;
-        const finishX = finish[0]!;
-        const finishY = finish[1]!;
-        const midpoint = [(startX + finishX) / 2, (startY + finishY) / 2];
-        const rotation = -Math.atan2(finishY - startY, finishX - startX);
+    for (const placement of directionArrowPlacements(geometry.getCoordinates(), resolution)) {
         styles.push(new Style({
-            geometry: new Point(midpoint),
+            geometry: new Point(placement.coordinate),
             image: new RegularShape({
                 points: 3,
-                radius: 8,
-                rotation,
+                radius: 7,
+                rotation: placement.rotation,
                 angle: Math.PI / 2,
                 fill: new Fill({ color: "#f97316" }),
                 stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
@@ -115,6 +109,50 @@ function directionStyles(feature: FeatureLike): Style[] {
         }));
     }
     return styles;
+}
+
+interface DirectionArrowPlacement {
+    coordinate: number[];
+    rotation: number;
+}
+
+function directionArrowPlacements(coordinates: number[][], resolution: number): DirectionArrowPlacement[] {
+    if (coordinates.length < 2 || !Number.isFinite(resolution) || resolution <= 0) return [];
+    const segments: { start: number[]; finish: number[]; length: number }[] = [];
+    let totalLength = 0;
+    for (let index = 1; index < coordinates.length; index++) {
+        const start = coordinates[index - 1];
+        const finish = coordinates[index];
+        if (!start || !finish) continue;
+        const length = Math.hypot(finish[0]! - start[0]!, finish[1]! - start[1]!);
+        if (length <= 0) continue;
+        segments.push({ start, finish, length });
+        totalLength += length;
+    }
+    const spacing = Math.max(
+        arrowSpacingPixels * resolution,
+        totalLength / (maximumDirectionArrows + .5),
+    );
+    const placements: DirectionArrowPlacement[] = [];
+    let travelled = 0;
+    let nextArrow = spacing / 2;
+    for (const segment of segments) {
+        while (nextArrow <= travelled + segment.length && placements.length < maximumDirectionArrows) {
+            const fraction = (nextArrow - travelled) / segment.length;
+            const deltaX = segment.finish[0]! - segment.start[0]!;
+            const deltaY = segment.finish[1]! - segment.start[1]!;
+            placements.push({
+                coordinate: [
+                    segment.start[0]! + deltaX * fraction,
+                    segment.start[1]! + deltaY * fraction,
+                ],
+                rotation: -Math.atan2(deltaY, deltaX),
+            });
+            nextArrow += spacing;
+        }
+        travelled += segment.length;
+    }
+    return placements;
 }
 
 function editingPointStyles(

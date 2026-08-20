@@ -1,4 +1,5 @@
 using RouteTrace.Core.Routes.Geometry;
+using RouteTrace.Core.Editing;
 
 namespace RouteTrace.Core.Routes.Documents;
 
@@ -24,10 +25,12 @@ public sealed class Track
 
 public sealed class TrackSegment
 {
-    public TrackSegment(IEnumerable<RoutePoint>? points = null)
+    public TrackSegment(IEnumerable<RoutePoint>? points = null, IEnumerable<int>? anchorIndices = null)
     {
         Points = RouteDocument.Snapshot(points, nameof(points));
+        AnchorIndices = RouteAnchorSelector.ValidateOrSelect(Points, anchorIndices);
     }
 
     public IReadOnlyList<RoutePoint> Points { get; }
+    public IReadOnlyList<int> AnchorIndices { get; }
 }

@@ -130,12 +130,12 @@ RouteWorkspace
 │  ├─ RouteDocument
 │  │  ├─ Tracks[]
 │  │  │  └─ Segments[]
-│  │  │     └─ RoutePoint[]
-│  │  ├─ Routes[]
+│  │  │     ├─ RoutePoint[]
+│  │  │     └─ AnchorIndices[]
+│  │  ├─ Routes[] (RoutePoint[] + AnchorIndices[])
 │  │  └─ Waypoints[]
 │  ├─ Presentation settings
 │  ├─ ImageOverlay?
-│  └─ Editing anchors[]
 ├─ ActiveDocumentId?
 └─ Provider settings
 ```
@@ -152,7 +152,14 @@ Maintain the distinction between:
 - A track segment break, where points must not be connected.
 - A continuous route line.
 - Independent waypoints/POIs.
-- Editing anchors used to reproduce a routed path.
+- Editing anchors used to reproduce a routed path. An anchor is a route point
+  elevated to a user control; the other points are replaceable calculated
+  geometry and are not directly interactive.
+
+GPX does not identify editing anchors. Import therefore selects endpoints and
+significant direction changes heuristically. Anchor indices are retained on
+the in-memory route or segment and in browser workspace state, but GPX export
+contains only the standard ordered points.
 
 Unknown GPX extensions should be preserved as opaque XML where feasible.
 Round-trip preservation and semantic understanding are separate concerns.
@@ -230,6 +237,16 @@ The initial static application may call a remote provider directly. This still
 requires careful handling of CORS, quotas, API keys, and key exposure. A
 provider requiring a secret cannot be called securely from a static client.
 
+The initial `IRoutePlanner` adapter calls the configurable BRouter HTTP endpoint
+at `https://brouter.de/brouter`. Provider-neutral Cycling, Gravel, and MTB modes
+map to BRouter's `fastbike`, `gravel`, and `mtb` profiles respectively. The
+latest mode is a small browser-local preference; changing it reroutes the
+edited line. BRouter requires no credential and currently permits browser CORS
+requests, but edited anchor coordinates leave the browser. The editing UI
+discloses that transfer. The public instance is an operational dependency
+without an application-owned SLA; the same adapter can target a self-hosted
+BRouter server.
+
 If that becomes limiting, add an optional project:
 
 ```text
@@ -284,7 +301,7 @@ site and must not depend on Azure-specific runtime features.
 
 - Product and solution name.
 - Tile/style provider and cycling-map presentation.
-- Routing and map-matching provider.
+- Map-matching provider.
 - Whether a hosted gateway becomes necessary.
 - Computer-vision library.
 - FIT SDK integration and licensing/distribution implications.

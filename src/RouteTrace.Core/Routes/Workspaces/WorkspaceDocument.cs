@@ -124,7 +124,7 @@ public sealed class WorkspaceDocument
     {
         Route[] routes = [.. Document.Routes];
         Route existing = routes[index];
-        routes[index] = new Route(name, existing.Points, existing.UnsupportedExtensionXml);
+        routes[index] = new Route(name, existing.Points, existing.UnsupportedExtensionXml, existing.AnchorIndices);
         return CopyDocument(routes: routes);
     }
 

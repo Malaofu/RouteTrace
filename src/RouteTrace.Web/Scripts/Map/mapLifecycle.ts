@@ -18,7 +18,6 @@ import type {
 import { configureMarkerStyles, createFeatureStyle } from "./mapStyles.js";
 import {
     refreshEditingPointPixels,
-    synchronizeEditingPointsFromLine,
 } from "./manualRouteEditing.js";
 
 export interface MapHandle {
@@ -66,7 +65,7 @@ export function initializeMap(
     const editingLineLayer = new VectorLayer({ source: editingLineSource });
     const editingPointLayer = new VectorLayer({ source: editingPointSource });
     const editingModify = new Modify({
-        source: editingLineSource,
+        source: editingPointSource,
         pixelTolerance: 12,
         deleteCondition: () => false,
     });
@@ -109,15 +108,17 @@ export function initializeMap(
     editingModify.on("modifyend", event => {
         editingPointLayer.setOpacity(1);
         map.getTargetElement().dataset.editingLive = "false";
-        synchronizeEditingPointsFromLine(handle);
         const feature = event.features.item(0);
         const geometry = feature?.getGeometry();
-        const coordinates = geometry instanceof LineString
-            ? geometry.getCoordinates().map(coordinate => toLonLat(coordinate))
-            : geometry instanceof Point
-                ? [toLonLat(geometry.getCoordinates())]
-                : null;
-        if (coordinates) void handle.dotNetViewport.invokeMethodAsync("ReplaceEditingPoints", coordinates);
+        if (geometry instanceof Point) {
+            const coordinate = toLonLat(geometry.getCoordinates());
+            void handle.dotNetViewport.invokeMethodAsync(
+                "MoveEditingPoint",
+                feature.get("editIndex") as number,
+                coordinate[0],
+                coordinate[1],
+            );
+        }
     });
     handle.contextMenuListener = (event: MouseEvent) => notifyEditingContextMenu(handle, event);
     map.getViewport().addEventListener("contextmenu", handle.contextMenuListener);
@@ -145,11 +146,56 @@ function notifyEditingClick(handle: MapHandle, pixel: number[], coordinate: numb
         feature => feature.get("kind") === "editing-line" ? feature : undefined,
         { hitTolerance: 8, layerFilter: layer => layer === handle.editingLineLayer },
     );
-    if (line) return;
+    if (line) {
+        const geometry = line.getGeometry();
+        if (!(geometry instanceof LineString)) return;
+        const closest = geometry.getClosestPoint(coordinate);
+        const segmentIndex = closestSegmentIndex(geometry.getCoordinates(), closest);
+        const anchorFeatures = handle.editingPointSource.getFeatures()
+            .sort((left, right) => (left.get("editIndex") as number) - (right.get("editIndex") as number));
+        let afterAnchorIndex = 0;
+        for (const anchor of anchorFeatures) {
+            if ((anchor.get("geometryIndex") as number) > segmentIndex) break;
+            afterAnchorIndex = anchor.get("editIndex") as number;
+        }
+        const wgs84 = toLonLat(closest);
+        void handle.dotNetViewport.invokeMethodAsync(
+            "InsertEditingAnchor",
+            afterAnchorIndex,
+            wgs84[0],
+            wgs84[1],
+        );
+        return;
+    }
 
     if (!handle.editingPointAddEnabled) return;
     const wgs84 = toLonLat(coordinate);
     void handle.dotNetViewport.invokeMethodAsync("AddEditingPoint", wgs84[0], wgs84[1]);
+}
+
+function closestSegmentIndex(coordinates: number[][], point: number[]): number {
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < coordinates.length - 1; index++) {
+        const start = coordinates[index];
+        const finish = coordinates[index + 1];
+        if (!start || !finish) continue;
+        const dx = finish[0]! - start[0]!;
+        const dy = finish[1]! - start[1]!;
+        const lengthSquared = dx * dx + dy * dy;
+        const position = lengthSquared === 0
+            ? 0
+            : Math.max(0, Math.min(1,
+                ((point[0]! - start[0]!) * dx + (point[1]! - start[1]!) * dy) / lengthSquared));
+        const offsetX = point[0]! - (start[0]! + position * dx);
+        const offsetY = point[1]! - (start[1]! + position * dy);
+        const distance = offsetX * offsetX + offsetY * offsetY;
+        if (distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = index;
+        }
+    }
+    return closestIndex;
 }
 
 function notifyEditingContextMenu(handle: MapHandle, event: MouseEvent): void {

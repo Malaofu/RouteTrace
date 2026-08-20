@@ -681,7 +681,7 @@ menus, and insertion as the first gesture after entering edit mode.
 
 ## PBI-090 — Bicycle routing between anchors
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Replace straight lines between selected anchors with bicycle-routed
 geometry.
@@ -700,6 +700,15 @@ geometry.
 - Moving one anchor updates the result.
 - Provider failure does not destroy the last valid route.
 - Provider choice and client-side credential implications are documented.
+
+**Delivered:** Route and segment geometry now retains explicit anchor indices;
+GPX imports heuristically elevate endpoints and significant direction changes,
+while workspace schema 4 preserves subsequent anchor edits outside GPX. The
+configurable BRouter adapter offers Cycling, Gravel, and MTB modes, remembers
+the latest selection, recalculates only changed legs (or all legs after a mode
+change), and commits geometry only after every affected leg succeeds. Direction
+arrows are spaced by rendered distance and capped rather than repeated for
+every calculated point.
 
 ## PBI-100 — Local image import and overlay
 

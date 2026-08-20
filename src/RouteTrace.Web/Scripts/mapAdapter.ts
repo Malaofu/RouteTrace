@@ -90,10 +90,11 @@ export function setManualRouteEditing(
     elementId: string,
     enabled: boolean,
     pointAddEnabled: boolean,
-    points: Array<[number, number]>,
+    geometry: Array<[number, number]>,
+    anchors: Array<[number, number]>,
     selectedIndex: number | null,
 ): void {
-    applyManualRouteEditing(getMap(elementId), enabled, pointAddEnabled, points, selectedIndex);
+    applyManualRouteEditing(getMap(elementId), enabled, pointAddEnabled, geometry, anchors, selectedIndex);
 }
 
 export function focusSelection(

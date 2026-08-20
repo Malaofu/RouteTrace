@@ -17,12 +17,13 @@ public partial class MapViewport
     [Parameter] public int FocusVersion { get; set; }
     [Parameter] public bool EditingEnabled { get; set; }
     [Parameter] public bool EditingPointAddEnabled { get; set; }
-    [Parameter] public IReadOnlyList<double[]> EditingPoints { get; set; } = [];
+    [Parameter] public IReadOnlyList<double[]> EditingGeometry { get; set; } = [];
+    [Parameter] public IReadOnlyList<double[]> EditingAnchors { get; set; } = [];
     [Parameter] public int? SelectedEditingPoint { get; set; }
     [Parameter] public EventCallback<double[]> EditingPointAdded { get; set; }
     [Parameter] public EventCallback<int> EditingPointSelected { get; set; }
     [Parameter] public EventCallback<EditingPointMove> EditingPointMoved { get; set; }
-    [Parameter] public EventCallback<double[][]> EditingPointsReplaced { get; set; }
+    [Parameter] public EventCallback<EditingAnchorInsert> EditingAnchorInserted { get; set; }
     [Parameter] public EventCallback<int> EditingPointDeleteRequested { get; set; }
 
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
@@ -80,7 +81,8 @@ public partial class MapViewport
         EditingPointMoved.InvokeAsync(new EditingPointMove(index, [longitude, latitude]));
 
     [JSInvokable]
-    public Task ReplaceEditingPoints(double[][] coordinates) => EditingPointsReplaced.InvokeAsync(coordinates);
+    public Task InsertEditingAnchor(int afterAnchorIndex, double longitude, double latitude) =>
+        EditingAnchorInserted.InvokeAsync(new EditingAnchorInsert(afterAnchorIndex, [longitude, latitude]));
 
     [JSInvokable]
     public Task ShowEditingPointMenu(int index, double left, double top)
@@ -130,13 +132,15 @@ public partial class MapViewport
 
             bool editingEnabled = EditingEnabled;
             bool pointAddEnabled = EditingPointAddEnabled;
-            double[][] editingPoints = EditingPoints.Select(point => point.ToArray()).ToArray();
+            double[][] editingGeometry = EditingGeometry.Select(point => point.ToArray()).ToArray();
+            double[][] editingAnchors = EditingAnchors.Select(point => point.ToArray()).ToArray();
             int? selectedEditingPoint = SelectedEditingPoint;
             await RenderEditingAsync(
                 currentModule,
                 editingEnabled,
                 pointAddEnabled,
-                editingPoints,
+                editingGeometry,
+                editingAnchors,
                 selectedEditingPoint);
             if (renderVersion != parameterRenderVersion) return;
 
@@ -206,21 +210,24 @@ public partial class MapViewport
             currentModule,
             EditingEnabled,
             EditingPointAddEnabled,
-            EditingPoints,
+            EditingGeometry,
+            EditingAnchors,
             SelectedEditingPoint);
 
     private Task RenderEditingAsync(
         IJSObjectReference currentModule,
         bool editingEnabled,
         bool editingPointAddEnabled,
-        IReadOnlyList<double[]> editingPoints,
+        IReadOnlyList<double[]> editingGeometry,
+        IReadOnlyList<double[]> editingAnchors,
         int? selectedEditingPoint) =>
         currentModule.InvokeVoidAsync(
             "setManualRouteEditing",
             elementId,
             editingEnabled,
             editingPointAddEnabled,
-            editingPoints,
+            editingGeometry,
+            editingAnchors,
             selectedEditingPoint).AsTask();
 
     public async ValueTask DisposeAsync()
@@ -250,3 +257,4 @@ public partial class MapViewport
 }
 
 public sealed record EditingPointMove(int Index, double[] Coordinate);
+public sealed record EditingAnchorInsert(int AfterAnchorIndex, double[] Coordinate);

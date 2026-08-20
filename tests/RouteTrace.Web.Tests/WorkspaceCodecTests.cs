@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RouteTrace.Core.Routes.Documents;
 using RouteTrace.Core.Routes.Workspaces;
+using RouteTrace.Core.Routes.Geometry;
 using RouteTrace.Web.Features.Workspaces;
 
 namespace RouteTrace.Web.Tests;
@@ -82,6 +83,28 @@ public sealed class WorkspaceCodecTests
         decoded.Workspace!.Documents[0].Document.Metadata!.Name.ShouldBe("Renamed");
         decoded.Workspace.Documents[0].Document.Metadata!.Description.ShouldBe("Updated description");
         decoded.Workspace.Documents[0].Document.Tracks[0].Name.ShouldBe("Renamed track");
+    }
+
+    [Fact]
+    public async Task RoundTripsEditingAnchorsOutsideGpx()
+    {
+        RoutePoint[] points =
+        [
+            new(new GeoCoordinate(55, 12)),
+            new(new GeoCoordinate(55.0005, 12.0005)),
+            new(new GeoCoordinate(55.001, 12.001))
+        ];
+        var routeDocument = new RouteDocument(
+            tracks: [new Track(segments: [new TrackSegment(points, [0, 2])])]);
+        var document = new WorkspaceDocument(Guid.NewGuid(), routeDocument, "anchors.gpx");
+        var workspace = new RouteWorkspace(Guid.NewGuid(), "Anchors", [document], document.Id);
+
+        string payload = await WorkspaceCodec.EncodeAsync(workspace, TestContext.Current.CancellationToken);
+        WorkspaceDecodeResult decoded = await WorkspaceCodec.DecodeAsync(payload, TestContext.Current.CancellationToken);
+
+        decoded.Workspace!.Documents[0].Document.Tracks[0].Segments[0].AnchorIndices.ShouldBe([0, 2]);
+        payload.ShouldContain("editingAnchors");
+        payload.ShouldNotContain("<extensions>");
     }
 
     [Theory]

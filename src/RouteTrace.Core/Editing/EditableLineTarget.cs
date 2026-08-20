@@ -32,33 +32,47 @@ public readonly record struct EditableLineTarget(
         };
     }
 
-    public RouteDocument ReplacePoints(RouteDocument document, IEnumerable<RoutePoint> points)
+    public IReadOnlyList<int> GetAnchorIndices(RouteDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        return Kind switch
+        {
+            EditableLineKind.TrackSegment => document.Tracks[PrimaryIndex].Segments[SecondaryIndex].AnchorIndices,
+            EditableLineKind.Route => document.Routes[PrimaryIndex].AnchorIndices,
+            _ => throw new InvalidOperationException()
+        };
+    }
+
+    public RouteDocument ReplacePoints(
+        RouteDocument document,
+        IEnumerable<RoutePoint> points,
+        IEnumerable<int>? anchorIndices = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(points);
         return Kind switch
         {
-            EditableLineKind.TrackSegment => ReplaceSegment(document, points),
-            EditableLineKind.Route => ReplaceRoute(document, points),
+            EditableLineKind.TrackSegment => ReplaceSegment(document, points, anchorIndices),
+            EditableLineKind.Route => ReplaceRoute(document, points, anchorIndices),
             _ => throw new InvalidOperationException()
         };
     }
 
-    private RouteDocument ReplaceSegment(RouteDocument document, IEnumerable<RoutePoint> points)
+    private RouteDocument ReplaceSegment(RouteDocument document, IEnumerable<RoutePoint> points, IEnumerable<int>? anchorIndices)
     {
         Track[] tracks = [.. document.Tracks];
         Track track = tracks[PrimaryIndex];
         TrackSegment[] segments = [.. track.Segments];
-        segments[SecondaryIndex] = new TrackSegment(points);
+        segments[SecondaryIndex] = new TrackSegment(points, anchorIndices);
         tracks[PrimaryIndex] = new Track(track.Name, segments, track.Type);
         return CopyDocument(document, tracks: tracks);
     }
 
-    private RouteDocument ReplaceRoute(RouteDocument document, IEnumerable<RoutePoint> points)
+    private RouteDocument ReplaceRoute(RouteDocument document, IEnumerable<RoutePoint> points, IEnumerable<int>? anchorIndices)
     {
         GpxRoute[] routes = [.. document.Routes];
         GpxRoute route = routes[PrimaryIndex];
-        routes[PrimaryIndex] = new GpxRoute(route.Name, points, route.UnsupportedExtensionXml);
+        routes[PrimaryIndex] = new GpxRoute(route.Name, points, route.UnsupportedExtensionXml, anchorIndices);
         return CopyDocument(document, routes: routes);
     }
 
