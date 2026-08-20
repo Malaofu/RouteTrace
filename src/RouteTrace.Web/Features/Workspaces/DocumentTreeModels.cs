@@ -67,6 +67,7 @@ internal static class DocumentTreeTargetFactory
 internal sealed class DocumentTreeExpansionState
 {
     private readonly HashSet<Guid> initialisedDocuments = [];
+    private readonly HashSet<string> initialisedTracks = [];
     private readonly HashSet<string> expandedNodes = [];
 
     public void ExpandNewDocuments(RouteWorkspace workspace)
@@ -74,19 +75,25 @@ internal sealed class DocumentTreeExpansionState
         foreach (WorkspaceDocument document in workspace.Documents.Where(item => initialisedDocuments.Add(item.Id)))
         {
             expandedNodes.Add(DocumentKey(document.Id));
-            for (int track = 0; track < document.Document.Tracks.Count; track++)
-            {
-                expandedNodes.Add(TrackKey(document.Id, track));
-            }
-
             if (document.Document.Waypoints.Count > 0)
             {
                 expandedNodes.Add(WaypointGroupKey(document.Id));
             }
         }
+
+        foreach (WorkspaceDocument document in workspace.Documents)
+        {
+            for (int track = 0; track < document.Document.Tracks.Count; track++)
+            {
+                string key = TrackKey(document.Id, track);
+                if (initialisedTracks.Add(key)) expandedNodes.Add(key);
+            }
+        }
     }
 
     public bool IsExpanded(string key) => expandedNodes.Contains(key);
+
+    public void Expand(string key) => expandedNodes.Add(key);
 
     public void Toggle(string key)
     {

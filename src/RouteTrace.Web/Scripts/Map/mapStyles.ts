@@ -95,7 +95,7 @@ function poiStyles(symbolKey: string, colour: string, selected: boolean): Style[
     ];
 }
 
-function endpointStyle(start: boolean, overlap: boolean): Style {
+export function endpointStyle(start: boolean, overlap: boolean): Style {
     return new Style({
         image: start
             ? new CircleStyle({

@@ -32,6 +32,35 @@ public sealed class WorkspaceDocument
     public WorkspaceDocument WithColour(string colour) =>
         new(Id, Document, SourceFileName, IsVisible, colour, PresentationOverrides.Values);
 
+    public WorkspaceDocument WithDocument(RouteDocument document) =>
+        new(Id, document, SourceFileName, IsVisible, Colour, PresentationOverrides.Values);
+
+    public WorkspaceDocument AddTrack(string? name = null)
+    {
+        string trackName = name ?? $"Route {Document.Tracks.Count + 1}";
+        return WithDocument(CopyDocument(tracks: Document.Tracks.Append(new Track(trackName))));
+    }
+
+    public WorkspaceDocument AddSegment(int trackIndex)
+    {
+        Track[] tracks = [.. Document.Tracks];
+        Track track = tracks[trackIndex];
+        tracks[trackIndex] = new Track(track.Name, track.Segments.Append(new TrackSegment()), track.Type);
+        return WithDocument(CopyDocument(tracks: tracks));
+    }
+
+    public WorkspaceDocument DeleteNode(WorkspaceNode node)
+    {
+        RouteDocument changed = node.Kind switch
+        {
+            WorkspaceNodeKind.Track => CopyDocument(tracks: Document.Tracks.Where((_, index) => index != node.PrimaryIndex)),
+            WorkspaceNodeKind.Segment => DeleteSegment(node.PrimaryIndex, node.SecondaryIndex),
+            WorkspaceNodeKind.Route => CopyDocument(routes: Document.Routes.Where((_, index) => index != node.PrimaryIndex)),
+            _ => throw new ArgumentException("Only routes and segments can be deleted.", nameof(node))
+        };
+        return new WorkspaceDocument(Id, changed, SourceFileName, IsVisible, Colour);
+    }
+
     public WorkspaceDocument WithNodeVisibility(WorkspaceNode node, bool? visible)
     {
         var overrides = PresentationOverrides.Values
@@ -104,6 +133,17 @@ public sealed class WorkspaceDocument
         Waypoint[] waypoints = [.. Document.Waypoints];
         waypoints[index] = waypoints[index] with { Name = name, Description = description };
         return CopyDocument(waypoints: waypoints);
+    }
+
+    private RouteDocument DeleteSegment(int trackIndex, int segmentIndex)
+    {
+        Track[] tracks = [.. Document.Tracks];
+        Track track = tracks[trackIndex];
+        tracks[trackIndex] = new Track(
+            track.Name,
+            track.Segments.Where((_, index) => index != segmentIndex),
+            track.Type);
+        return CopyDocument(tracks: tracks);
     }
 
     private RouteDocument CopyDocument(IEnumerable<Track>? tracks = null, IEnumerable<Route>? routes = null, IEnumerable<Waypoint>? waypoints = null, RouteMetadata? metadata = null) =>

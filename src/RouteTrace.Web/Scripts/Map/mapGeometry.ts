@@ -150,6 +150,7 @@ export function focusSelection(
     waypointIndex: number | null,
     wholeDocument: boolean,
     waypointGroup: boolean,
+    animated: boolean,
 ): void {
     const features = handle.geometrySource.getFeatures().filter(feature => {
         if (feature.get("documentId") !== documentId ||
@@ -190,7 +191,7 @@ export function focusSelection(
         extent[3] = Math.max(extent[3], next[3]);
     });
     handle.map.getView().fit(extent, {
-        duration: 250,
+        duration: animated ? 250 : 0,
         maxZoom: 18,
         padding: [64, 64, 64, 64],
     });

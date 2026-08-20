@@ -4,20 +4,53 @@
 @using RouteTrace.Web.Features.Import
 @using RouteTrace.Web.Features.Workspaces
 @using RouteTrace.Web.Features.Commands
+@using RouteTrace.Web.Features.Editing
 
 <PageTitle>Route Trace</PageTitle>
 
 <h1 class="visually-hidden">Route Trace map</h1>
 <div class="home-workspace">
     <section class="home-workspace__map" aria-label="Map workspace">
-        <MapViewport Documents="MapDocuments" Selection="selection" FocusVersion="focusVersion" />
+        <MapViewport Documents="MapDocuments"
+                     Selection="selection"
+                     FocusVersion="focusVersion"
+                     EditingEnabled="@(manualEditor is not null)"
+                     EditingPointAddEnabled="@(manualEditor is not null)"
+                     EditingPoints="ManualEditingPoints"
+                     SelectedEditingPoint="selectedEditingPoint"
+                     EditingPointAdded="HandleEditingPointAddedAsync"
+                     EditingPointSelected="HandleEditingPointSelected"
+                     EditingPointMoved="HandleEditingPointMovedAsync"
+                     EditingPointsReplaced="HandleEditingPointsReplacedAsync"
+                     EditingPointDeleteRequested="DeleteEditingPointAtAsync" />
         <ApplicationMenu ActiveDocument="workspace.ActiveDocument"
                          InspectorVisible="inspectorVisible"
                          ExplorerVisible="explorerVisible"
+                         EditingActive="@(manualEditor is not null)"
                          DocumentImported="HandleDocumentImported"
                          InspectorVisibilityChanged="HandleInspectorVisibilityChanged"
-                         ExplorerVisibilityChanged="HandleExplorerVisibilityChanged" />
-        <WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
+                         ExplorerVisibilityChanged="HandleExplorerVisibilityChanged"
+                         EditUndoRequested="UndoManualEditAsync"
+                         EditRedoRequested="RedoManualEditAsync"
+                         EditCloseRequested="RequestCloseManualRouteAsync" />
+        @if (manualEditor is null)
+        {
+            <WorkspacePanel Workspace="workspace" WorkspaceChanged="HandleWorkspaceChangedAsync" WorkspaceDeleted="HandleWorkspaceDeleted" />
+        }
+        <ManualRouteToolbar Active="@(manualEditor is not null)"
+                            Title="@manualEditorTitle"
+                            PointCount="@(manualEditor?.Points.Count ?? 0)"
+                            SelectedIndex="selectedEditingPoint"
+                            IsLoop="@(manualEditor?.IsLoop ?? false)"
+                            CanUndo="@(manualEditor?.CanUndo ?? false)"
+                            CanRedo="@(manualEditor?.CanRedo ?? false)"
+                            FinishRequested="FinishManualRoute"
+                            UndoRequested="UndoManualEditAsync"
+                            RedoRequested="RedoManualEditAsync"
+                            DeleteRequested="DeleteEditingPointAsync"
+                            ReverseRequested="ReverseManualRouteAsync"
+                            CloseLoopRequested="CloseManualRouteLoopAsync"
+                            ClearRequested="ClearManualRouteAsync" />
         @if (workspace.ActiveDocument is not null && inspectorVisible)
         {
             <GpxInspector Document="workspace.ActiveDocument.Document" SelectionChanged="HandleSelectionChanged" />
@@ -28,5 +61,21 @@
                       Visible="explorerVisible"
                       WorkspaceChanged="HandleWorkspaceChangedAsync"
                       SelectionChanged="HandleSelectionChanged"
-                      FocusRequested="HandleFocusRequested" />
+                      FocusRequested="HandleFocusRequested"
+                      EditRequested="StartEditingTargetAsync" />
 </div>
+
+@if (editExitConfirmationVisible)
+{
+    <div class="home-workspace__dialog-backdrop">
+        <section class="home-workspace__edit-exit" role="dialog" aria-modal="true" aria-labelledby="edit-exit-title">
+            <h2 id="edit-exit-title">Keep route changes?</h2>
+            <p>This editing session has changes.</p>
+            <div>
+                <button type="button" class="home-workspace__dialog-primary" @onclick="KeepManualRouteChanges">Keep changes</button>
+                <button type="button" @onclick="DiscardManualRouteChangesAsync">Discard changes</button>
+                <button type="button" @onclick="CancelCloseManualRoute">Continue editing</button>
+            </div>
+        </section>
+    </div>
+}

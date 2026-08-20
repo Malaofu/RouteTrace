@@ -15,13 +15,24 @@ public partial class MapViewport
     [Parameter]
     public MapSelection Selection { get; set; }
     [Parameter] public int FocusVersion { get; set; }
+    [Parameter] public bool EditingEnabled { get; set; }
+    [Parameter] public bool EditingPointAddEnabled { get; set; }
+    [Parameter] public IReadOnlyList<double[]> EditingPoints { get; set; } = [];
+    [Parameter] public int? SelectedEditingPoint { get; set; }
+    [Parameter] public EventCallback<double[]> EditingPointAdded { get; set; }
+    [Parameter] public EventCallback<int> EditingPointSelected { get; set; }
+    [Parameter] public EventCallback<EditingPointMove> EditingPointMoved { get; set; }
+    [Parameter] public EventCallback<double[][]> EditingPointsReplaced { get; set; }
+    [Parameter] public EventCallback<int> EditingPointDeleteRequested { get; set; }
 
     private readonly string elementId = $"route-map-{Guid.NewGuid():N}";
     private readonly Dictionary<Guid, MapDocumentGeometry> renderedDocuments = [];
     private IJSObjectReference? module;
     private DotNetObjectReference<MapViewport>? selfReference;
     private HoveredWaypoint? hoveredWaypoint;
+    private EditingPointMenu? editingPointMenu;
     private int renderedFocusVersion;
+    private int parameterRenderVersion;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -36,6 +47,7 @@ public partial class MapViewport
         selfReference = DotNetObjectReference.Create(this);
         await module.InvokeVoidAsync("initialize", elementId, MarkerOptions.Value, selfReference);
         await RenderDocumentAsync(module);
+        await RenderEditingAsync(module);
     }
 
     [JSInvokable]
@@ -56,6 +68,42 @@ public partial class MapViewport
         return InvokeAsync(StateHasChanged);
     }
 
+    [JSInvokable]
+    public Task AddEditingPoint(double longitude, double latitude) =>
+        EditingPointAdded.InvokeAsync(new[] { longitude, latitude });
+
+    [JSInvokable]
+    public Task SelectEditingPoint(int index) => EditingPointSelected.InvokeAsync(index);
+
+    [JSInvokable]
+    public Task MoveEditingPoint(int index, double longitude, double latitude) =>
+        EditingPointMoved.InvokeAsync(new EditingPointMove(index, [longitude, latitude]));
+
+    [JSInvokable]
+    public Task ReplaceEditingPoints(double[][] coordinates) => EditingPointsReplaced.InvokeAsync(coordinates);
+
+    [JSInvokable]
+    public Task ShowEditingPointMenu(int index, double left, double top)
+    {
+        editingPointMenu = new(index, left, top);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public Task HideEditingPointMenu()
+    {
+        if (editingPointMenu is null) return Task.CompletedTask;
+        editingPointMenu = null;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DeleteEditingPointFromMenuAsync()
+    {
+        if (editingPointMenu is not { } menu) return;
+        editingPointMenu = null;
+        await EditingPointDeleteRequested.InvokeAsync(menu.Index);
+    }
+
     private static string WaypointMetadata(MapWaypoint waypoint)
     {
         string coordinates = FormattableString.Invariant($"{waypoint.Coordinate[1]:F6}° {waypoint.Coordinate[0]:F6}°");
@@ -74,13 +122,28 @@ public partial class MapViewport
 
     protected override async Task OnParametersSetAsync()
     {
+        int renderVersion = ++parameterRenderVersion;
         if (module is { } currentModule)
         {
             await RenderDocumentAsync(currentModule);
+            if (renderVersion != parameterRenderVersion) return;
+
+            bool editingEnabled = EditingEnabled;
+            bool pointAddEnabled = EditingPointAddEnabled;
+            double[][] editingPoints = EditingPoints.Select(point => point.ToArray()).ToArray();
+            int? selectedEditingPoint = SelectedEditingPoint;
+            await RenderEditingAsync(
+                currentModule,
+                editingEnabled,
+                pointAddEnabled,
+                editingPoints,
+                selectedEditingPoint);
+            if (renderVersion != parameterRenderVersion) return;
+
             if (FocusVersion != renderedFocusVersion)
             {
                 renderedFocusVersion = FocusVersion;
-                await currentModule.InvokeVoidAsync("focusSelection", elementId, Selection.DocumentId, Selection.TrackIndex, Selection.SegmentIndex, Selection.RouteIndex, Selection.WaypointIndex, Selection.WholeDocument, Selection.WaypointGroup);
+                await currentModule.InvokeVoidAsync("focusSelection", elementId, Selection.DocumentId, Selection.TrackIndex, Selection.SegmentIndex, Selection.RouteIndex, Selection.WaypointIndex, Selection.WholeDocument, Selection.WaypointGroup, !EditingEnabled);
             }
         }
     }
@@ -135,8 +198,30 @@ public partial class MapViewport
                 || !ReferenceEquals(previous.Geometry, document.Geometry));
         renderedDocuments.Clear();
         foreach ((Guid id, MapDocumentGeometry document) in current) renderedDocuments[id] = document;
-        await currentModule.InvokeVoidAsync("endDocumentUpdate", elementId, geometryChanged);
+        await currentModule.InvokeVoidAsync("endDocumentUpdate", elementId, geometryChanged && !EditingEnabled);
     }
+
+    private Task RenderEditingAsync(IJSObjectReference currentModule) =>
+        RenderEditingAsync(
+            currentModule,
+            EditingEnabled,
+            EditingPointAddEnabled,
+            EditingPoints,
+            SelectedEditingPoint);
+
+    private Task RenderEditingAsync(
+        IJSObjectReference currentModule,
+        bool editingEnabled,
+        bool editingPointAddEnabled,
+        IReadOnlyList<double[]> editingPoints,
+        int? selectedEditingPoint) =>
+        currentModule.InvokeVoidAsync(
+            "setManualRouteEditing",
+            elementId,
+            editingEnabled,
+            editingPointAddEnabled,
+            editingPoints,
+            selectedEditingPoint).AsTask();
 
     public async ValueTask DisposeAsync()
     {
@@ -161,4 +246,7 @@ public partial class MapViewport
     }
 
     private sealed record HoveredWaypoint(Guid DocumentId, int WaypointIndex, MapWaypoint Waypoint, double Left, double Top);
+    private sealed record EditingPointMenu(int Index, double Left, double Top);
 }
+
+public sealed record EditingPointMove(int Index, double[] Coordinate);

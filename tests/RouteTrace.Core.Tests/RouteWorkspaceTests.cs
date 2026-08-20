@@ -111,4 +111,34 @@ public sealed class RouteWorkspaceTests
         changed.Documents[0].Document.Tracks[0].Type.ShouldBe("cycling");
         changed.Documents[0].Document.UnsupportedExtensionXml.ShouldBe(document.UnsupportedExtensionXml);
     }
+
+    [Fact]
+    public void AddsAndDeletesRoutesAndSegmentsWithoutReplacingOtherDocumentContent()
+    {
+        var existingRoute = new Route("GPX route", []);
+        var document = new RouteDocument(
+            routes: [existingRoute],
+            metadata: new RouteMetadata("Document"),
+            unsupportedExtensionXml: ["<x:test xmlns:x='urn:test' />"]);
+        RouteWorkspace workspace = new RouteWorkspace(Guid.NewGuid(), "Routes").AddDocument(document);
+        Guid id = workspace.Documents[0].Id;
+
+        RouteWorkspace withSegment = workspace.AddTrack(id).AddSegment(id, 0);
+
+        withSegment.Documents[0].Document.Tracks.Single().Name.ShouldBe("Route 1");
+        withSegment.Documents[0].Document.Tracks[0].Segments.Count.ShouldBe(1);
+        withSegment.Documents[0].Document.Routes.Single().ShouldBeSameAs(existingRoute);
+        withSegment.Documents[0].Document.UnsupportedExtensionXml.ShouldBe(document.UnsupportedExtensionXml);
+
+        RouteWorkspace withoutSegment = withSegment.DeleteNode(id, new(WorkspaceNodeKind.Segment, 0, 0));
+        withoutSegment.Documents[0].Document.Tracks[0].Segments.ShouldBeEmpty();
+
+        RouteWorkspace withoutTrack = withoutSegment.DeleteNode(id, new(WorkspaceNodeKind.Track, 0));
+        withoutTrack.Documents[0].Document.Tracks.ShouldBeEmpty();
+        withoutTrack.Documents[0].Document.Routes.Single().ShouldBeSameAs(existingRoute);
+
+        RouteWorkspace withoutRoute = withoutTrack.DeleteNode(id, new(WorkspaceNodeKind.Route, 0));
+        withoutRoute.Documents[0].Document.Routes.ShouldBeEmpty();
+        withoutRoute.Documents[0].Document.Metadata!.Name.ShouldBe("Document");
+    }
 }

@@ -1,0 +1,39 @@
+@if (Active)
+{
+    <section class="manual-route-toolbar" aria-label="Manual route editor">
+        <div class="manual-route-toolbar__status" role="status">
+            <strong>@Title</strong>
+            <span>@Instruction</span>
+        </div>
+        <div class="manual-route-toolbar__actions">
+            <button type="button" disabled="@(!CanUndo)" @onclick="UndoRequested" title="Undo">↶ <span>Undo</span></button>
+            <button type="button" disabled="@(!CanRedo)" @onclick="RedoRequested" title="Redo">↷ <span>Redo</span></button>
+            <button type="button" disabled="@(SelectedIndex is null)" @onclick="DeleteRequested">Delete point</button>
+            <button type="button" disabled="@(PointCount < 2)" @onclick="ReverseRequested">Reverse</button>
+            <button type="button" disabled="@(PointCount < 3 || IsLoop)" @onclick="CloseLoopRequested">Close loop</button>
+            <button type="button" disabled="@(PointCount == 0)" @onclick="ClearRequested">Clear</button>
+            <button type="button" class="manual-route-toolbar__primary" @onclick="FinishRequested">Done</button>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public string Title { get; set; } = "Manual route";
+    [Parameter] public int PointCount { get; set; }
+    [Parameter] public int? SelectedIndex { get; set; }
+    [Parameter] public bool IsLoop { get; set; }
+    [Parameter] public bool CanUndo { get; set; }
+    [Parameter] public bool CanRedo { get; set; }
+    [Parameter] public EventCallback FinishRequested { get; set; }
+    [Parameter] public EventCallback UndoRequested { get; set; }
+    [Parameter] public EventCallback RedoRequested { get; set; }
+    [Parameter] public EventCallback DeleteRequested { get; set; }
+    [Parameter] public EventCallback ReverseRequested { get; set; }
+    [Parameter] public EventCallback CloseLoopRequested { get; set; }
+    [Parameter] public EventCallback ClearRequested { get; set; }
+
+    private string Instruction => SelectedIndex is null
+            ? "Click the line to insert, drag a point to move it, or right-click a point for actions."
+            : $"Point {SelectedIndex + 1} selected. Drag it to move it or right-click for actions.";
+}

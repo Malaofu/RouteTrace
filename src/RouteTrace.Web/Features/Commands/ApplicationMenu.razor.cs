@@ -27,6 +27,10 @@ public partial class ApplicationMenu
 
     [Parameter] public bool ExplorerVisible { get; set; }
     [Parameter] public EventCallback<bool> ExplorerVisibilityChanged { get; set; }
+    [Parameter] public bool EditingActive { get; set; }
+    [Parameter] public EventCallback EditUndoRequested { get; set; }
+    [Parameter] public EventCallback EditRedoRequested { get; set; }
+    [Parameter] public EventCallback EditCloseRequested { get; set; }
 
     private readonly ApplicationCommand openCommand;
     private readonly ApplicationCommand exportCommand;
@@ -68,6 +72,11 @@ public partial class ApplicationMenu
             {
                 await menuModule.InvokeVoidAsync("attachApplicationMenu", selfReference, input.Element);
             }
+        }
+
+        if (menuModule is not null)
+        {
+            await menuModule.InvokeVoidAsync("setEditingActive", EditingActive);
         }
 
         if (focusFirstItem)
@@ -154,6 +163,9 @@ public partial class ApplicationMenu
         "export" => exportCommand.TryExecuteAsync(),
         "inspector" => inspectorCommand.TryExecuteAsync(),
         "explorer" => explorerCommand.TryExecuteAsync(),
+        "editUndo" when EditingActive => EditUndoRequested.InvokeAsync(),
+        "editRedo" when EditingActive => EditRedoRequested.InvokeAsync(),
+        "editClose" when EditingActive => EditCloseRequested.InvokeAsync(),
         _ => Task.CompletedTask
     };
 

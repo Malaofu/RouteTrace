@@ -71,3 +71,29 @@
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-md);
 }
+
+.map-editing-point-menu {
+  position: absolute;
+  z-index: 1100;
+  min-width: 9rem;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.map-editing-point-menu button {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  color: var(--color-danger);
+  background: transparent;
+  text-align: left;
+}
+
+.map-editing-point-menu button:hover,
+.map-editing-point-menu button:focus-visible {
+  background: var(--color-hover);
+}

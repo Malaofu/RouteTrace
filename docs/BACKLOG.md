@@ -644,13 +644,17 @@ without calling an elevation provider.
 
 ## PBI-080 — Manual route editing
 
-**Status:** Not started
+**Status:** Complete
 
 **Goal:** Allow a user to create and adjust an unrouted line on the map.
 
 **Tasks:**
 
 - Add, move, insert, and delete ordered editing points.
+- Edit a selected existing track segment or GPX route without replacing the
+  surrounding document.
+- Insert by clicking or dragging the existing line, redraw during the gesture,
+  and offer point deletion from a point context menu.
 - Choose or reverse direction and select a starting point for a loop.
 - Establish reusable undo/redo history for the editing workflows that follow.
 - Clear recent edits without bypassing that history.
@@ -662,6 +666,18 @@ without calling an elevation provider.
 - Direction is visible.
 - Undo and redo cover the operations introduced by this PBI.
 - The result exports as GPX.
+- Existing routes and segments support direct insertion, live drag preview,
+  arbitrary point deletion, and preservation of unaffected GPX content.
+
+**Implemented:** Explorer context menus create documents, routes, and segments,
+then edit or delete routes and segments in place. OpenLayers line editing
+provides click/drag insertion and live redraw; points support drag movement and
+right-click deletion, including after clearing a segment. Editing displays
+start/finish markers, supports keyboard undo/redo, and uses an Escape
+keep/discard flow. Unaffected document content and point metadata are retained,
+and normal workspace persistence and GPX export remain authoritative. Follow-up
+verification covers theme-aware exit confirmation, pointer-relative background
+menus, and insertion as the first gesture after entering edit mode.
 
 ## PBI-090 — Bicycle routing between anchors
 

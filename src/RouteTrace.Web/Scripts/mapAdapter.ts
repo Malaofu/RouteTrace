@@ -18,6 +18,7 @@ import {
     getMap,
     initializeMap,
 } from "./Map/mapLifecycle.js";
+import { setManualRouteEditing as applyManualRouteEditing } from "./Map/manualRouteEditing.js";
 
 let markerConfig: MarkerConfig | null = null;
 
@@ -85,6 +86,16 @@ export function endDocumentUpdate(elementId: string, fitGeometry: boolean): void
     endGeometryUpdate(getMap(elementId), fitGeometry);
 }
 
+export function setManualRouteEditing(
+    elementId: string,
+    enabled: boolean,
+    pointAddEnabled: boolean,
+    points: Array<[number, number]>,
+    selectedIndex: number | null,
+): void {
+    applyManualRouteEditing(getMap(elementId), enabled, pointAddEnabled, points, selectedIndex);
+}
+
 export function focusSelection(
     elementId: string,
     documentId: string,
@@ -94,6 +105,7 @@ export function focusSelection(
     waypointIndex: number | null,
     wholeDocument: boolean,
     waypointGroup: boolean,
+    animated: boolean,
 ): void {
     focusGeometrySelection(
         getMap(elementId),
@@ -104,6 +116,7 @@ export function focusSelection(
         waypointIndex,
         wholeDocument,
         waypointGroup,
+        animated,
     );
 }
 

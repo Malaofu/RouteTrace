@@ -19,6 +19,12 @@ public partial class DocumentExplorerActions
     [Parameter]
     public EventCallback<MapSelection> FocusRequested { get; set; }
 
+    [Parameter]
+    public EventCallback<DocumentTreeTarget> EditRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<DocumentTreeNodeIdentity> TrackExpansionRequested { get; set; }
+
     private IReadOnlyList<DocumentTreeTarget> selectedTargets = [];
     private DocumentTreeTarget? actionTarget;
     private DocumentTreeTarget? infoTarget;
@@ -37,9 +43,27 @@ public partial class DocumentExplorerActions
         menuY = request.ClientY;
     }
 
+    public void OpenBackground(double clientX, double clientY)
+    {
+        actionTarget = null;
+        selectedTargets = [];
+        menuX = clientX;
+        menuY = clientY;
+        backgroundActionsOpen = true;
+    }
+
+    private bool backgroundActionsOpen;
+    private bool ActionsOpen => backgroundActionsOpen || actionTarget is not null;
+    private string ActionLabel => actionTarget?.Name ?? "document explorer";
+    private string MenuPositionStyle => actionTarget is null
+        ? FormattableString.Invariant($"left:min({menuX}px, calc(100vw - 11rem)); top:min({menuY}px, calc(100vh - 3rem))")
+        : FormattableString.Invariant($"left:min({menuX}px, calc(100vw - 11rem)); top:min({menuY}px, calc(100vh - 22rem))");
+
     private bool AllTargetsVisible => selectedTargets.All(TargetIsVisible);
     private bool CanEditInfo => actionTarget is { } target && selectedTargets.Count == 1 && HasInfo(target.Node);
     private bool CanResetAppearance => selectedTargets.Count > 0 && selectedTargets.All(target => target.Node is not null);
+    private bool CanDeleteTarget => actionTarget?.Node is null ||
+        actionTarget.Node.Value.Kind is WorkspaceNodeKind.Track or WorkspaceNodeKind.Segment or WorkspaceNodeKind.Route;
     private bool InfoHasDescription => infoTarget?.Node is null || infoTarget?.Node?.Kind == WorkspaceNodeKind.Waypoint;
 
     private async Task ActivateTargetAsync()
@@ -133,6 +157,46 @@ public partial class DocumentExplorerActions
         CloseActions();
     }
 
+    private async Task CreateDocumentAsync()
+    {
+        var document = new RouteDocument(metadata: new RouteMetadata("Untitled document"));
+        await WorkspaceChanged.InvokeAsync(Workspace.AddDocument(document));
+        CloseActions();
+    }
+
+    private async Task CreateTrackAsync()
+    {
+        if (actionTarget is not { Node: null } target) return;
+        await WorkspaceChanged.InvokeAsync(Workspace.AddTrack(target.Document.Id));
+        CloseActions();
+    }
+
+    private async Task CreateSegmentAsync()
+    {
+        if (actionTarget?.Node is not { Kind: WorkspaceNodeKind.Track } node) return;
+        await WorkspaceChanged.InvokeAsync(Workspace.AddSegment(actionTarget.Document.Id, node.PrimaryIndex));
+        await TrackExpansionRequested.InvokeAsync(new(actionTarget.Document.Id, node));
+        CloseActions();
+    }
+
+    private async Task EditTargetAsync()
+    {
+        if (actionTarget is not { } target) return;
+        CloseActions();
+        await EditRequested.InvokeAsync(target);
+    }
+
+    private async Task DeleteTargetAsync()
+    {
+        if (actionTarget is not { Node: { } node } target) return;
+        await WorkspaceChanged.InvokeAsync(Workspace.DeleteNode(target.Document.Id, node));
+        CloseActions();
+    }
+
+    private Task DeleteOrCloseTargetAsync() => actionTarget?.Node is null
+        ? CloseTargetAsync()
+        : DeleteTargetAsync();
+
     private async Task ExportTargetAsync()
     {
         if (actionTarget is not { } action)
@@ -172,7 +236,11 @@ public partial class DocumentExplorerActions
         CloseInfo();
     }
 
-    private void CloseActions() => actionTarget = null;
+    private void CloseActions()
+    {
+        actionTarget = null;
+        backgroundActionsOpen = false;
+    }
     private void CloseAppearance() => appearanceTarget = null;
 
     private void CloseInfo()

@@ -1,13 +1,52 @@
-@if (actionTarget is not null)
+@using RouteTrace.Core.Routes.Workspaces
+
+@if (ActionsOpen)
 {
     <div class="document-explorer__menu-dismiss"
          @onclick="CloseActions"
          @oncontextmenu="CloseActions"
          @oncontextmenu:preventDefault></div>
     <div class="document-explorer__actions"
-         style="left:min(@(menuX)px, calc(100vw - 11rem)); top:min(@(menuY)px, calc(100vh - 22rem))"
+         style="@MenuPositionStyle"
          role="menu"
-         aria-label="Actions for @actionTarget.Name">
+         aria-label="Actions for @ActionLabel">
+        @if (actionTarget is null)
+        {
+            <button role="menuitem" @onclick="CreateDocumentAsync">
+                <span class="document-explorer__action-icon">＋</span>
+                <span>New document</span>
+                <span></span>
+            </button>
+        }
+        else
+        {
+        @if (actionTarget.Node is null)
+        {
+            <button role="menuitem" @onclick="CreateTrackAsync">
+                <span class="document-explorer__action-icon">＋</span>
+                <span>New route</span>
+                <span></span>
+            </button>
+            <div class="document-explorer__action-separator" role="separator"></div>
+        }
+        else if (actionTarget.Node is { Kind: WorkspaceNodeKind.Track })
+        {
+            <button role="menuitem" @onclick="CreateSegmentAsync">
+                <span class="document-explorer__action-icon">＋</span>
+                <span>New segment</span>
+                <span></span>
+            </button>
+            <div class="document-explorer__action-separator" role="separator"></div>
+        }
+        else if (actionTarget.Node is { Kind: WorkspaceNodeKind.Segment or WorkspaceNodeKind.Route })
+        {
+            <button role="menuitem" @onclick="EditTargetAsync">
+                <span class="document-explorer__action-icon">✎</span>
+                <span>Edit</span>
+                <span></span>
+            </button>
+            <div class="document-explorer__action-separator" role="separator"></div>
+        }
         <button role="menuitem" disabled="@(!CanEditInfo)" @onclick="OpenInfo">
             <span class="document-explorer__action-icon">ⓘ</span>
             <span>Info…</span>
@@ -24,12 +63,6 @@
             <span class="document-explorer__action-icon">@(AllTargetsVisible ? "◉̸" : "◉")</span>
             <span>@(AllTargetsVisible ? "Hide" : "Show")</span>
             <kbd>Ctrl H</kbd>
-        </button>
-        <div class="document-explorer__action-separator" role="separator"></div>
-        <button role="menuitem" disabled>
-            <span class="document-explorer__action-icon">＋</span>
-            <span>New segment</span>
-            <span></span>
         </button>
         <div class="document-explorer__action-separator" role="separator"></div>
         <button role="menuitem" @onclick="FocusTargetAsync">
@@ -74,12 +107,13 @@
         }
         <div class="document-explorer__action-separator" role="separator"></div>
         <button role="menuitem"
-                disabled="@(selectedTargets.Count != 1 || actionTarget.Node is not null)"
-                @onclick="CloseTargetAsync">
+                disabled="@(!CanDeleteTarget)"
+                @onclick="DeleteOrCloseTargetAsync">
             <span class="document-explorer__action-icon">♜</span>
             <span>Delete</span>
             <kbd>Ctrl ⌫</kbd>
         </button>
+        }
     </div>
 }
 

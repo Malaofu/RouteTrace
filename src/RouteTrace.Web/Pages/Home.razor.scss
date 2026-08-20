@@ -7,6 +7,41 @@
   min-height: 0;
 }
 
+.home-workspace__dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    background: rgb(15 23 42 / 45%);
+}
+
+.home-workspace__edit-exit {
+    width: min(28rem, calc(100vw - 2rem));
+    padding: 1.25rem;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-md);
+}
+
+.home-workspace__edit-exit h2 { margin-top: 0; }
+.home-workspace__edit-exit div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.home-workspace__edit-exit button {
+    padding: 0.5rem 0.75rem;
+    color: var(--color-text);
+    border-color: var(--color-border);
+    background: var(--color-surface-raised);
+}
+.home-workspace__edit-exit button:hover { background: var(--color-hover); }
+.home-workspace__dialog-primary {
+    color: var(--color-accent-contrast) !important;
+    background: var(--color-accent) !important;
+    border-color: var(--color-accent) !important;
+}
+.home-workspace__dialog-primary:hover { background: var(--color-accent-hover) !important; }
+
 .home-workspace__map {
   position: relative;
   flex: 1 1 auto;

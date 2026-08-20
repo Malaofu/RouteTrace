@@ -23,6 +23,12 @@ public partial class DocumentTree
 
     protected override void OnParametersSet() => expansion.ExpandNewDocuments(Workspace);
 
+    public void ExpandTrack(Guid documentId, int trackIndex)
+    {
+        expansion.Expand(DocumentTreeExpansionState.TrackKey(documentId, trackIndex));
+        StateHasChanged();
+    }
+
     private Task SelectTargetAsync(DocumentTreeTarget target, MouseEventArgs args) =>
         SelectionRequested.InvokeAsync(new(target, args.CtrlKey));
 

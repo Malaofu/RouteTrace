@@ -10,6 +10,9 @@
          data-selected-segment="@Selection.SegmentIndex"
          data-selected-route="@Selection.RouteIndex"
          data-selected-waypoint="@Selection.WaypointIndex"
+         data-editing="@(EditingEnabled ? "true" : "false")"
+         data-editing-points="@EditingPoints.Count"
+         data-selected-editing-point="@SelectedEditingPoint"
          data-selected-document="@(Selection.WholeDocument ? "true" : "false")"
          data-selected-waypoint-group="@(Selection.WaypointGroup ? "true" : "false")">
     </div>
@@ -23,6 +26,15 @@
                 <span class="map-poi-tooltip__description">@hoveredWaypoint.Waypoint.Description</span>
             }
         </aside>
+    }
+    @if (editingPointMenu is not null)
+    {
+        <div class="map-editing-point-menu"
+             role="menu"
+             aria-label="Editing point actions"
+             style="left: @(editingPointMenu.Left)px; top: @(editingPointMenu.Top)px">
+            <button type="button" role="menuitem" @onclick="DeleteEditingPointFromMenuAsync">Delete point</button>
+        </div>
     }
 </div>
 @if (Documents.Count > 0 && Documents.All(document => document.Geometry.Tracks.Count == 0 && document.Geometry.Routes.Count == 0 && document.Geometry.Waypoints.Count == 0))

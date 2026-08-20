@@ -39,7 +39,7 @@ test("context actions follow selection, pointer position, and outside dismissal"
     await expect(explorer.locator(".document-explorer__row--active")).toHaveCount(2);
     let menu = page.getByRole("menu", { name: /Actions for/ });
     await expect(menu.getByRole("menuitem", { name: /Appearance/ })).toBeVisible();
-    await expect(menu.getByRole("menuitem", { name: /New segment/ })).toBeDisabled();
+    await expect(menu.getByRole("menuitem", { name: /New segment/ })).toBeEnabled();
     await expect(menu.getByRole("menuitem", { name: /Duplicate/ })).toBeDisabled();
     await expect(menu.getByRole("menuitem", { name: /Copy/ })).toBeDisabled();
     await expect(menu.getByRole("menuitem", { name: /Cut/ })).toBeDisabled();
@@ -68,6 +68,50 @@ test("context actions follow selection, pointer position, and outside dismissal"
     expect(await storedWorkspacePayload(page)).toContain("Renamed GPX");
     await page.reload();
     await expect(page.getByRole("complementary", { name: "Document explorer" }).getByRole("button", { name: "Renamed GPX", exact: true })).toBeVisible();
+});
+
+test("explorer context menus create and delete the document route segment hierarchy", async ({ page }) => {
+    await page.goto("/");
+    const explorer = page.getByRole("complementary", { name: "Document explorer" });
+    await page.locator('input[type="file"]').setInputFiles(fixturePath);
+    await explorer.locator(".document-explorer__label").first().click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    const explorerBox = await explorer.boundingBox();
+    if (!explorerBox) throw new Error("Expected explorer bounds.");
+    const clickPosition = { x: 24, y: explorerBox.height - 40 };
+    const backgroundClick = {
+        x: explorerBox.x + clickPosition.x,
+        y: explorerBox.y + clickPosition.y,
+    };
+    await explorer.click({ button: "right", position: clickPosition });
+    const backgroundMenu = page.getByRole("menu", { name: "Actions for document explorer" });
+    await expect(backgroundMenu).toBeVisible();
+    const backgroundMenuBox = await backgroundMenu.boundingBox();
+    if (!backgroundMenuBox) throw new Error("Expected background menu bounds.");
+    expect(backgroundMenuBox.y).toBeGreaterThan(backgroundClick.y - 64);
+    expect(backgroundMenuBox.y + backgroundMenuBox.height).toBeLessThanOrEqual(explorerBox.y + explorerBox.height + 1);
+    await backgroundMenu.getByRole("menuitem", { name: "New document" }).click();
+    const document = explorer.locator(".document-explorer__label", { hasText: "Untitled document" });
+    await expect(document).toBeVisible();
+
+    await document.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "New route" }).click();
+    const route = explorer.locator(".document-explorer__label", { hasText: "Route 1" });
+    await expect(route).toBeVisible();
+
+    await route.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "New segment" }).click();
+    const segment = explorer.locator(".document-explorer__label", { hasText: "Segment 1" });
+    await expect(segment).toBeVisible();
+
+    await segment.click({ button: "right" });
+    await expect(page.getByRole("menuitem", { name: /Edit/ })).toBeVisible();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(segment).toHaveCount(0);
+
+    await route.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(route).toHaveCount(0);
 });
 
 test("effective colour strips update and child colours can reset to their parent", async ({ page }) => {

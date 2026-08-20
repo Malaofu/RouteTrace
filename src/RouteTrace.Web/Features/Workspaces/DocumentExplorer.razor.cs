@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using RouteTrace.Core.Routes.Workspaces;
 using RouteTrace.Web.Features.Map;
 
@@ -24,8 +25,12 @@ public partial class DocumentExplorer
     [Parameter]
     public EventCallback<MapSelection> FocusRequested { get; set; }
 
+    [Parameter]
+    public EventCallback<DocumentTreeTarget> EditRequested { get; set; }
+
     private readonly HashSet<DocumentTreeNodeIdentity> selectedNodes = [];
     private DocumentExplorerActions? actions;
+    private DocumentTree? tree;
 
     private async Task OpenActionsAsync(DocumentTreeActionRequest request)
     {
@@ -38,6 +43,12 @@ public partial class DocumentExplorer
 
         actions?.Open(request, SelectedTargets);
     }
+
+    private void OpenBackgroundActions(MouseEventArgs args) =>
+        actions?.OpenBackground(args.ClientX, args.ClientY);
+
+    private void ExpandTrack(DocumentTreeNodeIdentity identity) =>
+        tree?.ExpandTrack(identity.DocumentId, identity.Node?.PrimaryIndex ?? 0);
 
     private Task SelectTargetAsync(DocumentTreeSelectionRequest request) =>
         SelectNodeAsync(request.Target, request.Additive);

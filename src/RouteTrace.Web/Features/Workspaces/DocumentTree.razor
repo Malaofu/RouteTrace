@@ -22,7 +22,8 @@ else
                 <div class="@RowClass(documentActive)"
                      style="--document-colour: @workspaceDocument.Colour"
                      @oncontextmenu="args => OpenActionsAsync(documentTarget, args)"
-                     @oncontextmenu:preventDefault>
+                     @oncontextmenu:preventDefault
+                     @oncontextmenu:stopPropagation>
                     <button type="button"
                             class="document-explorer__expander"
                             aria-label="@(documentExpanded ? "Collapse" : "Expand") @DocumentName(workspaceDocument)"
@@ -57,7 +58,8 @@ else
                                 <div class="@RowClass(trackActive)"
                                      style="--document-colour: @workspaceDocument.NodeColour(trackNode)"
                                      @oncontextmenu="args => OpenActionsAsync(trackTarget, args)"
-                                     @oncontextmenu:preventDefault>
+                                     @oncontextmenu:preventDefault
+                                     @oncontextmenu:stopPropagation>
                                     <button type="button"
                                             class="document-explorer__expander"
                                             aria-label="@(trackExpanded ? "Collapse" : "Expand") @trackName"
@@ -94,7 +96,8 @@ else
                                                 <div class="@RowClass(segmentActive)"
                                                      style="--document-colour: @workspaceDocument.NodeColour(segmentNode)"
                                                      @oncontextmenu="args => OpenActionsAsync(segmentTarget, args)"
-                                                     @oncontextmenu:preventDefault>
+                                                     @oncontextmenu:preventDefault
+                                                     @oncontextmenu:stopPropagation>
                                                     <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
                                                     <button type="button"
                                                             class="document-explorer__label"
@@ -125,7 +128,8 @@ else
                                 <div class="@RowClass(routeActive)"
                                      style="--document-colour: @workspaceDocument.NodeColour(routeNode)"
                                      @oncontextmenu="args => OpenActionsAsync(routeTarget, args)"
-                                     @oncontextmenu:preventDefault>
+                                     @oncontextmenu:preventDefault
+                                     @oncontextmenu:stopPropagation>
                                     <span class="document-explorer__leaf" aria-hidden="true">⌁</span>
                                     <button type="button"
                                             class="document-explorer__label"
@@ -151,7 +155,8 @@ else
                                 <div class="@RowClass(poiActive)"
                                      style="--document-colour: @workspaceDocument.NodeColour(poiNode)"
                                      @oncontextmenu="args => OpenActionsAsync(poiTarget, args)"
-                                     @oncontextmenu:preventDefault>
+                                     @oncontextmenu:preventDefault
+                                     @oncontextmenu:stopPropagation>
                                     <button type="button"
                                             class="document-explorer__expander"
                                             aria-label="@(poiExpanded ? "Collapse" : "Expand") points of interest"
@@ -185,7 +190,8 @@ else
                                                 <div class="@RowClass(waypointActive)"
                                                      style="--document-colour: @workspaceDocument.NodeColour(waypointNode)"
                                                      @oncontextmenu="args => OpenActionsAsync(waypointTarget, args)"
-                                                     @oncontextmenu:preventDefault>
+                                                     @oncontextmenu:preventDefault
+                                                     @oncontextmenu:stopPropagation>
                                                     <span class="document-explorer__leaf" aria-hidden="true">⌖</span>
                                                     <button type="button"
                                                             class="document-explorer__label"

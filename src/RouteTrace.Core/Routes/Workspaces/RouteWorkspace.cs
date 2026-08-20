@@ -62,9 +62,14 @@ public sealed class RouteWorkspace
         ActiveDocumentId, SelectedDocumentId);
 
     public RouteWorkspace SetColour(Guid documentId, string colour) => Replace(documentId, document => document.WithColour(colour));
+    public RouteWorkspace ReplaceDocument(Guid documentId, RouteDocument document) =>
+        Replace(documentId, workspaceDocument => workspaceDocument.WithDocument(document));
     public RouteWorkspace SetNodeVisibility(Guid documentId, WorkspaceNode node, bool? visible) => Replace(documentId, document => document.WithNodeVisibility(node, visible));
     public RouteWorkspace SetNodeColour(Guid documentId, WorkspaceNode node, string? colour) => Replace(documentId, document => document.WithNodeColour(node, colour));
     public RouteWorkspace UpdateNodeInfo(Guid documentId, WorkspaceNode? node, string? name, string? description) => Replace(documentId, document => document.WithNodeInfo(node, name, description));
+    public RouteWorkspace AddTrack(Guid documentId) => Replace(documentId, document => document.AddTrack());
+    public RouteWorkspace AddSegment(Guid documentId, int trackIndex) => Replace(documentId, document => document.AddSegment(trackIndex));
+    public RouteWorkspace DeleteNode(Guid documentId, WorkspaceNode node) => Replace(documentId, document => document.DeleteNode(node));
 
     private RouteWorkspace Replace(Guid documentId, Func<WorkspaceDocument, WorkspaceDocument> update) => new(
         Id, Name, Documents.Select(document => document.Id == documentId ? update(document) : document), ActiveDocumentId, SelectedDocumentId);

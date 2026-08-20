@@ -17,6 +17,7 @@ interface ChromeThemeStyles {
     contextMenu: ComputedThemeStyles;
     infoDialog: ComputedThemeStyles;
     infoInput: ComputedThemeStyles;
+    editExitDialog: ComputedThemeStyles;
 }
 
 async function computedThemeStyles(locator: Locator): Promise<ComputedThemeStyles> {
@@ -49,12 +50,22 @@ async function chromeThemeStyles(page: Page): Promise<ChromeThemeStyles> {
     const inputStyles = await computedThemeStyles(infoDialog.getByLabel("Name"));
     await infoDialog.getByRole("button", { name: "Cancel" }).click();
 
+    const segment = explorer.locator(".document-explorer__label", { hasText: "Segment 1" });
+    await segment.click({ button: "right" });
+    await page.getByRole("menuitem", { name: /Edit/ }).click();
+    await page.getByRole("button", { name: "Reverse" }).click();
+    await page.keyboard.press("Escape");
+    const editExitDialog = page.getByRole("dialog", { name: "Keep route changes?" });
+    const editExitStyles = await computedThemeStyles(editExitDialog);
+    await editExitDialog.getByRole("button", { name: "Discard changes" }).click();
+
     return {
         applicationMenu: menuStyles,
         documentExplorer: explorerStyles,
         contextMenu: contextStyles,
         infoDialog: dialogStyles,
         infoInput: inputStyles,
+        editExitDialog: editExitStyles,
     };
 }
 

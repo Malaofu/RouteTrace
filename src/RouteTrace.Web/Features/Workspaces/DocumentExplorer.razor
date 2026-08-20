@@ -1,8 +1,11 @@
 <aside class="document-explorer @(Visible ? null : "document-explorer--hidden")"
        aria-label="Document explorer"
-       aria-hidden="@(!Visible)">
+       aria-hidden="@(!Visible)"
+       @oncontextmenu="OpenBackgroundActions"
+       @oncontextmenu:preventDefault>
     <header><h2>Documents</h2></header>
-    <DocumentTree Workspace="Workspace"
+    <DocumentTree @ref="tree"
+                  Workspace="Workspace"
                   SelectedNodes="selectedNodes"
                   SelectionRequested="SelectTargetAsync"
                   ActionsRequested="OpenActionsAsync" />
@@ -11,4 +14,6 @@
 <DocumentExplorerActions @ref="actions"
                          Workspace="Workspace"
                          WorkspaceChanged="WorkspaceChanged"
-                         FocusRequested="FocusRequested" />
+                         FocusRequested="FocusRequested"
+                         EditRequested="EditRequested"
+                         TrackExpansionRequested="ExpandTrack" />

@@ -5,9 +5,27 @@ type MenuReference = {
 let reference: MenuReference | null = null;
 let fileInput: HTMLInputElement | null = null;
 let fileDragDepth = 0;
+let editingActive = false;
 
 function handleKeyDown(event: KeyboardEvent): void {
+    if (editingActive && event.key === "Escape") {
+        event.preventDefault();
+        void reference?.invokeMethodAsync("RunShortcutAsync", "editClose");
+        return;
+    }
+
     if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+
+    if (editingActive && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        void reference?.invokeMethodAsync("RunShortcutAsync", event.shiftKey ? "editRedo" : "editUndo");
+        return;
+    }
+    if (editingActive && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        void reference?.invokeMethodAsync("RunShortcutAsync", "editRedo");
+        return;
+    }
 
     const command = event.key.toLowerCase() === "o"
         ? "open"
@@ -99,8 +117,13 @@ export function detachApplicationMenu(): void {
     reference = null;
     fileInput = null;
     fileDragDepth = 0;
+    editingActive = false;
 }
 
 export function openFilePicker(input: HTMLInputElement): void {
     input.click();
+}
+
+export function setEditingActive(active: boolean): void {
+    editingActive = active;
 }
